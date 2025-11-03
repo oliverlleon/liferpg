@@ -1241,8 +1241,8 @@
         
         console.log(`Analisando: ${taskTitle} ${taskDuration}`);
         
-        const apiKey = ""; // Deixado em branco, será preenchido pelo ambiente
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const apiKey = "AIzaSyAILiH0MMEib3tVJMostz9qxlYii1kTHGg"; // Chave fornecida pelo usuário
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
         // Prompt do Sistema (conforme GDD)
         const systemPrompt = "Você é um mestre de jogo (Game Master) de um RPG da vida real. Sua função é analisar tarefas e classificá-las. Responda APENAS com um objeto JSON. Não inclua ```json ou qualquer texto antes ou depois.";
