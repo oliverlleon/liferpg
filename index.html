@@ -1244,16 +1244,15 @@
         const apiKey = "AIzaSyAILiH0MMEib3tVJMostz9qxlYii1kTHGg"; // Chave fornecida pelo usuário
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
-        // Prompt do Sistema (conforme GDD)
-        const systemPrompt = "Você é um mestre de jogo (Game Master) de um RPG da vida real. Sua função é analisar tarefas e classificá-las. Responda APENAS com um objeto JSON. Não inclua ```json ou qualquer texto antes ou depois.";
-
         // Combina o título e a duração para dar mais contexto à IA
         const fullTaskDescription = taskDuration 
             ? `${taskTitle} (duração: ${taskDuration})` 
             : taskTitle;
 
-        // Prompt do Usuário (conforme GDD, mas agora com a descrição completa)
-        const userPrompt = `Analise a tarefa a seguir: '${fullTaskDescription}'.
+        // Prompt Combinado (Instrução de Sistema + Prompt do Usuário)
+        const combinedPrompt = `Você é um mestre de jogo (Game Master) de um RPG da vida real. Sua função é analisar tarefas e classificá-las. Responda APENAS com um objeto JSON. Não inclua \`\`\`json ou qualquer texto antes ou depois.
+
+Analise a tarefa a seguir: '${fullTaskDescription}'.
 Classifique-a em 'atributo_associado' (escolha um: FORCA, INTELIGENCIA, VELOCIDADE, VITALIDADE, CARISMA) e 'dificuldade' (escolha uma: FACIL, MEDIA, DIFICIL).
 Use estas definições:
 FORCA: Academia, levantar peso, limpeza pesada.
@@ -1281,11 +1280,9 @@ Tarefa: '${fullTaskDescription}'`;
             required: ["atributo_associado", "dificuldade"]
         };
         
+        // Payload corrigido, sem 'systemInstruction'
         const payload = {
-            contents: [{ parts: [{ text: userPrompt }] }],
-            systemInstruction: {
-                parts: [{ text: systemPrompt }]
-            },
+            contents: [{ parts: [{ text: combinedPrompt }] }],
             generationConfig: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
