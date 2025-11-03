@@ -483,6 +483,12 @@
            </div>
         </div>
 
+        <!-- Duração (Opcional) -->
+        <label class="flex flex-col w-full">
+          <p class="text-white/70 text-base font-medium leading-normal pb-2">Duração Estimada (Opcional)</p>
+          <input id="task-duration" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: 30 min, 1 hora" value="" />
+        </label>
+
         <!-- Prazos (Opcional) -->
         <div class="grid grid-cols-2 gap-4">
             <label class="flex flex-col w-full">
@@ -497,7 +503,7 @@
 
         <!-- Estimativa de Recompensa (IA) -->
         <div>
-          <p class="text-white text-base font-medium leading-normal pb-2">Estimativa de Recompensa (Análise da IA)</p>
+          <p class="text-white text-base font-medium leading-normal pb-2">Análise da Missão (IA)</p>
           <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark min-h-[160px] flex items-center justify-center">
             
             <!-- Estado Inicial/Carregando -->
@@ -665,6 +671,7 @@
         title: document.getElementById('task-title'),
         typeGroup: document.getElementById('task-type-group'),
         typeButtons: document.querySelectorAll('.task-type-btn'),
+        duration: document.getElementById('task-duration'), // <-- ADICIONADO
         deadline: document.getElementById('task-deadline'),
         reminder: document.getElementById('task-reminder'),
         saveBtn: document.getElementById('task-save-btn'),
@@ -1167,6 +1174,7 @@
      */
     function resetTaskForm() {
         taskForm.title.value = '';
+        taskForm.duration.value = ''; // <-- ADICIONADO
         taskForm.deadline.value = '';
         taskForm.reminder.value = '';
         selectedTaskType = null;
@@ -1200,10 +1208,12 @@
     });
 
     /**
-     * Dispara a análise da IA após o usuário digitar o título
+     * Dispara a análise da IA após o usuário digitar o título ou duração
      */
-    taskForm.title.addEventListener('keyup', () => {
+    function triggerAIAnalysis() {
         const title = taskForm.title.value.trim();
+        const duration = taskForm.duration.value.trim();
+        
         if (title.length < 5) { // Não analisa títulos muito curtos
              rewardBox.loading.classList.remove('hidden');
              rewardBox.loadingText.textContent = 'Digite mais detalhes...';
@@ -1217,16 +1227,19 @@
         rewardBox.spinner.classList.remove('hidden');
         rewardBox.results.classList.add('hidden');
         
-        debounce(() => analyzeTaskWithAI(title), 1000); // Atraso de 1 seg
-    });
+        debounce(() => analyzeTaskWithAI(title, duration), 1000); // Atraso de 1 seg
+    }
+    
+    taskForm.title.addEventListener('keyup', triggerAIAnalysis);
+    taskForm.duration.addEventListener('keyup', triggerAIAnalysis);
     
     /**
      * Chama a API do Gemini para análise
      */
-    async function analyzeTaskWithAI(taskTitle) {
+    async function analyzeTaskWithAI(taskTitle, taskDuration) {
         if (!taskTitle) return;
         
-        console.log(`Analisando: ${taskTitle}`);
+        console.log(`Analisando: ${taskTitle} ${taskDuration}`);
         
         const apiKey = ""; // Deixado em branco, será preenchido pelo ambiente
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
@@ -1234,8 +1247,13 @@
         // Prompt do Sistema (conforme GDD)
         const systemPrompt = "Você é um mestre de jogo (Game Master) de um RPG da vida real. Sua função é analisar tarefas e classificá-las. Responda APENAS com um objeto JSON. Não inclua ```json ou qualquer texto antes ou depois.";
 
-        // Prompt do Usuário (conforme GDD)
-        const userPrompt = `Analise a tarefa a seguir: '${taskTitle}'.
+        // Combina o título e a duração para dar mais contexto à IA
+        const fullTaskDescription = taskDuration 
+            ? `${taskTitle} (duração: ${taskDuration})` 
+            : taskTitle;
+
+        // Prompt do Usuário (conforme GDD, mas agora com a descrição completa)
+        const userPrompt = `Analise a tarefa a seguir: '${fullTaskDescription}'.
 Classifique-a em 'atributo_associado' (escolha um: FORCA, INTELIGENCIA, VELOCIDADE, VITALIDADE, CARISMA) e 'dificuldade' (escolha uma: FACIL, MEDIA, DIFICIL).
 Use estas definições:
 FORCA: Academia, levantar peso, limpeza pesada.
@@ -1251,7 +1269,7 @@ Exemplos de Classificação:
 'Ir na academia': {"atributo_associado": "FORCA", "dificuldade": "MEDIA"}
 'Ligar para minha mãe': {"atributo_associado": "CARISMA", "dificuldade": "FACIL"}
 'Arrumar a mesa do escritório': {"atributo_associado": "VELOCIDADE", "dificuldade": "FACIL"}
-Tarefa: '${taskTitle}'`;
+Tarefa: '${fullTaskDescription}'`;
 
         // Schema de Resposta (para forçar JSON)
         const responseSchema = {
@@ -1373,6 +1391,7 @@ Tarefa: '${taskTitle}'`;
         const taskData = {
             titulo: title,
             tipo: selectedTaskType,
+            duracao_estimada: taskForm.duration.value.trim() || null, // <-- ADICIONADO
             atributo_associado: aiResults.atributo_associado,
             dificuldade: aiResults.dificuldade,
             recompensa: calculatedRewards, // Salva as recompensas calculadas
