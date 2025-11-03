@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPG da Vida Real - Aventura</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
+  <!-- Google Fonts e Ícones -->
+  <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  
+  <!-- Configuração do Tailwind -->
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#13ec6d",
+            "background-light": "#f6f8f7",
+            "background-dark": "#102218",
+          },
+          fontFamily: {
+            "display": ["Spline Sans", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+  
+  <!-- Estilos Globais -->
+  <style>
+    body {
+      min-height: max(884px, 100dvh);
+      background-color: #102218;
+      font-family: 'Spline Sans', sans-serif;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24;
+    }
+    
+    /* Classe helper para a seleção de avatar */
+    .avatar-selected {
+      border-color: #13ec6d !important;
+      box-shadow: 0 0 15px 2px rgba(19, 236, 109, 0.5);
+    }
+  </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-white">
+
+  <!-- Container Principal da Aplicação -->
+  <div id="app-container">
+
+    <!-- Tela 1: Abertura (Splash) -->
+    <div id="screen-splash" class="relative flex min-h-screen w-full flex-col dark group/design-root overflow-x-hidden">
+      <!-- Background Image -->
+      <div class="absolute inset-0 z-0">
+        <div class="h-full w-full bg-center bg-no-repeat bg-cover opacity-10" data-alt="A subtle, stylized texture resembling an old, weathered fantasy map." style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6sSjEhz7hgGMCO9BdTp0pHGvGbE3XMpV6jPLsVzsYPwCqNXpNCbXwpEujggDvZYrE9pQH3Y5d5BVF7gvg7jPZ0AXCp2Nwx2A7FFDzew_5BcOaQSLjVdbARuQ92QAHPYPKFF8zuiCOXoXUsMSviMA_KKbTiUtBIpnFlJBm280neUs4DCq_Bfit7g90h0YuQrldqBiXPliiGMqqxXfOBfNx_NLz-YaO63IyoVmNdwY8nkPEARovFkiWn0qj-T5XhZjUWMi1i1P7O7tL_");'></div>
+      </div>
+      <!-- Main Content -->
+      <div class="relative z-10 flex w-full grow flex-col justify-between p-4 @container min-h-screen">
+        <div class="flex flex-1 flex-col items-center justify-center">
+          <!-- Logo -->
+          <div class="flex flex-col items-center justify-center text-center mb-8">
+            <div class="text-primary" data-icon="ShieldCheck" data-size="64px" data-weight="bold">
+              <svg class="fill-current" height="64" viewbox="0 0 256 256" width="64" xmlns="http://www.w3.org/2000/svg">
+                <path d="M229.06,75.12,139,17.26a16,16,0,0,0-22,0L26.94,75.12A16,16,0,0,0,20,87.82V168a16,16,0,0,0,16,16H220a16,16,0,0,0,16-16V87.82A16,16,0,0,0,229.06,75.12Z" opacity="0.2"></path>
+                <path d="M220,48H36A20,20,0,0,0,16,68V188a20,20,0,0,0,20,20H220a20,20,0,0,0,20-20V68A20,20,0,0,0,220,48Zm4,140a4,4,0,0,1-4,4H36a4,4,0,0,1-4-4V68a4,4,0,0,1,4-4H220a4,4,0,0,1,4,4Zm-54.34-82.34-48,48a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,124.69l42.34-42.35a8,8,0,0,1,11.32,11.32Z"></path>
+              </svg>
+            </div>
+            <h1 class="text-white text-3xl font-bold mt-2">RPG da Vida</h1>
+          </div>
+          <!-- Slogan/Tagline -->
+          <h3 class="text-white tracking-light text-2xl font-bold leading-tight px-4 text-center pb-8 pt-5">Sua vida, suas regras, seu próximo nível.</h3>
+        </div>
+        <!-- Action Buttons and Social Login -->
+        <div class="flex w-full flex-col items-center">
+          <div class="flex w-full flex-1 flex-col items-stretch gap-3 max-w-[480px] py-3">
+            <button id="btn-goto-register" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-primary text-background-dark text-base font-bold leading-normal tracking-[0.015em] w-full">
+              <span class="truncate">Iniciar Jornada</span>
+            </button>
+            <button id="btn-goto-login" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-primary/20 text-white text-base font-bold leading-normal tracking-[0.015em] w-full">
+              <span class="truncate">Continuar Aventura</span>
+            </button>
+          </div>
+          <p class="text-[#9db9a8]/80 text-sm font-normal leading-normal pb-3 pt-4 px-4 text-center">Ou entre com</p>
+          <div class="w-full max-w-[480px]">
+            <div class="gap-4 px-4 grid-cols-[repeat(auto-fit,_minmax(80px,_1fr))] grid">
+              <div id="btn-google-login" class="flex flex-col items-center gap-2 py-2.5 text-center cursor-pointer">
+                <div class="rounded-full bg-primary/20 p-3.5">
+                  <span class="material-symbols-outlined text-white text-[24px]">
+                    sports_esports
+                  </span>
+                </div>
+                <p class="text-white text-sm font-medium leading-normal">Google</p>
+              </div>
+              <div class="flex flex-col items-center gap-2 py-2.5 text-center opacity-50 cursor-not-allowed" title="Login com Apple em breve">
+                <div class="rounded-full bg-primary/20 p-3.5">
+                  <span class="material-symbols-outlined text-white text-[24px]">ios</span>
+                </div>
+                <p class="text-white text-sm font-medium leading-normal">Apple</p>
+              </div>
+              <div class="flex flex-col items-center gap-2 py-2.5 text-center opacity-50 cursor-not-allowed" title="Login com Facebook em breve">
+                <div class="rounded-full bg-primary/20 p-3.5">
+                  <span class="material-symbols-outlined text-white text-[24px]">social_leaderboard</span>
+                </div>
+                <p class="text-white text-sm font-medium leading-normal">Facebook</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tela 2: Cadastro (Criação de Personagem) -->
+    <div id="screen-register" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden">
+      <!-- Top App Bar -->
+      <div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10">
+        <button id="reg-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
+          <span class="material-symbols-outlined text-3xl">arrow_back</span>
+        </button>
+        <h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Criação de Personagem</h2>
+      </div>
+      <!-- Page Indicators -->
+      <div class="flex w-full flex-row items-center justify-center gap-3 py-5 px-4">
+        <div id="progress-1" class="h-1 flex-1 rounded-full bg-primary"></div>
+        <div id="progress-2" class="h-1 flex-1 rounded-full bg-primary/20"></div>
+        <div id="progress-3" class="h-1 flex-1 rounded-full bg-primary/20"></div>
+      </div>
+      <main class="flex-grow px-4">
+        <!-- Step 1: Identidade -->
+        <section class="flex flex-col gap-4" id="step-1">
+          <h1 class="text-white tracking-light text-[32px] font-bold leading-tight text-left pb-3 pt-6">Identidade</h1>
+          <div class="flex flex-col gap-4">
+            <label class="flex flex-col w-full">
+              <p class="text-white text-base font-medium leading-normal pb-2">Nome de Aventureiro</p>
+              <input id="reg-nickname" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: Aragorn" value="" />
+            </label>
+            <label class="flex flex-col w-full">
+              <p class="text-white text-base font-medium leading-normal pb-2">Email</p>
+              <input id="reg-email" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="seu.email@dominio.com" type="email" value="" />
+            </label>
+            <label class="flex flex-col w-full">
+              <p class="text-white text-base font-medium leading-normal pb-2">Senha</p>
+              <input id="reg-password" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Crie uma senha forte" type="password" value="" />
+            </label>
+          </div>
+        </section>
+        <!-- Step 2: Vitals -->
+        <section class="hidden flex-col gap-4" id="step-2">
+          <h1 class="text-white tracking-light text-[32px] font-bold leading-tight text-left pb-1 pt-6">Atributos Físicos</h1>
+          <p class="text-white/70 text-base font-normal leading-normal px-0 pb-4">Esses são seus "atributos base" iniciais. Você poderá evoluí-los durante sua jornada.</p>
+          <div class="flex flex-col gap-4">
+            <label class="flex flex-col w-full">
+              <p class="text-white text-base font-medium leading-normal pb-2">Altura (cm)</p>
+              <input id="reg-height" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: 180" type="number" value="" />
+            </label>
+            <div class="grid grid-cols-2 gap-4">
+              <label class="flex flex-col w-full">
+                <p class="text-white text-base font-medium leading-normal pb-2">Peso Atual (kg)</p>
+                <input id="reg-weight" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: 85" type="number" value="" />
+              </label>
+              <label class="flex flex-col w-full">
+                <p class="text-white text-base font-medium leading-normal pb-2">Meta de Peso (kg)</p>
+                <input id="reg-weight-target" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: 80" type="number" value="" />
+              </label>
+            </div>
+          </div>
+        </section>
+        <!-- Step 3: Aparência -->
+        <section class="hidden flex-col gap-4" id="step-3">
+          <h1 class="text-white tracking-light text-[32px] font-bold leading-tight text-left pb-1 pt-6">Aparência</h1>
+          <p class="text-white/70 text-base font-normal leading-normal px-0 pb-4">Escolha sua representação no jogo. Esta será sua identidade visual.</p>
+          <div class="grid grid-cols-2 gap-4" id="avatar-selection">
+            <div class="avatar-option aspect-square bg-primary/20 rounded-lg flex items-center justify-center border-2 border-transparent cursor-pointer transition-all" data-avatar-url="https://lh3.googleusercontent.com/aida-public/AB6AXuDTxayBmUlfJy71v5imptwwCT0UyzBNOkbhEA-t6F2WaM8NWdT5j0bfCglTU4pllPR2e_1y6jYkKhzENWZrh1VKExhriwROlAjFE7YD3FxTA6CFpG80I7MBWdHw2RFQ6MPMK9AP6tB8eoFjjtVXcpwxntGiq995k5WVtg_7PNsrhToO7kcyGsjqtQ8yYsD4kKHSFVTG_6fC86DCZOGTRR6MVocBqIfg0hoU_0pBKWQ-GBcl10KH3aQAJV5ku9BFDaHxpGqfEgXb85eG">
+              <img class="w-full h-full object-cover rounded-lg" alt="Avatar de uma mulher com cabelos escuros e olhar sério." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTxayBmUlfJy71v5imptwwCT0UyzBNOkbhEA-t6F2WaM8NWdT5j0bfCglTU4pllPR2e_1y6jYkKhzENWZrh1VKExhriwROlAjFE7YD3FxTA6CFpG80I7MBWdHw2RFQ6MPMK9AP6tB8eoFjjtVXcpwxntGiq995k5WVtg_7PNsrhToO7kcyGsjqtQ8yYsD4kKHSFVTG_6fC86DCZOGTRR6MVocBqIfg0hoU_0pBKWQ-GBcl10KH3aQAJV5ku9BFDaHxpGqfEgXb85eG" />
+            </div>
+            <div class="avatar-option aspect-square bg-primary/20 rounded-lg flex items-center justify-center border-2 border-transparent cursor-pointer transition-all" data-avatar-url="https://lh3.googleusercontent.com/aida-public/AB6AXuD1-IRdijy5eIYxAJ8uLTiddsEQK3MJwU5C_RvIxbDB9hNknG2wwTYDShf_fTx_J4zhN90tO-xtflTqR4QukN-Vw09rmrUe_2RUryc74DsE84MJcvzOVP7mu52BaYchp6OI0cYIZO0-kIwmZfI85sAot-g-CrAR9eLRT-2anb-SRe86Cj1sCqJSbiRWOpOJDLWbrm4MCVXxMP31_p3E3B3vIzqAuquxMz-f3s_XKhmHY7ekL2tWx0qoM3JDAe__2XXs0iCCaRrAJ0yE">
+              <img class="w-full h-full object-cover rounded-lg" alt="Avatar de um homem com barba e cabelo claro." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1-IRdijy5eIYxAJ8uLTiddsEQK3MJwU5C_RvIxbDB9hNknG2wwTYDShf_fTx_J4zhN90tO-xtflTqR4QukN-Vw09rmrUe_2RUryc74DsE84MJcvzOVP7mu52BaYchp6OI0cYIZO0-kIwmZfI85sAot-g-CrAR9eLRT-2anb-SRe86Cj1sCqJSbiRWOpOJDLWbrm4MCVXxMP31_p3E3B3vIzqAuquxMz-f3s_XKhmHY7ekL2tWx0qoM3JDAe__2XXs0iCCaRrAJ0yE" />
+            </div>
+            <div class="avatar-option aspect-square bg-primary/20 rounded-lg flex items-center justify-center border-2 border-transparent cursor-pointer transition-all" data-avatar-url="https://lh3.googleusercontent.com/aida-public/AB6AXuCwJvAfIhox0DQ7co5wKoPWq0KzXMm51LJPD_1nNcjur8TKp2PPRLlgHNdSdPSdSaq6X6P0n8syWafh4hKCORvoUMXl1dBJHiV0mSjoL7xSGkhY2gRcWPX2y-AIh0pWYCfQPYWl0CqjgTNtl88r-pfB12qjAECTYmw3rnbUwQC4WjY8qnOqWd80zLeT-2I66Y5nRV9yCZNjaCpzE4zvqgDL3gHyjcCVPAyo2qIfLwD-NY6aajvPCgnr_G8w03U2yDgYPlSvZVMcsKgY">
+              <img class="w-full h-full object-cover rounded-lg" alt="Avatar de uma mulher com sardas e cabelo castanho." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwJvAfIhox0DQ7co5wKoPWq0KzXMm51LJPD_1nNcjur8TKp2PPRLlgHNdSdPSdSaq6X6P0n8syWafh4hKCORvoUMXl1dBJHiV0mSjoL7xSGkhY2gRcWPX2y-AIh0pWYCfQPYWl0CqjgTNtl88r-pfB12qjAECTYmw3rnbUwQC4WjY8qnOqWd80zLeT-2I66Y5nRV9yCZNjaCpzE4zvqgDL3gHyjcCVPAyo2qIfLwD-NY6aajvPCgnr_G8w03U2yDgYPlSvZVMcsKgY" />
+            </div>
+            <div class="avatar-option aspect-square bg-primary/20 rounded-lg flex items-center justify-center border-2 border-transparent cursor-pointer transition-all" data-avatar-url="https://lh3.googleusercontent.com/aida-public/AB6AXuCaowuyHYeVV7QLQqkErji5qLb-CvJFR_rMYtZL7M6YLr1_O81-xKH-NNRhUm420Z8-FlXfIjQJmh8Xsq7ZKS2zyPFvLqGKvJSn_qgtwm71_5hCGdwD8ZRu9nvr2r93N39r1md_0C_ux1921h8wuWOD-OqZYoIL1nP4laPvRN0A-fQBRFxRr-Mz1J_7qnacmNgqF2h_srHsnmNr6kqETAh9l9wSS0FzA8na_BvHMxHN8E7E6wj-4ZIiXEsZ5ulR7MCUFhJcjDMfdJT5">
+              <img class="w-full h-full object-cover rounded-lg" alt="Avatar de um homem sorrindo com cabelo escuro." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaowuyHYeVV7QLQqkErji5qLb-CvJFR_rMYtZL7M6YLr1_O81-xKH-NNRhUm420Z8-FlXfIjQJmh8Xsq7ZKS2zyPFvLqGKvJSn_qgtwm71_5hCGdwD8ZRu9nvr2r93N39r1md_0C_ux1921h8wuWOD-OqZYoIL1nP4laPvRN0A-fQBRFxRr-Mz1J_7qnacmNgqF2h_srHsnmNr6kqETAh9l9wSS0FzA8na_BvHMxHN8E7E6wj-4ZIiXEsZ5ulR7MCUFhJcjDMfdJT5" />
+            </div>
+          </div>
+        </section>
+      </main>
+      <!-- Footer with Action Button -->
+      <footer class="sticky bottom-0 bg-background-light dark:bg-background-dark p-4 pt-6">
+        <button id="reg-next-btn" class="flex w-full items-center justify-center rounded-xl bg-primary h-14 text-background-dark text-lg font-bold">
+          Próximo
+        </button>
+      </footer>
+    </div>
+
+    <!-- Tela 3: Login (Acessar Personagem) -->
+    <div id="screen-login" class="hidden relative flex h-auto min-h-screen w-full flex-col items-center bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden p-4">
+      <button id="login-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer absolute top-4 left-4 z-10">
+        <span class="material-symbols-outlined text-3xl">arrow_back</span>
+      </button>
+      <div class="flex w-full max-w-md flex-col items-center justify-center pt-20 pb-8">
+        <svg class="h-20 w-20 text-primary" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"></path>
+        </svg>
+        <h1 class="text-white text-2xl font-bold leading-tight text-center tracking-wider mt-4">RPG DA VIDA REAL</h1>
+      </div>
+      <div class="w-full max-w-md">
+        <h1 class="text-white tracking-light text-[32px] font-bold leading-tight px-4 text-center pb-8 pt-6">Acessar seu Personagem</h1>
+        <div class="flex w-full flex-col gap-4 px-4 py-3">
+          <label class="flex flex-col w-full flex-1">
+            <p class="text-white text-base font-medium leading-normal pb-2">Email ou Nickname</p>
+            <div class="flex w-full flex-1 items-stretch rounded-xl border border-[#3b5445] bg-[#1c2720] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary">
+              <div class="text-[#9db9a8] flex items-center justify-center pl-[15px]">
+                <span class="material-symbols-outlined">person</span>
+              </div>
+              <input id="login-email" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-white focus:outline-0 focus:ring-0 border-0 bg-transparent h-14 placeholder:text-[#9db9a8] p-[15px] text-base font-normal leading-normal" placeholder="Digite seu email" value="" />
+            </div>
+          </label>
+        </div>
+        <div class="flex w-full flex-col gap-4 px-4 py-3">
+          <label class="flex flex-col w-full flex-1">
+            <p class="text-white text-base font-medium leading-normal pb-2">Senha</p>
+            <div class="flex w-full flex-1 items-stretch rounded-xl border border-[#3b5445] bg-[#1c2720] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary">
+              <div class="text-[#9db9a8] flex items-center justify-center pl-[15px]">
+                <span class="material-symbols-outlined">lock</span>
+              </div>
+              <input id="login-password" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-white focus:outline-0 focus:ring-0 border-0 bg-transparent h-14 placeholder:text-[#9db9a8] p-[15px] text-base font-normal leading-normal" placeholder="Digite sua senha" type="password" value="" />
+              <button class="text-[#9db9a8] flex items-center justify-center pr-[15px] bg-transparent border-0" onclick="togglePasswordVisibility('login-password', this)">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+            </div>
+          </label>
+        </div>
+        <div class="flex px-4 py-6">
+          <button id="login-btn" class="flex min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 flex-1 bg-primary text-[#111814] text-base font-bold leading-normal tracking-[0.015em] hover:bg-opacity-90 transition-opacity">
+            <span class="truncate">[ Entrar ]</span>
+          </button>
+        </div>
+        <p id="login-forgot-link" class="text-[#9db9a8] text-sm font-normal leading-normal pb-3 pt-1 px-4 text-center underline cursor-pointer hover:text-primary transition-colors">Perdeu o mapa? (Esqueci a senha)</p>
+      </div>
+    </div>
+
+    <!-- Tela 4: Recuperação de Senha -->
+    <div id="screen-forgot-password" class="hidden relative flex min-h-screen w-full flex-col antialiased">
+      <main class="flex flex-1 flex-col">
+        <div class="flex items-center p-4">
+          <button id="forgot-back-btn" class="text-white flex size-12 shrink-0 items-center justify-start cursor-pointer">
+            <span class="material-symbols-outlined text-3xl text-slate-300 dark:text-slate-400">arrow_back</span>
+          </button>
+          <h1 class="flex-1 text-center text-lg font-bold leading-tight tracking-[-0.015em] text-slate-800 dark:text-white -ml-12">Recuperação de Aventura</h1>
+        </div>
+        <div class="flex flex-1 flex-col justify-center px-4">
+          <div class="flex flex-col items-center">
+            <p class="text-center text-base font-normal leading-normal text-slate-600 dark:text-slate-300">Enviaremos um 'Pergaminho de Recuperação' para seu email.</p>
+          </div>
+          <div class="mt-8 mb-4 flex w-full max-w-[480px] flex-col self-center">
+            <label class="flex w-full flex-col">
+              <p class="pb-2 text-base font-medium leading-normal text-slate-800 dark:text-white">Seu Email</p>
+              <div class="relative flex w-full flex-1 items-stretch">
+                <input id="forgot-email" class="form-input flex h-14 w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-300/70 bg-background-light p-4 pr-12 text-base font-normal leading-normal text-slate-900 placeholder:text-slate-400 focus:border-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 dark:border-slate-700 dark:bg-background-dark dark:text-white dark:placeholder:text-slate-500 dark:focus:border-primary" placeholder="seu-heroi@email.com" value="" />
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center pr-4 text-slate-400 dark:text-slate-500">
+                  <span class="material-symbols-outlined">mail</span>
+                </div>
+              </div>
+            </label>
+          </div>
+          <div class="mt-4 flex w-full max-w-[480px] self-center">
+            <button id="forgot-btn" class="flex h-12 min-w-[84px] flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary px-5 text-base font-bold leading-normal tracking-[0.015em] text-slate-900 transition-colors hover:bg-primary/90">
+              <span class="truncate">Enviar Pergaminho de Recuperação</span>
+            </button>
+          </div>
+          <div class="mt-2 flex w-full max-w-[480px] justify-center self-center">
+            <button id="forgot-cancel-btn" class="flex h-10 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-transparent px-4 text-sm font-bold leading-normal tracking-[0.015em] text-slate-500 transition-colors hover:bg-slate-500/10 dark:text-slate-400 dark:hover:bg-slate-400/10">
+              <span class="truncate">Cancelar</span>
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+    
+    <!-- Tela 5: Dashboard (Logado) -->
+    <div id="screen-dashboard" class="hidden relative flex min-h-screen w-full flex-col p-4">
+        <div class="flex flex-col items-center justify-center flex-1">
+            <h1 class="text-white tracking-light text-[32px] font-bold leading-tight text-center pb-3 pt-6">Aventura Carregada!</h1>
+            
+            <div id="dashboard-avatar-container" class="my-6">
+                <!-- O avatar selecionado será inserido aqui pelo JS -->
+            </div>
+
+            <h2 id="dashboard-nickname" class="text-primary text-2xl font-bold"></h2>
+            <p class="text-white/70 text-lg">Bem-vindo(a) de volta à sua jornada.</p>
+
+            <div class="bg-[#1C2720] border border-primary/30 rounded-xl p-6 mt-8 w-full max-w-md">
+                <h3 class="text-white text-xl font-bold mb-4 text-center">Atributos Base</h3>
+                <div class="space-y-3">
+                    <p class="text-white text-lg"><strong>Email:</strong> <span id="dashboard-email" class="text-white/80"></span></p>
+                    <p class="text-white text-lg"><strong>Altura:</strong> <span id="dashboard-height" class="text-white/80"></span> cm</p>
+                    <p class="text-white text-lg"><strong>Peso Atual:</strong> <span id="dashboard-weight" class="text-white/80"></span> kg</p>
+                    <p class="text-white text-lg"><strong>Meta de Peso:</strong> <span id="dashboard-weight-target" class="text-white/80"></span> kg</p>
+                </div>
+            </div>
+
+            <button id="logout-btn" class="flex min-w-[84px] w-full max-w-md cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 mt-8 bg-red-600/80 text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-red-600 transition-all">
+                <span class="truncate">Sair da Aventura (Logout)</span>
+            </button>
+        </div>
+    </div>
+
+  </div>
+
+  <!-- Modal de Mensagem/Erro -->
+  <div id="modal-message" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm text-center">
+      <h3 id="modal-title" class="text-primary text-xl font-bold mb-3"></h3>
+      <p id="modal-body" class="text-white/90 mb-6"></p>
+      <button id="modal-close-btn" class="flex min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-primary text-[#111814] text-base font-bold">
+        Entendido
+      </button>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    // Importações do Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getAuth,
+      signInAnonymously,
+      signInWithCustomToken,
+      onAuthStateChanged,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      sendPasswordResetEmail,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      updateProfile
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      onSnapshot,
+      setLogLevel
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- Exibe o Domínio para Autorização no Firebase ---
+    const currentHostname = window.location.hostname;
+    console.warn('--- DOMÍNIO PARA AUTORIZAR NO FIREBASE ---');
+    console.warn('Para o Login com Google funcionar, adicione este domínio à sua lista de "Domínios autorizados" no Firebase Auth -> Configurações:');
+    console.warn(currentHostname);
+    console.warn('----------------------------------------------');
+
+    // --- Configuração do Firebase ---
+    // Configuração fornecida pelo usuário
+    const firebaseConfigUser = {
+      apiKey: "AIzaSyBeLq53I4Zu8TIcttgYwcyhFUBu4uneCxQ",
+      authDomain: "rpglife-8f33d.firebaseapp.com",
+      projectId: "rpglife-8f33d",
+      storageBucket: "rpglife-8f33d.firebasestorage.app",
+      messagingSenderId: "428052124083",
+      appId: "1:428052124083:web:1190108bd19638ad2bfbc6",
+      measurementId: "G-5LCK5W2JNH"
+    };
+    
+    // Configuração do Canvas (obrigatória)
+    const firebaseConfig = typeof __firebase_config !== 'undefined' 
+        ? JSON.parse(__firebase_config) 
+        : firebaseConfigUser;
+    
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rpglife-app';
+
+    // Inicialização do Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    setLogLevel('Debug'); // Para logs detalhados no console
+
+    // --- Variáveis de Estado Global ---
+    let currentUserId = null;
+    let profileListener = null; // Para o listener do onSnapshot
+    let currentRegistrationStep = 1;
+    let selectedAvatarUrl = null;
+
+    // --- Seletores de Elementos ---
+    const screens = {
+      splash: document.getElementById('screen-splash'),
+      register: document.getElementById('screen-register'),
+      login: document.getElementById('screen-login'),
+      forgot: document.getElementById('screen-forgot-password'),
+      dashboard: document.getElementById('screen-dashboard')
+    };
+
+    const registerSteps = {
+      step1: document.getElementById('step-1'),
+      step2: document.getElementById('step-2'),
+      step3: document.getElementById('step-3')
+    };
+
+    const progressBars = {
+      p1: document.getElementById('progress-1'),
+      p2: document.getElementById('progress-2'),
+      p3: document.getElementById('progress-3')
+    };
+    
+    const modal = {
+        container: document.getElementById('modal-message'),
+        title: document.getElementById('modal-title'),
+        body: document.getElementById('modal-body'),
+        closeBtn: document.getElementById('modal-close-btn')
+    };
+    
+    // Inputs de Cadastro
+    const regInputs = {
+        nickname: document.getElementById('reg-nickname'),
+        email: document.getElementById('reg-email'),
+        password: document.getElementById('reg-password'),
+        height: document.getElementById('reg-height'),
+        weight: document.getElementById('reg-weight'),
+        weightTarget: document.getElementById('reg-weight-target')
+    };
+    
+    // Inputs de Login
+    const loginInputs = {
+        email: document.getElementById('login-email'),
+        password: document.getElementById('login-password')
+    };
+
+    // --- Funções Auxiliares ---
+
+    /**
+     * Mostra uma tela específica e esconde as outras
+     * @param {string} screenId ('splash', 'register', 'login', 'forgot', 'dashboard')
+     */
+    function showScreen(screenId) {
+      console.log(`Navegando para: ${screenId}`);
+      Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+      if (screens[screenId]) {
+        screens[screenId].classList.remove('hidden');
+      }
+    }
+
+    /**
+     * Mostra o modal de mensagem
+     * @param {string} title Título do modal
+     * @param {string} message Mensagem do modal
+     */
+    function showMessage(title, message) {
+        modal.title.textContent = title;
+        modal.body.textContent = message;
+        modal.container.classList.remove('hidden');
+    }
+    
+    // Evento para fechar o modal
+    modal.closeBtn.addEventListener('click', () => modal.container.classList.add('hidden'));
+
+    /**
+     * Alterna a visibilidade da senha em um campo
+     * @param {string} inputId ID do campo de senha
+     * @param {HTMLElement} button Botão clicado
+     */
+    window.togglePasswordVisibility = (inputId, button) => {
+        const input = document.getElementById(inputId);
+        const icon = button.querySelector('span');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.textContent = 'visibility_off';
+        } else {
+            input.type = 'password';
+            icon.textContent = 'visibility';
+        }
+    }
+
+    // --- Lógica de Navegação ---
+
+    // Splash
+    document.getElementById('btn-goto-register').addEventListener('click', () => showScreen('register'));
+    document.getElementById('btn-goto-login').addEventListener('click', () => showScreen('login'));
+
+    // Login
+    document.getElementById('login-back-btn').addEventListener('click', () => showScreen('splash'));
+    document.getElementById('login-forgot-link').addEventListener('click', () => showScreen('forgot'));
+
+    // Forgot Password
+    document.getElementById('forgot-back-btn').addEventListener('click', () => showScreen('login'));
+    document.getElementById('forgot-cancel-btn').addEventListener('click', () => showScreen('login'));
+
+    // --- Lógica de Cadastro (Etapas) ---
+    
+    /**
+     * Atualiza a UI da tela de cadastro para a etapa atual
+     */
+    function updateRegistrationStepUI() {
+        const nextBtn = document.getElementById('reg-next-btn');
+        
+        // Esconde todas as etapas
+        Object.values(registerSteps).forEach(step => step.classList.add('hidden'));
+        
+        // Reseta barras de progresso
+        progressBars.p1.className = 'h-1 flex-1 rounded-full bg-primary/20';
+        progressBars.p2.className = 'h-1 flex-1 rounded-full bg-primary/20';
+        progressBars.p3.className = 'h-1 flex-1 rounded-full bg-primary/20';
+        
+        if (currentRegistrationStep === 1) {
+            registerSteps.step1.classList.remove('hidden');
+            progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
+            nextBtn.textContent = 'Próximo';
+        } else if (currentRegistrationStep === 2) {
+            registerSteps.step2.classList.remove('hidden');
+            progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
+            progressBars.p2.classList.replace('bg-primary/20', 'bg-primary');
+            nextBtn.textContent = 'Próximo';
+        } else if (currentRegistrationStep === 3) {
+            registerSteps.step3.classList.remove('hidden');
+            progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
+            progressBars.p2.classList.replace('bg-primary/20', 'bg-primary');
+            progressBars.p3.classList.replace('bg-primary/20', 'bg-primary');
+            nextBtn.textContent = 'Confirmar e Iniciar Jornada!';
+        }
+    }
+    
+    // Botão Voltar do Cadastro
+    document.getElementById('reg-back-btn').addEventListener('click', () => {
+        if (currentRegistrationStep > 1) {
+            currentRegistrationStep--;
+            updateRegistrationStepUI();
+        } else {
+            showScreen('splash'); // Volta para a splash se estiver na etapa 1
+        }
+    });
+
+    // Botão Próximo/Finalizar do Cadastro
+    document.getElementById('reg-next-btn').addEventListener('click', () => {
+        if (currentRegistrationStep === 1) {
+            // Validar Etapa 1
+            if (!regInputs.nickname.value || !regInputs.email.value || !regInputs.password.value) {
+                showMessage('Campo Obrigatório', 'Por favor, preencha seu nome, email e senha.');
+                return;
+            }
+            if (regInputs.password.value.length < 6) {
+                showMessage('Senha Fraca', 'Sua senha deve ter pelo menos 6 caracteres.');
+                return;
+            }
+            currentRegistrationStep = 2;
+        } else if (currentRegistrationStep === 2) {
+            // Validar Etapa 2
+             if (!regInputs.height.value || !regInputs.weight.value) {
+                showMessage('Campo Obrigatório', 'Por favor, preencha sua altura e peso atual.');
+                return;
+            }
+            currentRegistrationStep = 3;
+        } else if (currentRegistrationStep === 3) {
+            // Validar Etapa 3 e Finalizar
+             if (!selectedAvatarUrl) {
+                showMessage('Campo Obrigatório', 'Escolha sua aparência (avatar) para continuar.');
+                return;
+            }
+            handleRegister(); // Chama a função de registro do Firebase
+        }
+        
+        updateRegistrationStepUI();
+    });
+
+    // Lógica de seleção de Avatar
+    document.getElementById('avatar-selection').addEventListener('click', (e) => {
+        const clickedAvatar = e.target.closest('.avatar-option');
+        if (!clickedAvatar) return;
+        
+        // Remove a seleção de todos
+        document.querySelectorAll('.avatar-option').forEach(el => {
+            el.classList.remove('avatar-selected', 'border-primary');
+            el.classList.add('border-transparent');
+        });
+        
+        // Adiciona seleção ao clicado
+        clickedAvatar.classList.add('avatar-selected', 'border-primary');
+        clickedAvatar.classList.remove('border-transparent');
+        selectedAvatarUrl = clickedAvatar.dataset.avatarUrl;
+        console.log('Avatar selecionado:', selectedAvatarUrl);
+    });
+    
+    
+    // --- Lógica de Autenticação Firebase ---
+
+    /**
+     * INICIALIZAÇÃO DA AUTENTICAÇÃO
+     * REMOVIDA. Não vamos mais logar automaticamente.
+     */
+    /*
+    async function initializeAuth() {
+        try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                console.log('Logando com Custom Token (requerido pelo ambiente)...');
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                console.warn('Nenhum token inicial fornecido. Aguardando ação do usuário.');
+            }
+        } catch (error) {
+            console.error('Erro na autenticação inicial:', error);
+            showMessage('Erro de Conexão', 'Não foi possível conectar aos servidores. Tente recarregar a página.');
+        }
+    }
+    */
+
+    /**
+     * Observador de Estado de Autenticação (CORE)
+     * Gerencia o que acontece quando o usuário loga ou desloga
+     */
+    onAuthStateChanged(auth, (user) => {
+        if (user && !user.isAnonymous) {
+            // --- USUÁRIO LOGADO ---
+            // Isso agora SÓ VAI ACONTECER DEPOIS que o usuário
+            // clicar em "Login", "Registrar" ou "Login com Google".
+            
+            console.log('Usuário logado (APÓS AÇÃO MANUAL):', user.uid);
+            currentUserId = user.uid;
+            
+            // Se já houver um listener, remove
+            if (profileListener) profileListener(); 
+            
+            // Caminho do perfil no Firestore
+            const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
+            
+            // Ouve por mudanças no perfil em tempo real
+            profileListener = onSnapshot(profileRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    // Perfil existe, carregar dashboard
+                    const data = docSnap.data();
+                    populateDashboard(user, data);
+                    showScreen('dashboard');
+                } else {
+                    // Perfil NÃO existe (ex: primeiro login com Google)
+                    // Envia para a etapa 2 do cadastro para completar
+                    console.log('Perfil não encontrado, redirecionando para cadastro (etapa 2)...');
+                    showMessage('Personagem Incompleto', 'Quase lá! Precisamos de seus dados vitais para forjar seu personagem.');
+                    
+                    // Preenche dados do Google (se houver)
+                    regInputs.nickname.value = user.displayName || '';
+                    regInputs.email.value = user.email || '';
+                    
+                    // Desabilita campos se for login social
+                    if (user.providerData.some(p => p.providerId === 'google.com')) {
+                        regInputs.nickname.disabled = true;
+                        regInputs.email.disabled = true;
+                        regInputs.password.closest('label').classList.add('hidden'); // Esconde campo de senha
+                    }
+                    
+                    currentRegistrationStep = 2;
+                    updateRegistrationStepUI();
+                    showScreen('register');
+                }
+            });
+
+        } else {
+            // --- USUÁRIO DESLOGADO ---
+            // Este será o estado inicial do app ao carregar.
+            console.log('Usuário deslogado. Aguardando ação na tela inicial.');
+            currentUserId = null; 
+            
+            // Limpa o listener de perfil
+            if (profileListener) profileListener();
+            profileListener = null;
+            
+            // Reseta o formulário de cadastro
+            resetRegistrationForm();
+            
+            // Mostra a tela inicial (se não estivermos em login/cadastro)
+            const currentScreen = document.querySelector('#app-container > div:not(.hidden)');
+            // Se a tela atual for o dashboard (após um logout), volta pra splash
+            if (!currentScreen || currentScreen.id === 'screen-dashboard') {
+                showScreen('splash');
+            }
+        }
+    });
+
+    /**
+     * Popula o Dashboard com os dados do usuário
+     */
+    function populateDashboard(user, profileData) {
+        document.getElementById('dashboard-nickname').textContent = profileData.nickname || user.displayName;
+        document.getElementById('dashboard-email').textContent = user.email;
+        document.getElementById('dashboard-height').textContent = profileData.height;
+        document.getElementById('dashboard-weight').textContent = profileData.weight;
+        document.getElementById('dashboard-weight-target').textContent = profileData.weightTarget || 'N/A';
+        
+        const avatarContainer = document.getElementById('dashboard-avatar-container');
+        if (profileData.avatar) {
+            avatarContainer.innerHTML = `<img src="${profileData.avatar}" alt="Avatar" class="w-32 h-32 rounded-full object-cover border-4 border-primary shadow-lg">`;
+        } else {
+            avatarContainer.innerHTML = `<div class="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center border-4 border-primary/50"><span class="material-symbols-outlined text-6xl text-primary">person</span></div>`;
+        }
+    }
+    
+    /**
+     * Reseta o formulário de cadastro para o estado inicial
+     */
+     function resetRegistrationForm() {
+        currentRegistrationStep = 1;
+        updateRegistrationStepUI();
+        Object.values(regInputs).forEach(input => {
+            input.value = '';
+            input.disabled = false;
+        });
+        regInputs.password.closest('label').classList.remove('hidden');
+        selectedAvatarUrl = null;
+        document.querySelectorAll('.avatar-option').forEach(el => {
+            el.classList.remove('avatar-selected', 'border-primary');
+            el.classList.add('border-transparent');
+        });
+     }
+
+    /**
+     * Lidar com o Registro de novo usuário (Email/Senha)
+     */
+    async function handleRegister() {
+        // Coleta todos os dados
+        const data = {
+            nickname: regInputs.nickname.value,
+            email: regInputs.email.value,
+            height: regInputs.height.value,
+            weight: regInputs.weight.value,
+            weightTarget: regInputs.weightTarget.value || null,
+            avatar: selectedAvatarUrl
+        };
+        const password = regInputs.password.value;
+        
+        let user;
+        
+        try {
+            // Se o usuário já estiver logado (ex: Google) e sem perfil
+            if (auth.currentUser && !auth.currentUser.isAnonymous && regInputs.email.disabled) {
+                user = auth.currentUser;
+                console.log('Atualizando perfil existente do Google...');
+            } else {
+                 // Cria um novo usuário (Email/Senha)
+                console.log('Criando novo usuário com Email/Senha...');
+                const userCredential = await createUserWithEmailAndPassword(auth, data.email, password);
+                user = userCredential.user;
+            }
+            
+            // Atualiza o perfil do Firebase Auth (Nickname)
+            await updateProfile(user, { displayName: data.nickname });
+
+            // Salva os dados no Firestore
+            const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
+            await setDoc(profileRef, data);
+            
+            console.log('Personagem criado e salvo!');
+            // O onAuthStateChanged/onSnapshot cuidará de redirecionar para o dashboard
+            
+        } catch (error) {
+            console.error("Erro ao criar personagem:", error);
+            showMessage('Erro na Criação', `Não foi possível criar seu personagem. Erro: ${error.message}`);
+        }
+    }
+    
+    /**
+     * Lidar com o Login (Email/Senha)
+     */
+    document.getElementById('login-btn').addEventListener('click', async () => {
+        const email = loginInputs.email.value;
+        const password = loginInputs.password.value;
+        
+        if (!email || !password) {
+            return showMessage('Campos Vazios', 'Digite seu email e senha.');
+        }
+        
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // onAuthStateChanged cuidará do resto
+        } catch (error) {
+            console.error("Erro no login:", error);
+            showMessage('Erro ao Entrar', 'Email ou senha inválidos. Verifique seus dados.');
+        }
+    });
+    
+    /**
+     * Lidar com o Login (Google)
+     */
+     document.getElementById('btn-google-login').addEventListener('click', async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+            // onAuthStateChanged cuidará do resto (verificar se o perfil existe ou não)
+        } catch (error) {
+            console.error("Erro no login com Google:", error);
+            showMessage('Erro no Login', `Não foi possível logar com o Google. Erro: ${error.message}`);
+        }
+     });
+
+    /**
+     * Lidar com a Recuperação de Senha
+     */
+    document.getElementById('forgot-btn').addEventListener('click', async () => {
+        const email = document.getElementById('forgot-email').value;
+        if (!email) {
+            return showMessage('Campo Vazio', 'Digite seu email para recuperação.');
+        }
+        
+        try {
+            await sendPasswordResetEmail(auth, email);
+            showMessage('Pergaminho Enviado', 'Um email de recuperação foi enviado para ' + email + '. Verifique sua caixa de entrada (e spam).');
+            showScreen('login');
+        } catch (error) {
+            console.error("Erro ao enviar email de recuperação:", error);
+            showMessage('Erro', `Não foi possível enviar o email. Verifique o endereço digitado. Erro: ${error.message}`);
+        }
+    });
+    
+    /**
+     * Lidar com o Logout
+     */
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+        try {
+            await signOut(auth);
+            // onAuthStateChanged cuidará de levar para a tela de splash
+            // e NÃO VAI logar anonimamente.
+        } catch (error) {
+            console.error("Erro ao sair:", error);
+            showMessage('Erro', 'Não foi possível sair da aventura no momento.');
+        }
+    });
+    
+    // --- Inicialização da Aplicação ---
+    // A FUNÇÃO DE INICIALIZAÇÃO AUTOMÁTICA FOI REMOVIDA.
+    // initializeAuth(); // <--- REMOVIDO
+
+  </script>
+
+</body>
+</html>
+
+
