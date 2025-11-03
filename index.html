@@ -5,14 +5,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RPG da Vida Real - Aventura</title>
-  
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  
+
   <!-- Google Fonts e Ícones -->
   <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-  
+
   <!-- Configuração do Tailwind -->
   <script>
     tailwind.config = {
@@ -23,21 +23,32 @@
             "primary": "#13ec6d",
             "background-light": "#f6f8f7",
             "background-dark": "#102218",
+            // Cores do novo Hub
+            "surface-dark": "#1a3828",
+            "text-dark-primary": "#ffffff",
+            "text-dark-secondary": "#9db9a8",
+            "border-dark": "#335c47",
+            "health": "#ef4444",
+            "mana": "#3b82f6",
+            "xp": "#f59e0b"
           },
           fontFamily: {
             "display": ["Spline Sans", "sans-serif"]
           },
           borderRadius: {
             "DEFAULT": "1rem",
-            "lg": "2rem",
-            "xl": "3rem",
+            "lg": "1.5rem",
+            "xl": "2rem",
             "full": "9999px"
+          },
+          boxShadow: {
+            'glow-primary': '0 0 15px 0px rgba(19, 236, 109, 0.3)',
           },
         },
       },
     }
   </script>
-  
+
   <!-- Estilos Globais -->
   <style>
     body {
@@ -53,7 +64,7 @@
         'GRAD' 0,
         'opsz' 24;
     }
-    
+
     /* Classe helper para a seleção de avatar */
     .avatar-selected {
       border-color: #13ec6d !important;
@@ -226,7 +237,7 @@
         <h1 class="text-white tracking-light text-[32px] font-bold leading-tight px-4 text-center pb-8 pt-6">Acessar seu Personagem</h1>
         <div class="flex w-full flex-col gap-4 px-4 py-3">
           <label class="flex flex-col w-full flex-1">
-            <p class="text-white text-base font-medium leading-normal pb-2">Email ou Nickname</p>
+            <p class="text-white text-base font-medium leading-normal pb-2">Email</p>
             <div class="flex w-full flex-1 items-stretch rounded-xl border border-[#3b5445] bg-[#1c2720] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary">
               <div class="text-[#9db9a8] flex items-center justify-center pl-[15px]">
                 <span class="material-symbols-outlined">person</span>
@@ -295,33 +306,140 @@
         </div>
       </main>
     </div>
-    
-    <!-- Tela 5: Dashboard (Logado) -->
-    <div id="screen-dashboard" class="hidden relative flex min-h-screen w-full flex-col p-4">
-        <div class="flex flex-col items-center justify-center flex-1">
-            <h1 class="text-white tracking-light text-[32px] font-bold leading-tight text-center pb-3 pt-6">Aventura Carregada!</h1>
-            
-            <div id="dashboard-avatar-container" class="my-6">
-                <!-- O avatar selecionado será inserido aqui pelo JS -->
+
+    <!-- Tela 5: Dashboard (Logado) - NOVO DESIGN -->
+    <div id="screen-dashboard" class="hidden relative flex min-h-screen w-full flex-col overflow-x-hidden">
+      <!-- Background -->
+      <div class="absolute inset-0 z-0">
+        <div class="h-full w-full bg-center bg-no-repeat bg-cover opacity-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6sSjEhz7hgGMCO9BdTp0pHGvGbE3XMpV6jPLsVzsYPwCqNXpNCbXwpEujggDvZYrE9pQH3Y5d5BVF7gvg7jPZ0AXCp2Nwx2A7FFDzew_5BcOaQSLjVdbARuQ92QAHPYPKFF8zuiCOXoXUsMSviMA_KKbTiUtBIpnFlJBm280neUs4DCq_Bfit7g90h0YuQrldqBiXPliiGMqqxXfOBfNx_NLz-YaO63IyoVmNdwY8nkPEARovFkiWn0qj-T5XhZjUWMi1i1P7O7tL_");'></div>
+      </div>
+      <!-- Conteúdo do Hub -->
+      <div class="relative z-10 flex w-full grow flex-col pb-24">
+        <!-- Header -->
+        <header class="flex items-center justify-between p-4">
+          <div class="flex items-center gap-3">
+            <img id="hub-avatar" alt="Avatar do Aventureiro" class="h-12 w-12 rounded-full border-2 border-primary" src="https://placehold.co/100x100/1a3828/13ec6d?text=?" />
+            <div>
+              <h1 id="hub-nickname" class="text-xl font-bold">Carregando...</h1>
+              <p id="hub-level-title" class="text-sm text-text-dark-secondary">
+                <span id="hub-level">Nv. 1</span>
+              </p>
             </div>
-
-            <h2 id="dashboard-nickname" class="text-primary text-2xl font-bold"></h2>
-            <p class="text-white/70 text-lg">Bem-vindo(a) de volta à sua jornada.</p>
-
-            <div class="bg-[#1C2720] border border-primary/30 rounded-xl p-6 mt-8 w-full max-w-md">
-                <h3 class="text-white text-xl font-bold mb-4 text-center">Atributos Base</h3>
-                <div class="space-y-3">
-                    <p class="text-white text-lg"><strong>Email:</strong> <span id="dashboard-email" class="text-white/80"></span></p>
-                    <p class="text-white text-lg"><strong>Altura:</strong> <span id="dashboard-height" class="text-white/80"></span> cm</p>
-                    <p class="text-white text-lg"><strong>Peso Atual:</strong> <span id="dashboard-weight" class="text-white/80"></span> kg</p>
-                    <p class="text-white text-lg"><strong>Meta de Peso:</strong> <span id="dashboard-weight-target" class="text-white/80"></span> kg</p>
-                </div>
-            </div>
-
-            <button id="logout-btn" class="flex min-w-[84px] w-full max-w-md cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 mt-8 bg-red-600/80 text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-red-600 transition-all">
-                <span class="truncate">Sair da Aventura (Logout)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-dark/80 backdrop-blur-sm">
+              <span class="material-symbols-outlined text-text-dark-secondary">leaderboard</span>
             </button>
+            <button class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-dark/80 backdrop-blur-sm">
+              <span class="material-symbols-outlined text-text-dark-secondary">notifications</span>
+            </button>
+          </div>
+        </header>
+        
+        <!-- Barras de Status -->
+        <section class="px-4 py-2">
+          <div class="flex flex-col gap-2.5 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+            <!-- HP -->
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-health text-lg">favorite</span>
+              <div class="h-2.5 w-full flex-1 rounded-full bg-background-dark">
+                <div id="hub-hp-bar" class="h-2.5 rounded-full bg-health" style="width: 100%"></div>
+              </div>
+              <span id="hub-hp-text" class="text-sm font-semibold text-text-dark-secondary">100/100</span>
+            </div>
+            <!-- Mana -->
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-mana text-lg">bolt</span>
+              <div class="h-2.5 w-full flex-1 rounded-full bg-background-dark">
+                <div id="hub-mana-bar" class="h-2.5 rounded-full bg-mana" style="width: 100%"></div>
+              </div>
+              <span id="hub-mana-text" class="text-sm font-semibold text-text-dark-secondary">100/100</span>
+            </div>
+            <!-- XP -->
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-xp text-lg">star</span>
+              <div class="h-2.5 w-full flex-1 rounded-full bg-background-dark">
+                <div id="hub-xp-bar" class="h-2.5 rounded-full bg-xp" style="width: 0%"></div>
+              </div>
+              <span id="hub-xp-text" class="text-sm font-semibold text-text-dark-secondary">0/1000</span>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Atributos e Status -->
+        <section class="grid grid-cols-2 gap-4 px-4 py-2">
+          <!-- Atributos -->
+          <div class="flex flex-col gap-2 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+            <h2 class="text-base font-bold text-primary">Atributos</h2>
+            <div id="hub-stats-forca" class="flex items-center gap-2 text-sm">
+              <span class="material-symbols-outlined text-red-400 text-base">swords</span>
+              <span>Força: 1</span>
+            </div>
+            <div id="hub-stats-inteligencia" class="flex items-center gap-2 text-sm">
+              <span class="material-symbols-outlined text-blue-400 text-base">school</span>
+              <span>Inteligência: 1</span>
+            </div>
+            <div id="hub-stats-vitalidade" class="flex items-center gap-2 text-sm">
+              <span class="material-symbols-outlined text-green-400 text-base">shield</span>
+              <span>Vitalidade: 1</span>
+            </div>
+            <div id="hub-stats-velocidade" class="flex items-center gap-2 text-sm">
+              <span class="material-symbols-outlined text-yellow-400 text-base">sprint</span>
+              <span>Velocidade: 1</span>
+            </div>
+          </div>
+          <!-- Status Atuais -->
+          <div class="flex flex-col gap-2 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+            <h2 class="text-base font-bold text-primary">Status Atuais</h2>
+            <div id="hub-status-effects" class="flex flex-col gap-2">
+              <!-- Status são inseridos dinamicamente aqui -->
+              <p class="text-sm text-text-dark-secondary">Nenhum efeito ativo.</p>
+            </div>
+          </div>
+        </section>
+        
+        <!-- Registro de Missões -->
+        <section class="flex flex-col gap-3 px-4 py-2">
+          <h2 class="text-lg font-bold">Registro de Missões</h2>
+          <div id="hub-mission-list" class="flex flex-col gap-3">
+            <!-- Missões são inseridas dinamicamente aqui -->
+            <p class="text-sm text-text-dark-secondary p-4">Nenhuma missão encontrada. Adicione uma nova!</p>
+          </div>
+        </section>
+      </div>
+      
+      <!-- Botão Adicionar Missão -->
+      <div class="fixed bottom-24 right-4 z-20">
+        <button class="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-background-dark shadow-lg shadow-primary/30">
+          <span class="material-symbols-outlined text-4xl">add</span>
+        </button>
+      </div>
+      
+      <!-- Navegação Principal -->
+      <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
+        <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
+          <a classa="flex flex-col items-center gap-1 text-primary" href="#">
+            <span class="material-symbols-outlined">home</span>
+            <span class="text-xs font-bold">Início</span>
+          </a>
+          <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+            <span class="material-symbols-outlined">shield_person</span>
+            <span class="text-xs">Personagem</span>
+          </a>
+          <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+            <span class="material-symbols-outlined">swords</span>
+            <span class="text-xs">Guilda</span>
+          </a>
+          <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+            <span class="material-symbols-outlined">store</span>
+            <span class="text-xs">Mercado</span>
+          </a>
+          <a id="hub-logout-btn" class="flex flex-col items-center gap-1 text-text-dark-secondary cursor-pointer" href="#">
+            <span class="material-symbols-outlined">settings</span>
+            <span class="text-xs">Opções</span>
+          </a>
         </div>
+      </nav>
     </div>
 
   </div>
@@ -360,7 +478,9 @@
       setDoc,
       getDoc,
       onSnapshot,
-      setLogLevel
+      collection, // Importar collection
+      setLogLevel,
+      Timestamp // Importar Timestamp
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- Exibe o Domínio para Autorização no Firebase ---
@@ -381,12 +501,12 @@
       appId: "1:428052124083:web:1190108bd19638ad2bfbc6",
       measurementId: "G-5LCK5W2JNH"
     };
-    
+
     // Configuração do Canvas (obrigatória)
-    const firebaseConfig = typeof __firebase_config !== 'undefined' 
-        ? JSON.parse(__firebase_config) 
-        : firebaseConfigUser;
-    
+    const firebaseConfig = typeof __firebase_config !== 'undefined'
+      ? JSON.parse(__firebase_config)
+      : firebaseConfigUser;
+
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'rpglife-app';
 
     // Inicialização do Firebase
@@ -397,7 +517,8 @@
 
     // --- Variáveis de Estado Global ---
     let currentUserId = null;
-    let profileListener = null; // Para o listener do onSnapshot
+    let profileListener = null; // Para o listener do onSnapshot do perfil
+    let tasksListener = null; // Para o listener do onSnapshot das tarefas
     let currentRegistrationStep = 1;
     let selectedAvatarUrl = null;
 
@@ -421,28 +542,28 @@
       p2: document.getElementById('progress-2'),
       p3: document.getElementById('progress-3')
     };
-    
+
     const modal = {
-        container: document.getElementById('modal-message'),
-        title: document.getElementById('modal-title'),
-        body: document.getElementById('modal-body'),
-        closeBtn: document.getElementById('modal-close-btn')
+      container: document.getElementById('modal-message'),
+      title: document.getElementById('modal-title'),
+      body: document.getElementById('modal-body'),
+      closeBtn: document.getElementById('modal-close-btn')
     };
-    
+
     // Inputs de Cadastro
     const regInputs = {
-        nickname: document.getElementById('reg-nickname'),
-        email: document.getElementById('reg-email'),
-        password: document.getElementById('reg-password'),
-        height: document.getElementById('reg-height'),
-        weight: document.getElementById('reg-weight'),
-        weightTarget: document.getElementById('reg-weight-target')
+      nickname: document.getElementById('reg-nickname'),
+      email: document.getElementById('reg-email'),
+      password: document.getElementById('reg-password'),
+      height: document.getElementById('reg-height'),
+      weight: document.getElementById('reg-weight'),
+      weightTarget: document.getElementById('reg-weight-target')
     };
-    
+
     // Inputs de Login
     const loginInputs = {
-        email: document.getElementById('login-email'),
-        password: document.getElementById('login-password')
+      email: document.getElementById('login-email'),
+      password: document.getElementById('login-password')
     };
 
     // --- Funções Auxiliares ---
@@ -465,11 +586,11 @@
      * @param {string} message Mensagem do modal
      */
     function showMessage(title, message) {
-        modal.title.textContent = title;
-        modal.body.textContent = message;
-        modal.container.classList.remove('hidden');
+      modal.title.textContent = title;
+      modal.body.textContent = message;
+      modal.container.classList.remove('hidden');
     }
-    
+
     // Evento para fechar o modal
     modal.closeBtn.addEventListener('click', () => modal.container.classList.add('hidden'));
 
@@ -479,15 +600,15 @@
      * @param {HTMLElement} button Botão clicado
      */
     window.togglePasswordVisibility = (inputId, button) => {
-        const input = document.getElementById(inputId);
-        const icon = button.querySelector('span');
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.textContent = 'visibility_off';
-        } else {
-            input.type = 'password';
-            icon.textContent = 'visibility';
-        }
+      const input = document.getElementById(inputId);
+      const icon = button.querySelector('span');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility_off';
+      } else {
+        input.type = 'password';
+        icon.textContent = 'visibility';
+      }
     }
 
     // --- Lógica de Navegação ---
@@ -505,348 +626,457 @@
     document.getElementById('forgot-cancel-btn').addEventListener('click', () => showScreen('login'));
 
     // --- Lógica de Cadastro (Etapas) ---
-    
+
     /**
      * Atualiza a UI da tela de cadastro para a etapa atual
      */
     function updateRegistrationStepUI() {
-        const nextBtn = document.getElementById('reg-next-btn');
-        
-        // Esconde todas as etapas
-        Object.values(registerSteps).forEach(step => step.classList.add('hidden'));
-        
-        // Reseta barras de progresso
-        progressBars.p1.className = 'h-1 flex-1 rounded-full bg-primary/20';
-        progressBars.p2.className = 'h-1 flex-1 rounded-full bg-primary/20';
-        progressBars.p3.className = 'h-1 flex-1 rounded-full bg-primary/20';
-        
-        if (currentRegistrationStep === 1) {
-            registerSteps.step1.classList.remove('hidden');
-            progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
-            nextBtn.textContent = 'Próximo';
-        } else if (currentRegistrationStep === 2) {
-            registerSteps.step2.classList.remove('hidden');
-            progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
-            progressBars.p2.classList.replace('bg-primary/20', 'bg-primary');
-            nextBtn.textContent = 'Próximo';
-        } else if (currentRegistrationStep === 3) {
-            registerSteps.step3.classList.remove('hidden');
-            progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
-            progressBars.p2.classList.replace('bg-primary/20', 'bg-primary');
-            progressBars.p3.classList.replace('bg-primary/20', 'bg-primary');
-            nextBtn.textContent = 'Confirmar e Iniciar Jornada!';
-        }
+      const nextBtn = document.getElementById('reg-next-btn');
+
+      // Esconde todas as etapas
+      Object.values(registerSteps).forEach(step => step.classList.add('hidden'));
+
+      // Reseta barras de progresso
+      progressBars.p1.className = 'h-1 flex-1 rounded-full bg-primary/20';
+      progressBars.p2.className = 'h-1 flex-1 rounded-full bg-primary/20';
+      progressBars.p3.className = 'h-1 flex-1 rounded-full bg-primary/20';
+
+      if (currentRegistrationStep === 1) {
+        registerSteps.step1.classList.remove('hidden');
+        progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
+        nextBtn.textContent = 'Próximo';
+      } else if (currentRegistrationStep === 2) {
+        registerSteps.step2.classList.remove('hidden');
+        progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
+        progressBars.p2.classList.replace('bg-primary/20', 'bg-primary');
+        nextBtn.textContent = 'Próximo';
+      } else if (currentRegistrationStep === 3) {
+        registerSteps.step3.classList.remove('hidden');
+        progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
+        progressBars.p2.classList.replace('bg-primary/20', 'bg-primary');
+        progressBars.p3.classList.replace('bg-primary/20', 'bg-primary');
+        nextBtn.textContent = 'Confirmar e Iniciar Jornada!';
+      }
     }
-    
+
     // Botão Voltar do Cadastro
     document.getElementById('reg-back-btn').addEventListener('click', () => {
-        if (currentRegistrationStep > 1) {
-            currentRegistrationStep--;
-            updateRegistrationStepUI();
-        } else {
-            showScreen('splash'); // Volta para a splash se estiver na etapa 1
-        }
+      if (currentRegistrationStep > 1) {
+        currentRegistrationStep--;
+        updateRegistrationStepUI();
+      } else {
+        showScreen('splash'); // Volta para a splash se estiver na etapa 1
+      }
     });
 
     // Botão Próximo/Finalizar do Cadastro
     document.getElementById('reg-next-btn').addEventListener('click', () => {
-        if (currentRegistrationStep === 1) {
-            // Validar Etapa 1
-            if (!regInputs.nickname.value || !regInputs.email.value || !regInputs.password.value) {
-                showMessage('Campo Obrigatório', 'Por favor, preencha seu nome, email e senha.');
-                return;
-            }
-            if (regInputs.password.value.length < 6) {
-                showMessage('Senha Fraca', 'Sua senha deve ter pelo menos 6 caracteres.');
-                return;
-            }
-            currentRegistrationStep = 2;
-        } else if (currentRegistrationStep === 2) {
-            // Validar Etapa 2
-             if (!regInputs.height.value || !regInputs.weight.value) {
-                showMessage('Campo Obrigatório', 'Por favor, preencha sua altura e peso atual.');
-                return;
-            }
-            currentRegistrationStep = 3;
-        } else if (currentRegistrationStep === 3) {
-            // Validar Etapa 3 e Finalizar
-             if (!selectedAvatarUrl) {
-                showMessage('Campo Obrigatório', 'Escolha sua aparência (avatar) para continuar.');
-                return;
-            }
-            handleRegister(); // Chama a função de registro do Firebase
+      if (currentRegistrationStep === 1) {
+        // Validar Etapa 1
+        if (!regInputs.nickname.value || !regInputs.email.value || !regInputs.password.value) {
+          showMessage('Campo Obrigatório', 'Por favor, preencha seu nome, email e senha.');
+          return;
         }
-        
-        updateRegistrationStepUI();
+        if (regInputs.password.value.length < 6) {
+          showMessage('Senha Fraca', 'Sua senha deve ter pelo menos 6 caracteres.');
+          return;
+        }
+        currentRegistrationStep = 2;
+      } else if (currentRegistrationStep === 2) {
+        // Validar Etapa 2
+        if (!regInputs.height.value || !regInputs.weight.value) {
+          showMessage('Campo Obrigatório', 'Por favor, preencha sua altura e peso atual.');
+          return;
+        }
+        currentRegistrationStep = 3;
+      } else if (currentRegistrationStep === 3) {
+        // Validar Etapa 3 e Finalizar
+        if (!selectedAvatarUrl) {
+          showMessage('Campo Obrigatório', 'Escolha sua aparência (avatar) para continuar.');
+          return;
+        }
+        handleRegister(); // Chama a função de registro do Firebase
+      }
+
+      updateRegistrationStepUI();
     });
 
     // Lógica de seleção de Avatar
     document.getElementById('avatar-selection').addEventListener('click', (e) => {
-        const clickedAvatar = e.target.closest('.avatar-option');
-        if (!clickedAvatar) return;
-        
-        // Remove a seleção de todos
-        document.querySelectorAll('.avatar-option').forEach(el => {
-            el.classList.remove('avatar-selected', 'border-primary');
-            el.classList.add('border-transparent');
-        });
-        
-        // Adiciona seleção ao clicado
-        clickedAvatar.classList.add('avatar-selected', 'border-primary');
-        clickedAvatar.classList.remove('border-transparent');
-        selectedAvatarUrl = clickedAvatar.dataset.avatarUrl;
-        console.log('Avatar selecionado:', selectedAvatarUrl);
-    });
-    
-    
-    // --- Lógica de Autenticação Firebase ---
+      const clickedAvatar = e.target.closest('.avatar-option');
+      if (!clickedAvatar) return;
 
-    /**
-     * INICIALIZAÇÃO DA AUTENTICAÇÃO
-     * REMOVIDA. Não vamos mais logar automaticamente.
-     */
-    /*
-    async function initializeAuth() {
-        try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                console.log('Logando com Custom Token (requerido pelo ambiente)...');
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                console.warn('Nenhum token inicial fornecido. Aguardando ação do usuário.');
-            }
-        } catch (error) {
-            console.error('Erro na autenticação inicial:', error);
-            showMessage('Erro de Conexão', 'Não foi possível conectar aos servidores. Tente recarregar a página.');
-        }
-    }
-    */
+      // Remove a seleção de todos
+      document.querySelectorAll('.avatar-option').forEach(el => {
+        el.classList.remove('avatar-selected', 'border-primary');
+        el.classList.add('border-transparent');
+      });
+
+      // Adiciona seleção ao clicado
+      clickedAvatar.classList.add('avatar-selected', 'border-primary');
+      clickedAvatar.classList.remove('border-transparent');
+      selectedAvatarUrl = clickedAvatar.dataset.avatarUrl;
+      console.log('Avatar selecionado:', selectedAvatarUrl);
+    });
+
+
+    // --- Lógica de Autenticação Firebase ---
 
     /**
      * Observador de Estado de Autenticação (CORE)
      * Gerencia o que acontece quando o usuário loga ou desloga
      */
     onAuthStateChanged(auth, (user) => {
-        if (user && !user.isAnonymous) {
-            // --- USUÁRIO LOGADO ---
-            // Isso agora SÓ VAI ACONTECER DEPOIS que o usuário
-            // clicar em "Login", "Registrar" ou "Login com Google".
-            
-            console.log('Usuário logado (APÓS AÇÃO MANUAL):', user.uid);
-            currentUserId = user.uid;
-            
-            // Se já houver um listener, remove
-            if (profileListener) profileListener(); 
-            
-            // Caminho do perfil no Firestore
-            const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
-            
-            // Ouve por mudanças no perfil em tempo real
-            profileListener = onSnapshot(profileRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    // Perfil existe, carregar dashboard
-                    const data = docSnap.data();
-                    populateDashboard(user, data);
-                    showScreen('dashboard');
-                } else {
-                    // Perfil NÃO existe (ex: primeiro login com Google)
-                    // Envia para a etapa 2 do cadastro para completar
-                    console.log('Perfil não encontrado, redirecionando para cadastro (etapa 2)...');
-                    showMessage('Personagem Incompleto', 'Quase lá! Precisamos de seus dados vitais para forjar seu personagem.');
-                    
-                    // Preenche dados do Google (se houver)
-                    regInputs.nickname.value = user.displayName || '';
-                    regInputs.email.value = user.email || '';
-                    
-                    // Desabilita campos se for login social
-                    if (user.providerData.some(p => p.providerId === 'google.com')) {
-                        regInputs.nickname.disabled = true;
-                        regInputs.email.disabled = true;
-                        regInputs.password.closest('label').classList.add('hidden'); // Esconde campo de senha
-                    }
-                    
-                    currentRegistrationStep = 2;
-                    updateRegistrationStepUI();
-                    showScreen('register');
-                }
-            });
+      // Cancela listeners antigos
+      if (profileListener) profileListener();
+      if (tasksListener) tasksListener();
 
-        } else {
-            // --- USUÁRIO DESLOGADO ---
-            // Este será o estado inicial do app ao carregar.
-            console.log('Usuário deslogado. Aguardando ação na tela inicial.');
-            currentUserId = null; 
-            
-            // Limpa o listener de perfil
-            if (profileListener) profileListener();
-            profileListener = null;
-            
-            // Reseta o formulário de cadastro
-            resetRegistrationForm();
-            
-            // Mostra a tela inicial (se não estivermos em login/cadastro)
-            const currentScreen = document.querySelector('#app-container > div:not(.hidden)');
-            // Se a tela atual for o dashboard (após um logout), volta pra splash
-            if (!currentScreen || currentScreen.id === 'screen-dashboard') {
-                showScreen('splash');
+      if (user && !user.isAnonymous) {
+        // --- USUÁRIO LOGADO ---
+        console.log('Usuário logado (APÓS AÇÃO MANUAL):', user.uid);
+        currentUserId = user.uid;
+
+        // Caminho do perfil no Firestore
+        const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
+        // Caminho das tarefas (sub-coleção)
+        const tasksRef = collection(db, 'artifacts', appId, 'users', user.uid, 'tasks');
+
+        // 1. Ouve por mudanças no perfil em tempo real
+        profileListener = onSnapshot(profileRef, (docSnap) => {
+          if (docSnap.exists()) {
+            // Perfil existe, carregar dashboard
+            const data = docSnap.data();
+            populateDashboard(user, data); // Popula o hub com os dados do perfil
+            showScreen('dashboard');
+          } else {
+            // Perfil NÃO existe (ex: primeiro login com Google)
+            // Envia para a etapa 2 do cadastro para completar
+            console.log('Perfil não encontrado, redirecionando para cadastro (etapa 2)...');
+            showMessage('Personagem Incompleto', 'Quase lá! Precisamos de seus dados vitais para forjar seu personagem.');
+
+            // Preenche dados do Google (se houver)
+            regInputs.nickname.value = user.displayName || '';
+            regInputs.email.value = user.email || '';
+
+            // Desabilita campos se for login social
+            if (user.providerData.some(p => p.providerId === 'google.com')) {
+              regInputs.nickname.disabled = true;
+              regInputs.email.disabled = true;
+              regInputs.password.closest('label').classList.add('hidden'); // Esconde campo de senha
             }
-        }
+
+            currentRegistrationStep = 2;
+            updateRegistrationStepUI();
+            showScreen('register');
+          }
+        });
+
+        // 2. Ouve por mudanças nas tarefas em tempo real
+        tasksListener = onSnapshot(tasksRef, (querySnapshot) => {
+          const tasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          populateMissions(tasks); // Popula a lista de missões
+        });
+
+      } else {
+        // --- USUÁRIO DESLOGADO ---
+        console.log('Usuário deslogado. Aguardando ação na tela inicial.');
+        currentUserId = null;
+
+        // Limpa listeners
+        profileListener = null;
+        tasksListener = null;
+
+        // Reseta o formulário de cadastro
+        resetRegistrationForm();
+
+        // Mostra a tela inicial
+        showScreen('splash');
+      }
     });
 
     /**
-     * Popula o Dashboard com os dados do usuário
+     * Popula o Dashboard com os dados do perfil
      */
     function populateDashboard(user, profileData) {
-        document.getElementById('dashboard-nickname').textContent = profileData.nickname || user.displayName;
-        document.getElementById('dashboard-email').textContent = user.email;
-        document.getElementById('dashboard-height').textContent = profileData.height;
-        document.getElementById('dashboard-weight').textContent = profileData.weight;
-        document.getElementById('dashboard-weight-target').textContent = profileData.weightTarget || 'N/A';
-        
-        const avatarContainer = document.getElementById('dashboard-avatar-container');
-        if (profileData.avatar) {
-            avatarContainer.innerHTML = `<img src="${profileData.avatar}" alt="Avatar" class="w-32 h-32 rounded-full object-cover border-4 border-primary shadow-lg">`;
-        } else {
-            avatarContainer.innerHTML = `<div class="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center border-4 border-primary/50"><span class="material-symbols-outlined text-6xl text-primary">person</span></div>`;
-        }
+      const character = profileData.character || {};
+      const vitals = profileData.vitals || {};
+      const stats = profileData.stats || {};
+      
+      // Header
+      document.getElementById('hub-avatar').src = character.avatar_url || 'https://placehold.co/100x100/1a3828/13ec6d?text=?';
+      document.getElementById('hub-nickname').textContent = profileData.nickname || 'Aventureiro';
+      document.getElementById('hub-level').textContent = `Nv. ${character.level || 1}`;
+
+      // Barras
+      const hpPercent = (character.hp_atual / character.hp_max) * 100 || 100;
+      const manaPercent = (character.mana_atual / character.mana_max) * 100 || 100;
+      const xpPercent = (character.xp_atual / character.xp_para_upar) * 100 || 0;
+
+      document.getElementById('hub-hp-bar').style.width = `${hpPercent}%`;
+      document.getElementById('hub-hp-text').textContent = `${character.hp_atual}/${character.hp_max}`;
+      document.getElementById('hub-mana-bar').style.width = `${manaPercent}%`;
+      document.getElementById('hub-mana-text').textContent = `${character.mana_atual}/${character.mana_max}`;
+      document.getElementById('hub-xp-bar').style.width = `${xpPercent}%`;
+      document.getElementById('hub-xp-text').textContent = `${character.xp_atual}/${character.xp_para_upar}`;
+
+      // Atributos
+      document.getElementById('hub-stats-forca').innerHTML = `<span class="material-symbols-outlined text-red-400 text-base">swords</span> <span>Força: ${stats.forca?.level || 1}</span>`;
+      document.getElementById('hub-stats-inteligencia').innerHTML = `<span class="material-symbols-outlined text-blue-400 text-base">school</span> <span>Inteligência: ${stats.inteligencia?.level || 1}</span>`;
+      document.getElementById('hub-stats-vitalidade').innerHTML = `<span class="material-symbols-outlined text-green-400 text-base">shield</span> <span>Vitalidade: ${stats.vitalidade?.level || 1}</span>`;
+      document.getElementById('hub-stats-velocidade').innerHTML = `<span class="material-symbols-outlined text-yellow-400 text-base">sprint</span> <span>Velocidade: ${stats.velocidade?.level || 1}</span>`;
+
+      // Status Effects
+      const statusContainer = document.getElementById('hub-status-effects');
+      statusContainer.innerHTML = ''; // Limpa
+      if (profileData.status_effects && profileData.status_effects.length > 0) {
+        profileData.status_effects.forEach(effect => {
+          const effectEl = document.createElement('div');
+          effectEl.className = 'flex items-center gap-2 text-sm';
+          // Simplesmente mostra o rótulo
+          effectEl.innerHTML = `<span class="material-symbols-outlined text-yellow-500 text-base">spark</span> <span>${effect.label}</span>`;
+          statusContainer.appendChild(effectEl);
+        });
+      } else {
+        statusContainer.innerHTML = '<p class="text-sm text-text-dark-secondary">Nenhum efeito ativo.</p>';
+      }
     }
     
     /**
+     * Popula a lista de missões no Dashboard
+     */
+    function populateMissions(tasks) {
+        const missionContainer = document.getElementById('hub-mission-list');
+        missionContainer.innerHTML = ''; // Limpa
+        
+        if (!tasks || tasks.length === 0) {
+            missionContainer.innerHTML = '<p class="text-sm text-text-dark-secondary p-4">Nenhuma missão encontrada. Adicione uma nova!</p>';
+            return;
+        }
+
+        tasks.forEach(task => {
+            const taskEl = document.createElement('div');
+            const isCompleted = task.concluida;
+            
+            const iconMap = {
+                diaria: 'fitness_center',
+                habito: 'menu_book',
+                projeto: 'work',
+                default: 'task'
+            };
+            
+            const icon = iconMap[task.tipo] || iconMap.default;
+
+            taskEl.className = `flex items-center gap-3 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border ${isCompleted ? 'border-primary/50 opacity-60' : 'border-border-dark'}`;
+            
+            taskEl.innerHTML = `
+                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20">
+                  <span class="material-symbols-outlined text-primary text-3xl">${icon}</span>
+                </div>
+                <div class="flex-1">
+                  <p class="font-bold ${isCompleted ? 'line-through' : ''}">${task.titulo || 'Missão sem título'}</p>
+                  <p class="text-sm text-text-dark-secondary ${isCompleted ? 'line-through' : ''}">Atributo: ${task.atributo_associado || 'Nenhum'}</p>
+                </div>
+                <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary ${isCompleted ? 'bg-primary' : ''}">
+                  ${isCompleted ? '<span class="material-symbols-outlined text-background-dark text-base font-bold">check</span>' : ''}
+                </div>
+            `;
+            // Adicionar evento de clique para completar a missão (futuro)
+            // taskEl.addEventListener('click', () => completeTask(task.id));
+            missionContainer.appendChild(taskEl);
+        });
+    }
+
+    /**
      * Reseta o formulário de cadastro para o estado inicial
      */
-     function resetRegistrationForm() {
-        currentRegistrationStep = 1;
-        updateRegistrationStepUI();
-        Object.values(regInputs).forEach(input => {
-            input.value = '';
-            input.disabled = false;
-        });
-        regInputs.password.closest('label').classList.remove('hidden');
-        selectedAvatarUrl = null;
-        document.querySelectorAll('.avatar-option').forEach(el => {
-            el.classList.remove('avatar-selected', 'border-primary');
-            el.classList.add('border-transparent');
-        });
-     }
+    function resetRegistrationForm() {
+      currentRegistrationStep = 1;
+      updateRegistrationStepUI();
+      Object.values(regInputs).forEach(input => {
+        input.value = '';
+        input.disabled = false;
+      });
+      regInputs.password.closest('label').classList.remove('hidden');
+      selectedAvatarUrl = null;
+      document.querySelectorAll('.avatar-option').forEach(el => {
+        el.classList.remove('avatar-selected', 'border-primary');
+        el.classList.add('border-transparent');
+      });
+    }
 
     /**
      * Lidar com o Registro de novo usuário (Email/Senha)
      */
     async function handleRegister() {
-        // Coleta todos os dados
-        const data = {
-            nickname: regInputs.nickname.value,
-            email: regInputs.email.value,
-            height: regInputs.height.value,
-            weight: regInputs.weight.value,
-            weightTarget: regInputs.weightTarget.value || null,
-            avatar: selectedAvatarUrl
-        };
-        const password = regInputs.password.value;
-        
-        let user;
-        
-        try {
-            // Se o usuário já estiver logado (ex: Google) e sem perfil
-            if (auth.currentUser && !auth.currentUser.isAnonymous && regInputs.email.disabled) {
-                user = auth.currentUser;
-                console.log('Atualizando perfil existente do Google...');
-            } else {
-                 // Cria um novo usuário (Email/Senha)
-                console.log('Criando novo usuário com Email/Senha...');
-                const userCredential = await createUserWithEmailAndPassword(auth, data.email, password);
-                user = userCredential.user;
-            }
-            
-            // Atualiza o perfil do Firebase Auth (Nickname)
-            await updateProfile(user, { displayName: data.nickname });
+      let user;
+      
+      // 1. Dados básicos
+      const basicData = {
+          nickname: regInputs.nickname.value,
+          email: regInputs.email.value,
+          createdAt: Timestamp.now(),
+          uid: null // Será preenchido após a autenticação
+      };
+      
+      // 2. Vitals
+      const vitals = {
+          altura_cm: Number(regInputs.height.value),
+          peso_atual_kg: Number(regInputs.weight.value),
+          meta_peso_kg: Number(regInputs.weightTarget.value) || null,
+          imc: 0 // Calcular IMC (peso / (altura_m * altura_m))
+      };
+      if (vitals.altura_cm > 0) {
+          const altura_m = vitals.altura_cm / 100;
+          vitals.imc = parseFloat((vitals.peso_atual_kg / (altura_m * altura_m)).toFixed(1));
+      }
+      
+      // 3. Stats Iniciais
+      const defaultStat = { level: 1, xp_atual: 0, xp_para_upar: 100 };
+      const stats = {
+          forca: { ...defaultStat },
+          inteligencia: { ...defaultStat },
+          velocidade: { ...defaultStat },
+          vitalidade: { ...defaultStat }
+      };
+      
+      // 4. Character (Atributos Derivados)
+      const base_hp = 100 + (stats.vitalidade.level * 10);
+      const base_mana = 100 + (stats.inteligencia.level * 10);
+      
+      const character = {
+          level: 1,
+          xp_atual: 0,
+          xp_para_upar: 1000,
+          hp_max: base_hp,
+          hp_atual: base_hp,
+          energia_max: 100, // Pode ser derivado de velocidade/força
+          energia_atual: 100,
+          mana_max: base_mana,
+          mana_atual: base_mana,
+          moedas: 0,
+          avatar_url: selectedAvatarUrl
+      };
+      
+      // 5. Status Effects (Ex: baseado no IMC)
+      const status_effects = [];
+      if (vitals.imc > 25) {
+          status_effects.push({ id: "debuff_imc_alto", label: "Sobrepeso", effect: "energia_max", value: -10 });
+      } else if (vitals.imc < 18.5) {
+          status_effects.push({ id: "debuff_imc_baixo", label: "Abaixo do Peso", effect: "hp_max", value: -10 });
+      }
 
-            // Salva os dados no Firestore
-            const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
-            await setDoc(profileRef, data);
-            
-            console.log('Personagem criado e salvo!');
-            // O onAuthStateChanged/onSnapshot cuidará de redirecionar para o dashboard
-            
-        } catch (error) {
-            console.error("Erro ao criar personagem:", error);
-            showMessage('Erro na Criação', `Não foi possível criar seu personagem. Erro: ${error.message}`);
+      // Combina todos os dados no documento principal do perfil
+      const profileData = {
+          ...basicData,
+          vitals,
+          stats,
+          character,
+          status_effects
+      };
+
+      try {
+        // Se o usuário já estiver logado (ex: Google) e sem perfil
+        if (auth.currentUser && !auth.currentUser.isAnonymous && regInputs.email.disabled) {
+          user = auth.currentUser;
+          console.log('Atualizando perfil existente do Google...');
+          profileData.email = user.email; // Garante que o email do Google seja usado
+          profileData.nickname = user.displayName || basicData.nickname; // Usa o nome do Google
+          character.avatar_url = user.photoURL || selectedAvatarUrl; // Usa a foto do Google
+        } else {
+          // Cria um novo usuário (Email/Senha)
+          console.log('Criando novo usuário com Email/Senha...');
+          const userCredential = await createUserWithEmailAndPassword(auth, basicData.email, regInputs.password.value);
+          user = userCredential.user;
+          // Atualiza o perfil do Firebase Auth (Nickname)
+          await updateProfile(user, { displayName: basicData.nickname });
         }
+
+        // Salva os dados no Firestore
+        profileData.uid = user.uid; // Adiciona o UID final ao documento
+        const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
+        await setDoc(profileRef, profileData);
+
+        console.log('Personagem criado e salvo!');
+        // O onAuthStateChanged/onSnapshot cuidará de redirecionar para o dashboard
+
+      } catch (error) {
+        console.error("Erro ao criar personagem:", error);
+        showMessage('Erro na Criação', `Não foi possível criar seu personagem. Erro: ${error.message}`);
+      }
     }
-    
+
     /**
      * Lidar com o Login (Email/Senha)
      */
     document.getElementById('login-btn').addEventListener('click', async () => {
-        const email = loginInputs.email.value;
-        const password = loginInputs.password.value;
-        
-        if (!email || !password) {
-            return showMessage('Campos Vazios', 'Digite seu email e senha.');
-        }
-        
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            // onAuthStateChanged cuidará do resto
-        } catch (error) {
-            console.error("Erro no login:", error);
-            showMessage('Erro ao Entrar', 'Email ou senha inválidos. Verifique seus dados.');
-        }
+      const email = loginInputs.email.value;
+      const password = loginInputs.password.value;
+
+      if (!email || !password) {
+        return showMessage('Campos Vazios', 'Digite seu email e senha.');
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // onAuthStateChanged cuidará do resto
+      } catch (error) {
+        console.error("Erro no login:", error);
+        showMessage('Erro ao Entrar', 'Email ou senha inválidos. Verifique seus dados.');
+      }
     });
-    
+
     /**
      * Lidar com o Login (Google)
      */
-     document.getElementById('btn-google-login').addEventListener('click', async () => {
-        const provider = new GoogleAuthProvider();
-        try {
-            await signInWithPopup(auth, provider);
-            // onAuthStateChanged cuidará do resto (verificar se o perfil existe ou não)
-        } catch (error) {
-            console.error("Erro no login com Google:", error);
-            showMessage('Erro no Login', `Não foi possível logar com o Google. Erro: ${error.message}`);
-        }
-     });
+    document.getElementById('btn-google-login').addEventListener('click', async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        await signInWithPopup(auth, provider);
+        // onAuthStateChanged cuidará do resto (verificar se o perfil existe ou não)
+      } catch (error) {
+        console.error("Erro no login com Google:", error);
+        showMessage('Erro no Login', `Não foi possível logar com o Google. Erro: ${error.message}`);
+      }
+    });
 
     /**
      * Lidar com a Recuperação de Senha
      */
     document.getElementById('forgot-btn').addEventListener('click', async () => {
-        const email = document.getElementById('forgot-email').value;
-        if (!email) {
-            return showMessage('Campo Vazio', 'Digite seu email para recuperação.');
-        }
-        
-        try {
-            await sendPasswordResetEmail(auth, email);
-            showMessage('Pergaminho Enviado', 'Um email de recuperação foi enviado para ' + email + '. Verifique sua caixa de entrada (e spam).');
-            showScreen('login');
-        } catch (error) {
-            console.error("Erro ao enviar email de recuperação:", error);
-            showMessage('Erro', `Não foi possível enviar o email. Verifique o endereço digitado. Erro: ${error.message}`);
-        }
+      const email = document.getElementById('forgot-email').value;
+      if (!email) {
+        return showMessage('Campo Vazio', 'Digite seu email para recuperação.');
+      }
+
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showMessage('Pergaminho Enviado', 'Um email de recuperação foi enviado para ' + email + '. Verifique sua caixa de entrada (e spam).');
+        showScreen('login');
+      } catch (error) {
+        console.error("Erro ao enviar email de recuperação:", error);
+        showMessage('Erro', `Não foi possível enviar o email. Verifique o endereço digitado. Erro: ${error.message}`);
+      }
     });
-    
+
     /**
-     * Lidar com o Logout
+     * Lidar com o Logout (agora no botão "Opções" do Hub)
      */
-    document.getElementById('logout-btn').addEventListener('click', async () => {
+    document.getElementById('hub-logout-btn').addEventListener('click', async (e) => {
+        e.preventDefault(); // Impede que o link '#' navegue
         try {
             await signOut(auth);
             // onAuthStateChanged cuidará de levar para a tela de splash
-            // e NÃO VAI logar anonimamente.
         } catch (error) {
             console.error("Erro ao sair:", error);
             showMessage('Erro', 'Não foi possível sair da aventura no momento.');
         }
     });
-    
+
     // --- Inicialização da Aplicação ---
     // A FUNÇÃO DE INICIALIZAÇÃO AUTOMÁTICA FOI REMOVIDA.
-    // initializeAuth(); // <--- REMOVIDO
 
   </script>
 
 </body>
 </html>
-
 
