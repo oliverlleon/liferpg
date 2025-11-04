@@ -77,6 +77,18 @@
         color: #102218 !important;
         border-color: #13ec6d !important;
     }
+    /* Classe helper para a prioridade de tarefa selecionada */
+    .task-priority-selected {
+        background-color: #f59e0b !important; /* Cor de XP para destaque */
+        color: #102218 !important;
+        border-color: #f59e0b !important;
+    }
+    /* Classe helper para o dia da semana de recorrência selecionado */
+    .weekday-btn-selected {
+        background-color: #3b82f6 !important; /* Cor de Mana para destaque */
+        color: #ffffff !important;
+        border-color: #3b82f6 !important;
+    }
   </style>
 </head>
 
@@ -483,22 +495,59 @@
            </div>
         </div>
 
+        <!-- Prioridade da Missão -->
+        <div>
+           <p class="text-white text-base font-medium leading-normal pb-2">Tipo de Missão (Sua Prioridade)</p>
+           <div id="task-priority-group" class="grid grid-cols-3 gap-3">
+               <button data-priority="secundaria" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 Secundária
+               </button>
+               <button data-priority="contrato" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 Contrato
+               </button>
+               <button data-priority="principal" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 Principal
+               </button>
+           </div>
+        </div>
+
         <!-- Duração (Opcional) -->
         <label class="flex flex-col w-full">
           <p class="text-white/70 text-base font-medium leading-normal pb-2">Duração Estimada (Opcional)</p>
           <input id="task-duration" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: 30 min, 1 hora" value="" />
         </label>
 
-        <!-- Prazos (Opcional) -->
+        <!-- Prazos e Recorrência (Opcional) -->
         <div class="grid grid-cols-2 gap-4">
             <label class="flex flex-col w-full">
               <p class="text-white/70 text-base font-medium leading-normal pb-2">Prazo Final (Opcional)</p>
               <input id="task-deadline" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" type="date" />
             </label>
-            <label class="flex flex-col w-full">
-              <p class="text-white/70 text-base font-medium leading-normal pb-2">Lembrete (Opcional)</p>
-              <input id="task-reminder" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" type="time" />
-            </label>
+            <button id="btn-open-recurrence" class="flex items-center justify-center rounded-xl border-2 border-dashed border-border-dark bg-surface-dark/30 h-14 text-text-dark-secondary hover:border-primary transition-colors">
+              <span class="material-symbols-outlined mr-2">event_repeat</span>
+              Definir Recorrência
+            </button>
+        </div>
+        <p id="recurrence-summary" class="text-center text-sm text-primary -mt-2 mb-2"></p>
+
+        <!-- Notas / Anexos -->
+        <label class="flex flex-col w-full">
+            <p class="text-white/70 text-base font-medium leading-normal pb-2">Notas / Anexos (Opcional)</p>
+            <textarea id="task-notes" class="form-textarea flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Adicione links, lembretes ou qualquer contexto adicional aqui..." rows="3"></textarea>
+        </label>
+
+        <!-- Sub-tarefas (Checklist) -->
+        <div>
+            <p class="text-white text-base font-medium leading-normal pb-2">Sub-tarefas (Checklist)</p>
+            <div class="flex gap-2">
+                <input id="task-subtask-input" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: Pesquisar referências" value="" />
+                <button id="task-add-subtask-btn" class="flex items-center justify-center rounded-xl bg-primary/20 h-14 w-14 text-primary text-2xl font-bold">
+                    +
+                </button>
+            </div>
+            <div id="task-subtask-list" class="mt-3 space-y-2">
+                <!-- Sub-tarefas adicionadas aparecerão aqui -->
+            </div>
         </div>
 
         <!-- Estimativa de Recompensa (IA) -->
@@ -563,6 +612,44 @@
     </div>
   </div>
 
+  <!-- Modal de Recorrência -->
+  <div id="modal-recurrence" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm">
+      <h3 class="text-primary text-xl font-bold mb-4">Definir Recorrência</h3>
+
+      <!-- Opção 1: A cada X dias -->
+      <div class="space-y-2">
+          <label class="text-white/90">Repetir a cada:</label>
+          <div class="flex items-center gap-2">
+              <input id="recurrence-days-input" type="number" min="1" class="form-input w-20 bg-[#102218] border-border-dark rounded" placeholder="1">
+              <span class="text-white/90">dias</span>
+          </div>
+      </div>
+
+      <div class="my-4 text-center text-text-dark-secondary">ou</div>
+
+      <!-- Opção 2: Dias da Semana -->
+      <div class="space-y-2">
+          <label class="text-white/90">Repetir nos dias:</label>
+          <div id="recurrence-weekdays" class="grid grid-cols-4 gap-2 text-center">
+              <button data-day="1" class="weekday-btn p-2 rounded border border-border-dark">Seg</button>
+              <button data-day="2" class="weekday-btn p-2 rounded border border-border-dark">Ter</button>
+              <button data-day="3" class="weekday-btn p-2 rounded border border-border-dark">Qua</button>
+              <button data-day="4" class="weekday-btn p-2 rounded border border-border-dark">Qui</button>
+              <button data-day="5" class="weekday-btn p-2 rounded border border-border-dark">Sex</button>
+              <button data-day="6" class="weekday-btn p-2 rounded border border-border-dark">Sáb</button>
+              <button data-day="0" class="weekday-btn p-2 rounded border border-border-dark">Dom</button>
+          </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button id="recurrence-cancel-btn" class="px-4 py-2 rounded bg-surface-dark/50 text-white/80">Cancelar</button>
+        <button id="recurrence-save-btn" class="px-4 py-2 rounded bg-primary text-background-dark font-bold">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+
   <!-- Firebase SDKs -->
   <script type="module">
     // Importações do Firebase
@@ -585,9 +672,10 @@
       doc,
       setDoc,
       getDoc,
+      updateDoc, // <--- ADICIONADO
       onSnapshot,
       collection,
-      addDoc, // <--- ADICIONADO
+      addDoc,
       setLogLevel,
       Timestamp
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -633,6 +721,9 @@
     
     // --- Variáveis da Tela de Tarefas ---
     let selectedTaskType = null; // 'habito', 'diaria', 'projeto'
+    let selectedTaskPriority = 'contrato'; // Prioridade padrão
+    let recurrenceRule = null; // { type: 'days' | 'weekdays', value: number | number[] }
+    let subtasksList = []; // Array para armazenar as sub-tarefas
     let aiResults = null; // { atributo_associado, dificuldade }
     let calculatedRewards = null; // { xp_global, xp_atributo, moedas }
     let debounceTimer = null;
@@ -671,9 +762,16 @@
         title: document.getElementById('task-title'),
         typeGroup: document.getElementById('task-type-group'),
         typeButtons: document.querySelectorAll('.task-type-btn'),
-        duration: document.getElementById('task-duration'), // <-- ADICIONADO
+        priorityGroup: document.getElementById('task-priority-group'),
+        priorityButtons: document.querySelectorAll('.task-priority-btn'),
+        duration: document.getElementById('task-duration'),
         deadline: document.getElementById('task-deadline'),
-        reminder: document.getElementById('task-reminder'),
+        openRecurrenceBtn: document.getElementById('btn-open-recurrence'),
+        recurrenceSummary: document.getElementById('recurrence-summary'),
+        notes: document.getElementById('task-notes'),
+        subtaskInput: document.getElementById('task-subtask-input'),
+        addSubtaskBtn: document.getElementById('task-add-subtask-btn'),
+        subtaskList: document.getElementById('task-subtask-list'),
         saveBtn: document.getElementById('task-save-btn'),
         backBtn: document.getElementById('task-back-btn')
     };
@@ -702,6 +800,15 @@
       title: document.getElementById('modal-title'),
       body: document.getElementById('modal-body'),
       closeBtn: document.getElementById('modal-close-btn')
+    };
+
+    const recurrenceModal = {
+        container: document.getElementById('modal-recurrence'),
+        daysInput: document.getElementById('recurrence-days-input'),
+        weekdaysGroup: document.getElementById('recurrence-weekdays'),
+        weekdayButtons: document.querySelectorAll('.weekday-btn'),
+        saveBtn: document.getElementById('recurrence-save-btn'),
+        cancelBtn: document.getElementById('recurrence-cancel-btn')
     };
 
     // Inputs de Cadastro
@@ -733,6 +840,7 @@
         screens[screenId].classList.remove('hidden');
       }
     }
+    window.showScreen = showScreen; // Expose for testing
 
     /**
      * Mostra o modal de mensagem
@@ -908,7 +1016,8 @@
 
         tasksListener = onSnapshot(tasksRef, (querySnapshot) => {
           const tasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          populateMissions(tasks); 
+          checkAndGenerateRecurrentTasks(tasks); // Gera tarefas recorrentes
+          populateMissions(tasks);
         });
 
       } else {
@@ -964,21 +1073,105 @@
     }
     
     /**
+     * Verifica e gera tarefas recorrentes para o dia atual
+     */
+    async function checkAndGenerateRecurrentTasks(tasks) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normaliza para o início do dia
+        const todayStr = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+
+        const templates = tasks.filter(t => t.isTemplate);
+
+        for (const template of templates) {
+            const lastGenerated = template.lastGenerated ? new Date(template.lastGenerated.toDate()) : null;
+            let shouldGenerate = false;
+
+            // Se nunca foi gerada, verifica se hoje é um dia válido
+            if (!lastGenerated) {
+                 shouldGenerate = true;
+            } else {
+                // Se já foi gerada, verifica se não foi hoje
+                const lastGeneratedStr = lastGenerated.toISOString().split('T')[0];
+                if (lastGeneratedStr !== todayStr) {
+                    shouldGenerate = true;
+                }
+            }
+
+            if (shouldGenerate) {
+                let isValidToday = false;
+                if (template.recorrencia.type === 'weekdays') {
+                    if (template.recorrencia.value.includes(today.getDay())) {
+                        isValidToday = true;
+                    }
+                } else if (template.recorrencia.type === 'days') {
+                    // Para 'a cada X dias', a lógica é mais complexa.
+                    // Uma forma simples é basear na data de criação.
+                    const createdAt = template.createdAt.toDate();
+                    createdAt.setHours(0, 0, 0, 0);
+                    const diffTime = Math.abs(today - createdAt);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    if (diffDays % template.recorrencia.value === 0) {
+                        isValidToday = true;
+                    }
+                }
+
+                if (isValidToday) {
+                    // Cria uma nova tarefa "filha"
+                    const newTask = { ...template };
+                    delete newTask.id; // Remove o ID do template
+                    newTask.isTemplate = false;
+                    newTask.recorrencia = null;
+                    newTask.createdAt = Timestamp.now();
+                    newTask.titulo = `${template.titulo} (${today.toLocaleDateString('pt-BR')})`;
+
+                    try {
+                        const tasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks');
+                        await addDoc(tasksRef, newTask);
+
+                        // Atualiza a data da última geração no template
+                        const templateRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', template.id);
+                        await updateDoc(templateRef, { lastGenerated: Timestamp.now() });
+
+                        console.log(`Tarefa recorrente '${newTask.titulo}' gerada.`);
+
+                    } catch (error) {
+                        console.error("Erro ao gerar tarefa recorrente:", error);
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
      * Popula a lista de missões no Dashboard
      */
     function populateMissions(tasks) {
         const missionContainer = document.getElementById('hub-mission-list');
         missionContainer.innerHTML = ''; 
         
-        if (!tasks || tasks.length === 0) {
+        const visibleTasks = tasks.filter(t => !t.isTemplate);
+
+        if (!visibleTasks || visibleTasks.length === 0) {
             missionContainer.innerHTML = '<p class="text-sm text-text-dark-secondary p-4">Nenhuma missão encontrada. Adicione uma nova!</p>';
             return;
         }
 
-        tasks.forEach(task => {
+        // Ordena as tarefas: Principal > Contrato > Secundária
+        const priorityOrder = { 'principal': 1, 'contrato': 2, 'secundaria': 3 };
+        visibleTasks.sort((a, b) => (priorityOrder[a.prioridade] || 2) - (priorityOrder[b.prioridade] || 2));
+
+        visibleTasks.forEach(task => {
             const taskEl = document.createElement('div');
             const isCompleted = task.concluida;
             
+            const priorityClasses = {
+                principal: 'border-red-500/80',
+                contrato: 'border-border-dark', // Padrão
+                secundaria: 'border-gray-500/80'
+            };
+            const priorityClass = priorityClasses[task.prioridade] || 'border-border-dark';
+
             const iconMap = {
                 diaria: 'fitness_center',
                 habito: 'menu_book',
@@ -993,19 +1186,46 @@
             
             const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
 
-            taskEl.className = `flex items-center gap-3 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border ${isCompleted ? 'border-primary/50 opacity-60' : 'border-border-dark'}`;
+            taskEl.className = `flex flex-col rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border-l-4 ${priorityClass} ${isCompleted ? 'opacity-60' : ''}`;
             
+            let notesHTML = '';
+            if (task.notas) {
+                notesHTML = `<p class="text-sm text-text-dark-secondary mt-2 p-2 bg-background-dark/50 rounded">${task.notas.replace(/\n/g, '<br>')}</p>`;
+            }
+
+            let subtasksHTML = '';
+            if (task.subtarefas && task.subtarefas.length > 0) {
+                const topBorder = task.notas ? '' : 'border-t'; // Só adiciona borda se não houver notas
+                subtasksHTML += `<div class="mt-3 pt-3 ${topBorder} border-border-dark space-y-2">`;
+                task.subtarefas.forEach((sub, index) => {
+                    const subIsCompleted = sub.concluida;
+                    subtasksHTML += `
+                        <div class="flex items-center gap-3 ml-4">
+                            <div data-task-id="${task.id}" data-subtask-index="${index}" class="subtask-checkbox flex h-5 w-5 items-center justify-center rounded border-2 border-primary ${subIsCompleted ? 'bg-primary' : ''} cursor-pointer">
+                                ${subIsCompleted ? '<span class="material-symbols-outlined text-background-dark text-sm font-bold">check</span>' : ''}
+                            </div>
+                            <label class="flex-1 text-sm ${subIsCompleted ? 'line-through text-text-dark-secondary' : 'text-white/90'}">${sub.titulo}</label>
+                        </div>
+                    `;
+                });
+                subtasksHTML += '</div>';
+            }
+
             taskEl.innerHTML = `
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20">
-                  <span class="material-symbols-outlined text-primary text-3xl">${icon}</span>
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20">
+                      <span class="material-symbols-outlined text-primary text-3xl">${icon}</span>
+                    </div>
+                    <div class="flex-1">
+                      <p class="font-bold ${isCompleted ? 'line-through' : ''}">${task.titulo || 'Missão sem título'}</p>
+                      <p class="text-sm text-text-dark-secondary ${isCompleted ? 'line-through' : ''}">Atributo: ${task.atributo_associado || 'Nenhum'}</p>
+                    </div>
+                    <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary ${isCompleted ? 'bg-primary' : ''}">
+                      ${isCompleted ? '<span class="material-symbols-outlined text-background-dark text-base font-bold">check</span>' : ''}
+                    </div>
                 </div>
-                <div class="flex-1">
-                  <p class="font-bold ${isCompleted ? 'line-through' : ''}">${task.titulo || 'Missão sem título'}</p>
-                  <p class="text-sm text-text-dark-secondary ${isCompleted ? 'line-through' : ''}">Atributo: ${task.atributo_associado || 'Nenhum'}</p>
-                </div>
-                <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary ${isCompleted ? 'bg-primary' : ''}">
-                  ${isCompleted ? '<span class="material-symbols-outlined text-background-dark text-base font-bold">check</span>' : ''}
-                </div>
+                ${notesHTML}
+                ${subtasksHTML}
             `;
             missionContainer.appendChild(taskEl);
         });
@@ -1166,6 +1386,39 @@
             showMessage('Erro', 'Não foi possível sair da aventura no momento.');
         }
     });
+
+    /**
+     * Lida com o clique no checkbox de uma sub-tarefa
+     */
+    document.getElementById('hub-mission-list').addEventListener('click', async (e) => {
+        const checkbox = e.target.closest('.subtask-checkbox');
+        if (!checkbox || !currentUserId) return;
+
+        const taskId = checkbox.dataset.taskId;
+        const subtaskIndex = parseInt(checkbox.dataset.subtaskIndex, 10);
+
+        const taskRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId);
+
+        try {
+            const taskDoc = await getDoc(taskRef);
+            if (taskDoc.exists()) {
+                const taskData = taskDoc.data();
+                const subtarefas = taskData.subtarefas || [];
+
+                // Inverte o estado 'concluida' da sub-tarefa específica
+                if (subtarefas[subtaskIndex]) {
+                    subtarefas[subtaskIndex].concluida = !subtarefas[subtaskIndex].concluida;
+                }
+
+                // Atualiza o documento no Firestore
+                await updateDoc(taskRef, { subtarefas: subtarefas });
+                // O onSnapshot irá recarregar a lista automaticamente
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar sub-tarefa:", error);
+            showMessage('Erro', 'Não foi possível atualizar o status da sub-tarefa.');
+        }
+    });
     
     // --- LÓGICA DA TELA DE CRIAR TAREFAS (IA) ---
     
@@ -1174,20 +1427,66 @@
      */
     function resetTaskForm() {
         taskForm.title.value = '';
-        taskForm.duration.value = ''; // <-- ADICIONADO
+        taskForm.duration.value = '';
         taskForm.deadline.value = '';
-        taskForm.reminder.value = '';
+        taskForm.notes.value = ''; // Limpa as notas
+        taskForm.subtaskInput.value = '';
         selectedTaskType = null;
+        selectedTaskPriority = 'media'; // Reseta para o padrão
+        recurrenceRule = null; // Limpa a regra de recorrência
+        taskForm.recurrenceSummary.textContent = ''; // Limpa o resumo
         aiResults = null;
         calculatedRewards = null;
+        subtasksList = []; // Limpa a lista de sub-tarefas
+        renderSubtasks(); // Atualiza a UI para remover as sub-tarefas
         
         taskForm.typeButtons.forEach(btn => btn.classList.remove('task-type-selected'));
+        taskForm.priorityButtons.forEach(btn => btn.classList.remove('task-priority-selected'));
         
         rewardBox.loading.classList.remove('hidden');
         rewardBox.loadingText.textContent = 'Digite sua missão para calcularmos a recompensa...';
         rewardBox.spinner.classList.add('hidden');
         rewardBox.results.classList.add('hidden');
     }
+
+    /**
+     * Renderiza a lista de sub-tarefas na UI
+     */
+    function renderSubtasks() {
+        taskForm.subtaskList.innerHTML = '';
+        subtasksList.forEach((task, index) => {
+            const taskEl = document.createElement('div');
+            taskEl.className = 'flex items-center justify-between bg-surface-dark/50 p-3 rounded-lg';
+            taskEl.innerHTML = `
+                <span class="text-white/90">${task.titulo}</span>
+                <button data-index="${index}" class="remove-subtask-btn flex items-center justify-center h-6 w-6 rounded-full text-red-400 hover:bg-red-400/20">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            `;
+            taskForm.subtaskList.appendChild(taskEl);
+        });
+    }
+
+    /**
+     * Lógica para adicionar e remover sub-tarefas
+     */
+    taskForm.addSubtaskBtn.addEventListener('click', () => {
+        const title = taskForm.subtaskInput.value.trim();
+        if (title) {
+            subtasksList.push({ titulo: title, concluida: false });
+            taskForm.subtaskInput.value = '';
+            renderSubtasks();
+        }
+    });
+
+    taskForm.subtaskList.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-subtask-btn');
+        if (removeBtn) {
+            const index = parseInt(removeBtn.dataset.index, 10);
+            subtasksList.splice(index, 1);
+            renderSubtasks();
+        }
+    });
     
     /**
      * Seleciona o tipo de tarefa (Hábito, Diária, Projeto)
@@ -1206,6 +1505,63 @@
             updateRewardEstimation(aiResults.atributo_associado, aiResults.dificuldade);
         }
     });
+
+    /**
+     * Seleciona a prioridade da tarefa
+     */
+    taskForm.priorityGroup.addEventListener('click', (e) => {
+        const button = e.target.closest('.task-priority-btn');
+        if (!button) return;
+
+        selectedTaskPriority = button.dataset.priority;
+
+        taskForm.priorityButtons.forEach(btn => btn.classList.remove('task-priority-selected'));
+        button.classList.add('task-priority-selected');
+    });
+
+    /**
+     * Lógica do Modal de Recorrência
+     */
+    taskForm.openRecurrenceBtn.addEventListener('click', (e) => {
+        e.preventDefault(); // Previne comportamento de formulário
+        recurrenceModal.container.classList.remove('hidden');
+    });
+    recurrenceModal.cancelBtn.addEventListener('click', () => {
+        recurrenceModal.container.classList.add('hidden');
+    });
+    // Limpa dias da semana se input de dias for usado
+    recurrenceModal.daysInput.addEventListener('input', () => {
+        recurrenceModal.weekdayButtons.forEach(btn => btn.classList.remove('weekday-btn-selected'));
+    });
+    // Limpa input de dias se dias da semana forem usados
+    recurrenceModal.weekdaysGroup.addEventListener('click', (e) => {
+        const button = e.target.closest('.weekday-btn');
+        if (button) {
+            recurrenceModal.daysInput.value = '';
+            button.classList.toggle('weekday-btn-selected');
+        }
+    });
+    recurrenceModal.saveBtn.addEventListener('click', () => {
+        const days = parseInt(recurrenceModal.daysInput.value, 10);
+        const selectedWeekdays = [...recurrenceModal.weekdayButtons]
+            .filter(btn => btn.classList.contains('weekday-btn-selected'))
+            .map(btn => parseInt(btn.dataset.day, 10));
+
+        if (days > 0) {
+            recurrenceRule = { type: 'days', value: days };
+            taskForm.recurrenceSummary.textContent = `Repete a cada ${days} dia(s).`;
+        } else if (selectedWeekdays.length > 0) {
+            recurrenceRule = { type: 'weekdays', value: selectedWeekdays.sort() };
+            const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const summary = selectedWeekdays.map(d => dayNames[d]).join(', ');
+            taskForm.recurrenceSummary.textContent = `Repete em: ${summary}.`;
+        } else {
+            recurrenceRule = null;
+            taskForm.recurrenceSummary.textContent = '';
+        }
+        recurrenceModal.container.classList.add('hidden');
+    });
+
 
     /**
      * Dispara a análise da IA após o usuário digitar o título ou duração
@@ -1385,17 +1741,26 @@ Tarefa: '${fullTaskDescription}'`;
         }
         
         // Monta o objeto da tarefa
+        // Se for uma tarefa com recorrência, ela se torna um "template"
+        const isRecurrenceTemplate = recurrenceRule !== null;
+
         const taskData = {
             titulo: title,
             tipo: selectedTaskType,
-            duracao_estimada: taskForm.duration.value.trim() || null, // <-- ADICIONADO
+            prioridade: selectedTaskPriority,
+            notas: taskForm.notes.value.trim() || null,
+            recorrencia: recurrenceRule, // <-- ADICIONADO
+            isTemplate: isRecurrenceTemplate, // <-- ADICIONADO
+            lastGenerated: null, // <-- ADICIONADO para controle
+            duracao_estimada: taskForm.duration.value.trim() || null,
             atributo_associado: aiResults.atributo_associado,
             dificuldade: aiResults.dificuldade,
-            recompensa: calculatedRewards, // Salva as recompensas calculadas
+            recompensa: calculatedRewards,
             concluida: false,
             createdAt: Timestamp.now(),
             prazo_final: taskForm.deadline.value || null,
-            lembrete_horario: taskForm.reminder.value || null
+            lembrete_horario: taskForm.reminder.value || null,
+            subtarefas: subtasksList
         };
         
         try {
