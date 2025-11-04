@@ -540,10 +540,16 @@
         <p id="recurrence-summary" class="text-center text-sm text-primary -mt-2 mb-2"></p>
 
         <!-- Notas / Anexos -->
-        <label class="flex flex-col w-full">
+        <div>
             <p class="text-white/70 text-base font-medium leading-normal pb-2">Notas / Anexos (Opcional)</p>
-            <textarea id="task-notes" class="form-textarea flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Adicione links, lembretes ou qualquer contexto adicional aqui..." rows="3"></textarea>
-        </label>
+            <textarea id="task-notes" class="form-textarea flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary placeholder:text-white/40 p-[15px] text-base font-normal leading-normal mb-2" placeholder="Adicione links, lembretes ou qualquer contexto adicional aqui..." rows="3"></textarea>
+            <input type="file" id="task-attachment-input" class="hidden" />
+            <button id="btn-add-attachment" class="flex w-full items-center justify-center rounded-lg border-2 border-dashed border-border-dark bg-surface-dark/30 h-12 text-text-dark-secondary hover:border-primary transition-colors">
+              <span class="material-symbols-outlined mr-2">attach_file</span>
+              Adicionar Anexo
+            </button>
+            <p id="attachment-name" class="text-sm text-primary text-center mt-2"></p>
+        </div>
 
         <!-- Sub-tarefas (Checklist) -->
         <div>
@@ -688,6 +694,12 @@
       setLogLevel,
       Timestamp
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import {
+        getStorage,
+        ref,
+        uploadBytes,
+        getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
     // --- Exibe o Domínio para Autorização no Firebase ---
     const currentHostname = window.location.hostname;
@@ -719,6 +731,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    const storage = getStorage(app); // <-- ADICIONADO
     setLogLevel('Debug'); // Para logs detalhados no console
 
     // --- Variáveis de Estado Global ---
@@ -732,6 +745,7 @@
     let selectedTaskType = null;
     let selectedTaskPriority = 'contrato';
     let recurrenceRule = null;
+    let attachmentFile = null; // Para armazenar o arquivo do anexo
     let subtasksList = [];
     let aiResults = null;
     let calculatedRewards = null;
@@ -777,6 +791,9 @@
         openRecurrenceBtn: document.getElementById('btn-open-recurrence'),
         recurrenceSummary: document.getElementById('recurrence-summary'),
         notes: document.getElementById('task-notes'),
+        addAttachmentBtn: document.getElementById('btn-add-attachment'),
+        attachmentInput: document.getElementById('task-attachment-input'),
+        attachmentName: document.getElementById('attachment-name'),
         subtaskInput: document.getElementById('task-subtask-input'),
         addSubtaskBtn: document.getElementById('task-add-subtask-btn'),
         subtaskList: document.getElementById('task-subtask-list'),
@@ -1149,6 +1166,16 @@
                 notesHTML = `<p class="text-sm text-text-dark-secondary mt-2 p-2 bg-background-dark/50 rounded">${task.notas.replace(/\n/g, '<br>')}</p>`;
             }
 
+            let attachmentHTML = '';
+            if (task.anexo_url) {
+                attachmentHTML = `
+                    <a href="${task.anexo_url}" target="_blank" class="flex items-center justify-center gap-2 mt-2 p-2 rounded bg-mana/20 text-mana hover:bg-mana/30 transition-colors">
+                        <span class="material-symbols-outlined text-base">attachment</span>
+                        <span class="text-sm font-bold">Ver Anexo</span>
+                    </a>
+                `;
+            }
+
             let subtasksHTML = '';
             if (task.subtarefas && task.subtarefas.length > 0) {
                 const topBorder = task.notas ? '' : 'border-t';
@@ -1181,6 +1208,7 @@
                     </div>
                 </div>
                 ${notesHTML}
+                ${attachmentHTML}
                 ${subtasksHTML}
             `;
             missionContainer.appendChild(taskEl);
@@ -1375,6 +1403,9 @@
         selectedTaskPriority = 'contrato';
         recurrenceRule = null;
         taskForm.recurrenceSummary.textContent = '';
+        attachmentFile = null; // Limpa o anexo
+        taskForm.attachmentInput.value = ''; // Limpa o input de arquivo
+        taskForm.attachmentName.textContent = ''; // Limpa o nome do anexo
         aiResults = null;
         calculatedRewards = null;
         subtasksList = [];
@@ -1499,6 +1530,21 @@
     taskForm.title.addEventListener('keyup', triggerAIAnalysis);
     taskForm.durationHours.addEventListener('keyup', triggerAIAnalysis);
     taskForm.durationMinutes.addEventListener('keyup', triggerAIAnalysis);
+
+    taskForm.addAttachmentBtn.addEventListener('click', () => {
+        taskForm.attachmentInput.click();
+    });
+
+    taskForm.attachmentInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            attachmentFile = file;
+            taskForm.attachmentName.textContent = file.name;
+        } else {
+            attachmentFile = null;
+            taskForm.attachmentName.textContent = '';
+        }
+    });
 
     async function analyzeTaskWithAI(taskTitle, totalMinutes, taskType, subtasks) {
         console.log(`Analisando: Tipo=${taskType}, Título='${taskTitle}', Duração=${totalMinutes} min, Sub-tarefas=${subtasks.length}`);
@@ -1640,7 +1686,7 @@ Sub-tarefas: ${subtasksString}`;
         
         const isRecurrenceTemplate = recurrenceRule !== null;
 
-        const taskData = {
+        let taskData = {
             titulo: title,
             tipo: selectedTaskType,
             prioridade: selectedTaskPriority,
@@ -1655,10 +1701,25 @@ Sub-tarefas: ${subtasksString}`;
             concluida: false,
             createdAt: Timestamp.now(),
             prazo_final: taskForm.deadline.value || null,
-            subtarefas: subtasksList
+            subtarefas: subtasksList,
+            anexo_url: null // <-- ADICIONADO
         };
         
         try {
+            // Primeiro, faz o upload do anexo, se houver
+            if (attachmentFile) {
+                const timestamp = Date.now();
+                const attachmentRef = ref(storage, `attachments/${currentUserId}/${timestamp}-${attachmentFile.name}`);
+
+                showMessage('Enviando Anexo...', 'Aguarde enquanto o arquivo é enviado.');
+
+                await uploadBytes(attachmentRef, attachmentFile);
+                const downloadURL = await getDownloadURL(attachmentRef);
+                taskData.anexo_url = downloadURL;
+
+                console.log('Anexo enviado:', downloadURL);
+            }
+
             const tasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks');
             await addDoc(tasksRef, taskData);
             
@@ -1667,8 +1728,8 @@ Sub-tarefas: ${subtasksString}`;
             showScreen('dashboard');
             
         } catch (error) {
-            console.error("Erro ao salvar missão:", error);
-            showMessage('Erro no Firestore', `Não foi possível salvar sua missão. Erro: ${error.message}`);
+            console.error("Erro ao salvar missão ou anexo:", error);
+            showMessage('Erro', `Não foi possível salvar sua missão. Erro: ${error.message}`);
         }
     });
 
