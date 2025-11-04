@@ -77,6 +77,18 @@
         color: #102218 !important;
         border-color: #13ec6d !important;
     }
+    /* Classe helper para a prioridade de tarefa selecionada */
+    .task-priority-selected {
+        background-color: #f59e0b !important; /* Cor de XP para destaque */
+        color: #102218 !important;
+        border-color: #f59e0b !important;
+    }
+    /* Classe helper para o dia da semana de recorrência selecionado */
+    .weekday-btn-selected {
+        background-color: #3b82f6 !important; /* Cor de Mana para destaque */
+        color: #ffffff !important;
+        border-color: #3b82f6 !important;
+    }
   </style>
 </head>
 
@@ -483,6 +495,22 @@
            </div>
         </div>
 
+        <!-- Prioridade da Missão -->
+        <div>
+           <p class="text-white text-base font-medium leading-normal pb-2">Tipo de Missão (Sua Prioridade)</p>
+           <div id="task-priority-group" class="grid grid-cols-3 gap-3">
+               <button data-priority="secundaria" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 Secundária
+               </button>
+               <button data-priority="contrato" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 Contrato
+               </button>
+               <button data-priority="principal" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 Principal
+               </button>
+           </div>
+        </div>
+
         <!-- Duração (Opcional) -->
         <div>
             <p class="text-white/70 text-base font-medium leading-normal pb-2">Duração Estimada (Opcional)</p>
@@ -498,16 +526,37 @@
             </div>
         </div>
 
-        <!-- Prazos (Opcional) -->
+        <!-- Prazos e Recorrência (Opcional) -->
         <div class="grid grid-cols-2 gap-4">
             <label class="flex flex-col w-full">
               <p class="text-white/70 text-base font-medium leading-normal pb-2">Prazo Final (Opcional)</p>
               <input id="task-deadline" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" type="date" />
             </label>
-            <label class="flex flex-col w-full">
-              <p class="text-white/70 text-base font-medium leading-normal pb-2">Lembrete (Opcional)</p>
-              <input id="task-reminder" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" type="time" />
-            </label>
+            <button id="btn-open-recurrence" class="flex items-center justify-center rounded-xl border-2 border-dashed border-border-dark bg-surface-dark/30 h-14 text-text-dark-secondary hover:border-primary transition-colors">
+              <span class="material-symbols-outlined mr-2">event_repeat</span>
+              Definir Recorrência
+            </button>
+        </div>
+        <p id="recurrence-summary" class="text-center text-sm text-primary -mt-2 mb-2"></p>
+
+        <!-- Notas / Anexos -->
+        <label class="flex flex-col w-full">
+            <p class="text-white/70 text-base font-medium leading-normal pb-2">Notas / Anexos (Opcional)</p>
+            <textarea id="task-notes" class="form-textarea flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Adicione links, lembretes ou qualquer contexto adicional aqui..." rows="3"></textarea>
+        </label>
+
+        <!-- Sub-tarefas (Checklist) -->
+        <div>
+            <p class="text-white text-base font-medium leading-normal pb-2">Sub-tarefas (Checklist)</p>
+            <div class="flex gap-2">
+                <input id="task-subtask-input" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: Pesquisar referências" value="" />
+                <button id="task-add-subtask-btn" class="flex items-center justify-center rounded-xl bg-primary/20 h-14 w-14 text-primary text-2xl font-bold">
+                    +
+                </button>
+            </div>
+            <div id="task-subtask-list" class="mt-3 space-y-2">
+                <!-- Sub-tarefas adicionadas aparecerão aqui -->
+            </div>
         </div>
 
         <!-- Estimativa de Recompensa (IA) -->
@@ -572,6 +621,44 @@
     </div>
   </div>
 
+  <!-- Modal de Recorrência -->
+  <div id="modal-recurrence" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm">
+      <h3 class="text-primary text-xl font-bold mb-4">Definir Recorrência</h3>
+
+      <!-- Opção 1: A cada X dias -->
+      <div class="space-y-2">
+          <label class="text-white/90">Repetir a cada:</label>
+          <div class="flex items-center gap-2">
+              <input id="recurrence-days-input" type="number" min="1" class="form-input w-20 bg-[#102218] border-border-dark rounded" placeholder="1">
+              <span class="text-white/90">dias</span>
+          </div>
+      </div>
+
+      <div class="my-4 text-center text-text-dark-secondary">ou</div>
+
+      <!-- Opção 2: Dias da Semana -->
+      <div class="space-y-2">
+          <label class="text-white/90">Repetir nos dias:</label>
+          <div id="recurrence-weekdays" class="grid grid-cols-4 gap-2 text-center">
+              <button data-day="1" class="weekday-btn p-2 rounded border border-border-dark">Seg</button>
+              <button data-day="2" class="weekday-btn p-2 rounded border border-border-dark">Ter</button>
+              <button data-day="3" class="weekday-btn p-2 rounded border border-border-dark">Qua</button>
+              <button data-day="4" class="weekday-btn p-2 rounded border border-border-dark">Qui</button>
+              <button data-day="5" class="weekday-btn p-2 rounded border border-border-dark">Sex</button>
+              <button data-day="6" class="weekday-btn p-2 rounded border border-border-dark">Sáb</button>
+              <button data-day="0" class="weekday-btn p-2 rounded border border-border-dark">Dom</button>
+          </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button id="recurrence-cancel-btn" class="px-4 py-2 rounded bg-surface-dark/50 text-white/80">Cancelar</button>
+        <button id="recurrence-save-btn" class="px-4 py-2 rounded bg-primary text-background-dark font-bold">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+
   <!-- Firebase SDKs -->
   <script type="module">
     // Importações do Firebase
@@ -594,9 +681,10 @@
       doc,
       setDoc,
       getDoc,
+      updateDoc,
       onSnapshot,
       collection,
-      addDoc, // <--- ADICIONADO
+      addDoc,
       setLogLevel,
       Timestamp
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -641,19 +729,20 @@
     let selectedAvatarUrl = null;
 
     // --- Variáveis da Tela de Tarefas ---
-    let selectedTaskType = null; // 'habito', 'diaria', 'projeto'
-    let aiResults = null; // { atributo_associado, dificuldade }
-    let calculatedRewards = null; // { xp_global, xp_atributo, moedas }
+    let selectedTaskType = null;
+    let selectedTaskPriority = 'contrato';
+    let recurrenceRule = null;
+    let subtasksList = [];
+    let aiResults = null;
+    let calculatedRewards = null;
     let debounceTimer = null;
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
-    // XP de Atributo (baseado na dificuldade)
     const REWARDS_DIFFICULTY = {
         FACIL: { xp_attr: 10 },
         MEDIA: { xp_attr: 25 },
         DIFICIL: { xp_attr: 50 }
     };
-    // XP Global e Moedas (baseado no tipo)
     const REWARDS_TYPE = {
         habito:  { xp_global: 5,  moedas: 5 },
         diaria:  { xp_global: 15, moedas: 10 },
@@ -667,7 +756,7 @@
       login: document.getElementById('screen-login'),
       forgot: document.getElementById('screen-forgot-password'),
       dashboard: document.getElementById('screen-dashboard'),
-      addTask: document.getElementById('screen-add-task') // <-- NOVA TELA
+      addTask: document.getElementById('screen-add-task')
     };
 
     const registerSteps = {
@@ -721,6 +810,15 @@
       closeBtn: document.getElementById('modal-close-btn')
     };
 
+    const recurrenceModal = {
+        container: document.getElementById('modal-recurrence'),
+        daysInput: document.getElementById('recurrence-days-input'),
+        weekdaysGroup: document.getElementById('recurrence-weekdays'),
+        weekdayButtons: document.querySelectorAll('.weekday-btn'),
+        saveBtn: document.getElementById('recurrence-save-btn'),
+        cancelBtn: document.getElementById('recurrence-cancel-btn')
+    };
+
     // Inputs de Cadastro
     const regInputs = {
       nickname: document.getElementById('reg-nickname'),
@@ -738,11 +836,6 @@
     };
 
     // --- Funções Auxiliares ---
-
-    /**
-     * Mostra uma tela específica e esconde as outras
-     * @param {string} screenId ('splash', 'register', 'login', 'forgot', 'dashboard', 'addTask')
-     */
     function showScreen(screenId) {
       console.log(`Navegando para: ${screenId}`);
       Object.values(screens).forEach(screen => screen.classList.add('hidden'));
@@ -751,25 +844,14 @@
       }
     }
 
-    /**
-     * Mostra o modal de mensagem
-     * @param {string} title Título do modal
-     * @param {string} message Mensagem do modal
-     */
     function showMessage(title, message) {
       modal.title.textContent = title;
       modal.body.textContent = message;
       modal.container.classList.remove('hidden');
     }
 
-    // Evento para fechar o modal
     modal.closeBtn.addEventListener('click', () => modal.container.classList.add('hidden'));
 
-    /**
-     * Alterna a visibilidade da senha em um campo
-     * @param {string} inputId ID do campo de senha
-     * @param {HTMLElement} button Botão clicado
-     */
     window.togglePasswordVisibility = (inputId, button) => {
       const input = document.getElementById(inputId);
       const icon = button.querySelector('span');
@@ -782,40 +864,26 @@
       }
     }
 
-    /**
-     * Debounce para evitar chamadas excessivas à API
-     */
     function debounce(func, delay) {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(func, delay);
     }
 
     // --- Lógica de Navegação ---
-
-    // Splash
     document.getElementById('btn-goto-register').addEventListener('click', () => showScreen('register'));
     document.getElementById('btn-goto-login').addEventListener('click', () => showScreen('login'));
-
-    // Login
     document.getElementById('login-back-btn').addEventListener('click', () => showScreen('splash'));
     document.getElementById('login-forgot-link').addEventListener('click', () => showScreen('forgot'));
-
-    // Forgot Password
     document.getElementById('forgot-back-btn').addEventListener('click', () => showScreen('login'));
     document.getElementById('forgot-cancel-btn').addEventListener('click', () => showScreen('login'));
-
-    // Dashboard -> Add Task
     document.getElementById('btn-show-add-task').addEventListener('click', () => {
         resetTaskForm();
         showScreen('addTask');
     });
-
-    // Add Task -> Dashboard
     taskForm.backBtn.addEventListener('click', () => showScreen('dashboard'));
 
 
     // --- Lógica de Cadastro (Etapas) ---
-    // (Ocultado por brevidade, sem alterações)
     function updateRegistrationStepUI() {
       const nextBtn = document.getElementById('reg-next-btn');
       Object.values(registerSteps).forEach(step => step.classList.add('hidden'));
@@ -887,16 +955,12 @@
 
 
     // --- Lógica de Autenticação Firebase ---
-
-    /**
-     * Observador de Estado de Autenticação (CORE)
-     */
     onAuthStateChanged(auth, (user) => {
       if (profileListener) profileListener();
       if (tasksListener) tasksListener();
 
       if (user && !user.isAnonymous) {
-        console.log('Usuário logado (APÓS AÇÃO MANUAL):', user.uid);
+        console.log('Usuário logado:', user.uid);
         currentUserId = user.uid;
 
         const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
@@ -908,7 +972,7 @@
             populateDashboard(user, data);
             showScreen('dashboard');
           } else {
-            console.log('Perfil não encontrado, redirecionando para cadastro (etapa 2)...');
+            console.log('Perfil não encontrado, redirecionando para cadastro...');
             showMessage('Personagem Incompleto', 'Quase lá! Precisamos de seus dados vitais para forjar seu personagem.');
             regInputs.nickname.value = user.displayName || '';
             regInputs.email.value = user.email || '';
@@ -925,11 +989,12 @@
 
         tasksListener = onSnapshot(tasksRef, (querySnapshot) => {
           const tasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          checkAndGenerateRecurrentTasks(tasks);
           populateMissions(tasks);
         });
 
       } else {
-        console.log('Usuário deslogado. Aguardando ação na tela inicial.');
+        console.log('Usuário deslogado.');
         currentUserId = null;
         profileListener = null;
         tasksListener = null;
@@ -938,9 +1003,6 @@
       }
     });
 
-    /**
-     * Popula o Dashboard com os dados do perfil
-     */
     function populateDashboard(user, profileData) {
       const character = profileData.character || {};
       const vitals = profileData.vitals || {};
@@ -980,21 +1042,91 @@
       }
     }
 
-    /**
-     * Popula a lista de missões no Dashboard
-     */
+    async function checkAndGenerateRecurrentTasks(tasks) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0];
+
+        const templates = tasks.filter(t => t.isTemplate);
+
+        for (const template of templates) {
+            const lastGenerated = template.lastGenerated ? new Date(template.lastGenerated.toDate()) : null;
+            let shouldGenerate = false;
+
+            if (!lastGenerated) {
+                 shouldGenerate = true;
+            } else {
+                const lastGeneratedStr = lastGenerated.toISOString().split('T')[0];
+                if (lastGeneratedStr !== todayStr) {
+                    shouldGenerate = true;
+                }
+            }
+
+            if (shouldGenerate) {
+                let isValidToday = false;
+                if (template.recorrencia.type === 'weekdays') {
+                    if (template.recorrencia.value.includes(today.getDay())) {
+                        isValidToday = true;
+                    }
+                } else if (template.recorrencia.type === 'days') {
+                    const createdAt = template.createdAt.toDate();
+                    createdAt.setHours(0, 0, 0, 0);
+                    const diffTime = Math.abs(today - createdAt);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    if (diffDays % template.recorrencia.value === 0) {
+                        isValidToday = true;
+                    }
+                }
+
+                if (isValidToday) {
+                    const newTask = { ...template };
+                    delete newTask.id;
+                    newTask.isTemplate = false;
+                    newTask.recorrencia = null;
+                    newTask.createdAt = Timestamp.now();
+                    newTask.titulo = `${template.titulo} (${today.toLocaleDateString('pt-BR')})`;
+
+                    try {
+                        const tasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks');
+                        await addDoc(tasksRef, newTask);
+
+                        const templateRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', template.id);
+                        await updateDoc(templateRef, { lastGenerated: Timestamp.now() });
+
+                        console.log(`Tarefa recorrente '${newTask.titulo}' gerada.`);
+
+                    } catch (error) {
+                        console.error("Erro ao gerar tarefa recorrente:", error);
+                    }
+                }
+            }
+        }
+    }
+
     function populateMissions(tasks) {
         const missionContainer = document.getElementById('hub-mission-list');
         missionContainer.innerHTML = '';
 
-        if (!tasks || tasks.length === 0) {
+        const visibleTasks = tasks.filter(t => !t.isTemplate);
+
+        if (!visibleTasks || visibleTasks.length === 0) {
             missionContainer.innerHTML = '<p class="text-sm text-text-dark-secondary p-4">Nenhuma missão encontrada. Adicione uma nova!</p>';
             return;
         }
 
-        tasks.forEach(task => {
+        const priorityOrder = { 'principal': 1, 'contrato': 2, 'secundaria': 3 };
+        visibleTasks.sort((a, b) => (priorityOrder[a.prioridade] || 2) - (priorityOrder[b.prioridade] || 2));
+
+        visibleTasks.forEach(task => {
             const taskEl = document.createElement('div');
             const isCompleted = task.concluida;
+
+            const priorityClasses = {
+                principal: 'border-red-500/80',
+                contrato: 'border-border-dark',
+                secundaria: 'border-gray-500/80'
+            };
+            const priorityClass = priorityClasses[task.prioridade] || 'border-border-dark';
 
             const iconMap = {
                 diaria: 'fitness_center',
@@ -1010,27 +1142,78 @@
 
             const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
 
-            taskEl.className = `flex items-center gap-3 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border ${isCompleted ? 'border-primary/50 opacity-60' : 'border-border-dark'}`;
+            taskEl.className = `flex flex-col rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border-l-4 ${priorityClass} ${isCompleted ? 'opacity-60' : ''}`;
+
+            let notesHTML = '';
+            if (task.notas) {
+                notesHTML = `<p class="text-sm text-text-dark-secondary mt-2 p-2 bg-background-dark/50 rounded">${task.notas.replace(/\n/g, '<br>')}</p>`;
+            }
+
+            let subtasksHTML = '';
+            if (task.subtarefas && task.subtarefas.length > 0) {
+                const topBorder = task.notas ? '' : 'border-t';
+                subtasksHTML += `<div class="mt-3 pt-3 ${topBorder} border-border-dark space-y-2">`;
+                task.subtarefas.forEach((sub, index) => {
+                    const subIsCompleted = sub.concluida;
+                    subtasksHTML += `
+                        <div class="flex items-center gap-3 ml-4">
+                            <div data-task-id="${task.id}" data-subtask-index="${index}" class="subtask-checkbox flex h-5 w-5 items-center justify-center rounded border-2 border-primary ${subIsCompleted ? 'bg-primary' : ''} cursor-pointer">
+                                ${subIsCompleted ? '<span class="material-symbols-outlined text-background-dark text-sm font-bold">check</span>' : ''}
+                            </div>
+                            <label class="flex-1 text-sm ${subIsCompleted ? 'line-through text-text-dark-secondary' : 'text-white/90'}">${sub.titulo}</label>
+                        </div>
+                    `;
+                });
+                subtasksHTML += '</div>';
+            }
 
             taskEl.innerHTML = `
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20">
-                  <span class="material-symbols-outlined text-primary text-3xl">${icon}</span>
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20">
+                      <span class="material-symbols-outlined text-primary text-3xl">${icon}</span>
+                    </div>
+                    <div class="flex-1">
+                      <p class="font-bold ${isCompleted ? 'line-through' : ''}">${task.titulo || 'Missão sem título'}</p>
+                      <p class="text-sm text-text-dark-secondary ${isCompleted ? 'line-through' : ''}">Atributo: ${task.atributo_associado || 'Nenhum'}</p>
+                    </div>
+                    <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary ${isCompleted ? 'bg-primary' : ''}">
+                      ${isCompleted ? '<span class="material-symbols-outlined text-background-dark text-base font-bold">check</span>' : ''}
+                    </div>
                 </div>
-                <div class="flex-1">
-                  <p class="font-bold ${isCompleted ? 'line-through' : ''}">${task.titulo || 'Missão sem título'}</p>
-                  <p class="text-sm text-text-dark-secondary ${isCompleted ? 'line-through' : ''}">Atributo: ${task.atributo_associado || 'Nenhum'}</p>
-                </div>
-                <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary ${isCompleted ? 'bg-primary' : ''}">
-                  ${isCompleted ? '<span class="material-symbols-outlined text-background-dark text-base font-bold">check</span>' : ''}
-                </div>
+                ${notesHTML}
+                ${subtasksHTML}
             `;
             missionContainer.appendChild(taskEl);
         });
     }
 
-    /**
-     * Reseta o formulário de cadastro para o estado inicial
-     */
+    document.getElementById('hub-mission-list').addEventListener('click', async (e) => {
+        const checkbox = e.target.closest('.subtask-checkbox');
+        if (!checkbox || !currentUserId) return;
+
+        const taskId = checkbox.dataset.taskId;
+        const subtaskIndex = parseInt(checkbox.dataset.subtaskIndex, 10);
+
+        const taskRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId);
+
+        try {
+            const taskDoc = await getDoc(taskRef);
+            if (taskDoc.exists()) {
+                const taskData = taskDoc.data();
+                const subtarefas = taskData.subtarefas || [];
+
+                if (subtarefas[subtaskIndex]) {
+                    subtarefas[subtaskIndex].concluida = !subtarefas[subtaskIndex].concluida;
+                }
+
+                await updateDoc(taskRef, { subtarefas: subtarefas });
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar sub-tarefa:", error);
+            showMessage('Erro', 'Não foi possível atualizar o status da sub-tarefa.');
+        }
+    });
+
     function resetRegistrationForm() {
       currentRegistrationStep = 1;
       updateRegistrationStepUI();
@@ -1046,9 +1229,6 @@
       });
     }
 
-    /**
-     * Lidar com o Registro de novo usuário (Email/Senha)
-     */
     async function handleRegister() {
       let user;
 
@@ -1076,7 +1256,7 @@
           inteligencia: { ...defaultStat },
           velocidade: { ...defaultStat },
           vitalidade: { ...defaultStat },
-          carisma: { ...defaultStat } // Adicionando Carisma
+          carisma: { ...defaultStat }
       };
 
       const base_hp = 100 + (stats.vitalidade.level * 10);
@@ -1137,7 +1317,6 @@
       }
     }
 
-    // --- Lógica de Login/Logout/Recuperação (Sem alterações) ---
     document.getElementById('login-btn').addEventListener('click', async () => {
       const email = loginInputs.email.value;
       const password = loginInputs.password.value;
@@ -1185,10 +1364,6 @@
     });
 
     // --- LÓGICA DA TELA DE CRIAR TAREFAS (IA) ---
-
-    /**
-     * Reseta o formulário de criação de tarefa
-     */
     function resetTaskForm() {
         taskForm.title.value = '';
         taskForm.durationHours.value = '';
@@ -1213,44 +1388,91 @@
         rewardBox.spinner.classList.add('hidden');
         rewardBox.results.classList.add('hidden');
     }
-
-    /**
-     * Lógica de Seleção e Análise da IA
-     */
-    function setupTaskFormListeners() {
-        // Adiciona listeners para todos os campos que afetam a análise da IA
-        ['keyup', 'click'].forEach(eventType => {
-            taskForm.title.addEventListener(eventType, triggerAIAnalysis);
-            taskForm.durationHours.addEventListener(eventType, triggerAIAnalysis);
-            taskForm.durationMinutes.addEventListener(eventType, triggerAIAnalysis);
-            taskForm.typeGroup.addEventListener(eventType, triggerAIAnalysis);
-            taskForm.addSubtaskBtn.addEventListener(eventType, () => {
-                const title = taskForm.subtaskInput.value.trim();
-                if (title) {
-                    subtasksList.push({ titulo: title, concluida: false });
-                    taskForm.subtaskInput.value = '';
-                    renderSubtasks();
-                    triggerAIAnalysis();
-                }
-            });
-            taskForm.subtaskList.addEventListener(eventType, (e) => {
-                if (e.target.closest('.remove-subtask-btn')) {
-                    const index = parseInt(e.target.closest('.remove-subtask-btn').dataset.index, 10);
-                    subtasksList.splice(index, 1);
-                    renderSubtasks();
-                    triggerAIAnalysis();
-                }
-            });
-        });
-
-        taskForm.priorityGroup.addEventListener('click', (e) => {
-            const button = e.target.closest('.task-priority-btn');
-            if (!button) return;
-            selectedTaskPriority = button.dataset.priority;
-            taskForm.priorityButtons.forEach(btn => btn.classList.remove('task-priority-selected'));
-            button.classList.add('task-priority-selected');
+    function renderSubtasks() {
+        taskForm.subtaskList.innerHTML = '';
+        subtasksList.forEach((task, index) => {
+            const taskEl = document.createElement('div');
+            taskEl.className = 'flex items-center justify-between bg-surface-dark/50 p-3 rounded-lg';
+            taskEl.innerHTML = `
+                <span class="text-white/90">${task.titulo}</span>
+                <button data-index="${index}" class="remove-subtask-btn flex items-center justify-center h-6 w-6 rounded-full text-red-400 hover:bg-red-400/20">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            `;
+            taskForm.subtaskList.appendChild(taskEl);
         });
     }
+
+    taskForm.addSubtaskBtn.addEventListener('click', () => {
+        const title = taskForm.subtaskInput.value.trim();
+        if (title) {
+            subtasksList.push({ titulo: title, concluida: false });
+            taskForm.subtaskInput.value = '';
+            renderSubtasks();
+            triggerAIAnalysis();
+        }
+    });
+    taskForm.subtaskList.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-subtask-btn');
+        if (removeBtn) {
+            const index = parseInt(removeBtn.dataset.index, 10);
+            subtasksList.splice(index, 1);
+            renderSubtasks();
+            triggerAIAnalysis();
+        }
+    });
+    taskForm.typeGroup.addEventListener('click', (e) => {
+        const button = e.target.closest('.task-type-btn');
+        if (!button) return;
+        selectedTaskType = button.dataset.type;
+        taskForm.typeButtons.forEach(btn => btn.classList.remove('task-type-selected'));
+        button.classList.add('task-type-selected');
+        triggerAIAnalysis();
+    });
+    taskForm.priorityGroup.addEventListener('click', (e) => {
+        const button = e.target.closest('.task-priority-btn');
+        if (!button) return;
+        selectedTaskPriority = button.dataset.priority;
+        taskForm.priorityButtons.forEach(btn => btn.classList.remove('task-priority-selected'));
+        button.classList.add('task-priority-selected');
+    });
+    taskForm.openRecurrenceBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        recurrenceModal.container.classList.remove('hidden');
+    });
+    recurrenceModal.cancelBtn.addEventListener('click', () => {
+        recurrenceModal.container.classList.add('hidden');
+    });
+    recurrenceModal.daysInput.addEventListener('input', () => {
+        recurrenceModal.weekdayButtons.forEach(btn => btn.classList.remove('weekday-btn-selected'));
+    });
+    recurrenceModal.weekdaysGroup.addEventListener('click', (e) => {
+        const button = e.target.closest('.weekday-btn');
+        if (button) {
+            recurrenceModal.daysInput.value = '';
+            button.classList.toggle('weekday-btn-selected');
+        }
+    });
+    recurrenceModal.saveBtn.addEventListener('click', () => {
+        const days = parseInt(recurrenceModal.daysInput.value, 10);
+        const selectedWeekdays = [...recurrenceModal.weekdayButtons]
+            .filter(btn => btn.classList.contains('weekday-btn-selected'))
+            .map(btn => parseInt(btn.dataset.day, 10));
+
+        if (days > 0) {
+            recurrenceRule = { type: 'days', value: days };
+            taskForm.recurrenceSummary.textContent = `Repete a cada ${days} dia(s).`;
+        } else if (selectedWeekdays.length > 0) {
+            recurrenceRule = { type: 'weekdays', value: selectedWeekdays.sort() };
+            const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const summary = selectedWeekdays.map(d => dayNames[d]).join(', ');
+            taskForm.recurrenceSummary.textContent = `Repete em: ${summary}.`;
+        } else {
+            recurrenceRule = null;
+            taskForm.recurrenceSummary.textContent = '';
+        }
+        recurrenceModal.container.classList.add('hidden');
+    });
 
     function triggerAIAnalysis() {
         const title = taskForm.title.value.trim();
@@ -1273,6 +1495,10 @@
         
         debounce(() => analyzeTaskWithAI(title, totalMinutes, selectedTaskType, subtasksList), 1000);
     }
+
+    taskForm.title.addEventListener('keyup', triggerAIAnalysis);
+    taskForm.durationHours.addEventListener('keyup', triggerAIAnalysis);
+    taskForm.durationMinutes.addEventListener('keyup', triggerAIAnalysis);
 
     async function analyzeTaskWithAI(taskTitle, totalMinutes, taskType, subtasks) {
         console.log(`Analisando: Tipo=${taskType}, Título='${taskTitle}', Duração=${totalMinutes} min, Sub-tarefas=${subtasks.length}`);
@@ -1309,7 +1535,6 @@ Título: '${taskTitle}'
 Duração (minutos): ${totalMinutes}
 Sub-tarefas: ${subtasksString}`;
 
-        // Schema de Resposta (para forçar JSON)
         const responseSchema = {
             type: "OBJECT",
             properties: {
@@ -1319,13 +1544,12 @@ Sub-tarefas: ${subtasksString}`;
             required: ["atributo_associado", "dificuldade"]
         };
         
-        // Payload corrigido, sem 'systemInstruction'
         const payload = {
             contents: [{ parts: [{ text: combinedPrompt }] }],
             generationConfig: {
                 responseMimeType: "application/json",
                 responseSchema: responseSchema,
-                temperature: 0.1 // Baixa temperatura para respostas consistentes
+                temperature: 0.1
             }
         };
 
@@ -1347,10 +1571,9 @@ Sub-tarefas: ${subtasksString}`;
                  throw new Error("A IA não retornou uma análise válida.");
             }
 
-            aiResults = JSON.parse(text); // Salva os resultados globais
+            aiResults = JSON.parse(text);
             console.log("Resultado da IA:", aiResults);
             
-            // Atualiza a caixa de recompensa
             updateRewardEstimation(aiResults.atributo_associado, aiResults.dificuldade);
 
         } catch (error) {
@@ -1363,12 +1586,8 @@ Sub-tarefas: ${subtasksString}`;
         }
     }
     
-    /**
-     * Atualiza a caixa de estimativa de recompensa
-     */
      function updateRewardEstimation(attribute, difficulty) {
         if (!selectedTaskType) {
-            // Se a IA respondeu mas o tipo não foi selecionado
             rewardBox.loading.classList.remove('hidden');
             rewardBox.loadingText.textContent = 'Selecione um Tipo de Missão...';
             rewardBox.spinner.classList.add('hidden');
@@ -1376,7 +1595,6 @@ Sub-tarefas: ${subtasksString}`;
             return;
         }
 
-        // Normaliza as chaves (ex: "FORCA" -> "forca")
         const typeKey = selectedTaskType.toLowerCase();
         const difficultyKey = difficulty.toUpperCase();
         const attributeKey = attribute.toUpperCase();
@@ -1384,14 +1602,12 @@ Sub-tarefas: ${subtasksString}`;
         const typeRewards = REWARDS_TYPE[typeKey] || { xp_global: 0, moedas: 0 };
         const difficultyRewards = REWARDS_DIFFICULTY[difficultyKey] || { xp_attr: 0 };
         
-        // Salva as recompensas calculadas
         calculatedRewards = {
             xp_global: typeRewards.xp_global,
             xp_atributo: difficultyRewards.xp_attr,
-            moedas: typeRewards.moedas // Moedas baseadas apenas no tipo, conforme GDD
+            moedas: typeRewards.moedas
         };
 
-        // Exibe os resultados
         rewardBox.attribute.textContent = attributeKey;
         rewardBox.difficulty.textContent = difficultyKey;
         rewardBox.xpGlobal.textContent = `+${calculatedRewards.xp_global} XP`;
@@ -1403,16 +1619,12 @@ Sub-tarefas: ${subtasksString}`;
         rewardBox.results.classList.remove('hidden');
      }
      
-    /**
-     * Salva a nova tarefa no Firestore
-     */
     taskForm.saveBtn.addEventListener('click', async () => {
         const title = taskForm.title.value.trim();
         const hours = parseInt(taskForm.durationHours.value, 10) || 0;
         const minutes = parseInt(taskForm.durationMinutes.value, 10) || 0;
         const totalMinutes = (hours * 60) + minutes;
         
-        // Validação
         if (title.length < 3) {
             return showMessage('Missão Inválida', 'O título da missão é muito curto.');
         }
@@ -1459,9 +1671,6 @@ Sub-tarefas: ${subtasksString}`;
             showMessage('Erro no Firestore', `Não foi possível salvar sua missão. Erro: ${error.message}`);
         }
     });
-
-    // --- Inicialização da Aplicação ---
-    setupTaskFormListeners(); // Configura os listeners do formulário de tarefas
 
   </script>
 
