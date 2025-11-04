@@ -613,6 +613,62 @@
       </footer>
     </div>
 
+    <!-- Tela 7: Detalhes da Missão (Layout Baseado na Inspiração) -->
+    <div id="screen-mission-details" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-dark">
+        <header class="flex items-center p-4 pb-2 justify-between">
+            <div id="mission-details-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </div>
+            <h1 id="mission-details-title" class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center truncate px-2">Carregando Missão...</h1>
+            <div class="text-white flex size-12 shrink-0 items-center justify-center">
+                <button id="mission-details-edit-btn" class="flex shrink-0 items-center justify-center rounded-full size-12 text-white">
+                    <span class="material-symbols-outlined">edit_note</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-4">
+            <div id="mission-animation-container" class="relative flex items-center justify-center bg-cover bg-center aspect-video rounded-lg p-4 bg-surface-dark/50 border border-border-dark">
+                <!-- Animação CSS Padrão -->
+                <div class="text-center text-text-dark-secondary">
+                   <span class="material-symbols-outlined text-6xl text-primary animate-pulse">swords</span>
+                   <p>Missão em Andamento</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 pb-3 text-center">
+           <p class="text-white text-4xl font-bold tracking-tighter" id="session-timer">00:00:00</p>
+           <p class="text-text-dark-secondary text-sm" id="total-timer">Tempo Total Acumulado: 00:00:00</p>
+        </div>
+
+        <div id="mission-controls-container" class="flex flex-1 gap-3 flex-wrap px-4 py-3 justify-between">
+            <!-- Botões de controle inseridos via JS -->
+            <p class="text-center w-full text-text-dark-secondary">Carregando...</p>
+        </div>
+
+        <div class="flex justify-between items-center px-4 pb-3 pt-5">
+            <h2 class="text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">Diário de Bordo da Missão</h2>
+            <button id="mission-history-btn" class="inline-flex items-center gap-2 text-primary text-sm">
+                <span class="material-symbols-outlined !text-xl">history</span>
+                <span>Histórico</span>
+            </button>
+        </div>
+
+        <div class="px-4 pb-24">
+            <div id="sub-task-list" class="flex flex-col divide-y divide-[#28392f]">
+                <!-- Sub-tarefas inseridas via JS -->
+            </div>
+        </div>
+
+        <div class="fixed bottom-6 right-6 z-30">
+            <button id="btn-add-subtask-modal" class="flex items-center justify-center gap-2 h-14 pl-5 pr-6 rounded-full bg-primary text-background-dark shadow-lg">
+                <span class="material-symbols-outlined !text-2xl">post_add</span>
+                <span class="font-bold text-base">Nova Subtarefa</span>
+            </button>
+        </div>
+    </div>
+
 
   </div>
 
@@ -664,6 +720,21 @@
     </div>
   </div>
 
+  <!-- Modal de Histórico de Atividade -->
+  <div id="modal-activity-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-md max-h-[80vh] flex flex-col">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-primary text-xl font-bold">Registro de Atividade</h3>
+        <button id="log-close-btn" class="text-white/80 hover:text-white">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div id="log-content" class="overflow-y-auto space-y-3 pr-2">
+        <!-- Conteúdo do log será inserido aqui -->
+      </div>
+    </div>
+  </div>
+
 
   <!-- Firebase SDKs -->
   <script type="module">
@@ -687,10 +758,12 @@
       doc,
       setDoc,
       getDoc,
+      getDocs,
       updateDoc,
       onSnapshot,
       collection,
       addDoc,
+      writeBatch,
       setLogLevel,
       Timestamp
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -751,6 +824,12 @@
     let calculatedRewards = null;
     let debounceTimer = null;
 
+    // --- Variáveis da Tela de Detalhes da Missão ---
+    let sessionTimerInterval = null;
+    let accumulatedTime = 0; // Armazena o tempo já trabalhado em segundos
+    let currentMissionEventLogs = [];
+
+
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
     const REWARDS_DIFFICULTY = {
         FACIL: { xp_attr: 10 },
@@ -770,7 +849,8 @@
       login: document.getElementById('screen-login'),
       forgot: document.getElementById('screen-forgot-password'),
       dashboard: document.getElementById('screen-dashboard'),
-      addTask: document.getElementById('screen-add-task')
+      addTask: document.getElementById('screen-add-task'),
+      missionDetails: document.getElementById('screen-mission-details')
     };
 
     const registerSteps = {
@@ -836,6 +916,13 @@
         cancelBtn: document.getElementById('recurrence-cancel-btn')
     };
 
+    const activityLogModal = {
+        container: document.getElementById('modal-activity-log'),
+        closeBtn: document.getElementById('log-close-btn'),
+        content: document.getElementById('log-content')
+    };
+
+
     // Inputs de Cadastro
     const regInputs = {
       nickname: document.getElementById('reg-nickname'),
@@ -853,11 +940,17 @@
     };
 
     // --- Funções Auxiliares ---
-    function showScreen(screenId) {
-      console.log(`Navegando para: ${screenId}`);
+    function showScreen(screenId, data = null) {
+      console.log(`Navegando para: ${screenId}`, data ? `com dados: ${JSON.stringify(data)}` : '');
       Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+
       if (screens[screenId]) {
         screens[screenId].classList.remove('hidden');
+      }
+
+      // Pré-processamento para a tela de detalhes da missão
+      if (screenId === 'missionDetails' && data) {
+        loadMissionDetails(data); // O 'data' aqui é o taskId
       }
     }
 
@@ -898,6 +991,10 @@
         showScreen('addTask');
     });
     taskForm.backBtn.addEventListener('click', () => showScreen('dashboard'));
+    document.getElementById('mission-details-back-btn').addEventListener('click', () => {
+        stopSessionTimer();
+        showScreen('dashboard');
+    });
 
 
     // --- Lógica de Cadastro (Etapas) ---
@@ -1136,7 +1233,7 @@
 
         visibleTasks.forEach(task => {
             const taskEl = document.createElement('div');
-            const isCompleted = task.concluida;
+            const isCompleted = task.status === 'CONCLUIDA';
 
             const priorityClasses = {
                 principal: 'border-red-500/80',
@@ -1159,39 +1256,16 @@
 
             const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
 
-            taskEl.className = `flex flex-col rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border-l-4 ${priorityClass} ${isCompleted ? 'opacity-60' : ''}`;
+            // Classes e atributos para navegação
+            taskEl.className = `mission-card flex flex-col rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border-l-4 ${priorityClass} ${isCompleted ? 'opacity-60' : ''} cursor-pointer hover:bg-surface-dark/80 transition-colors`;
+            taskEl.dataset.taskId = task.id;
 
-            let notesHTML = '';
-            if (task.notas) {
-                notesHTML = `<p class="text-sm text-text-dark-secondary mt-2 p-2 bg-background-dark/50 rounded">${task.notas.replace(/\n/g, '<br>')}</p>`;
-            }
-
-            let attachmentHTML = '';
-            if (task.anexo_url) {
-                attachmentHTML = `
-                    <a href="${task.anexo_url}" target="_blank" class="flex items-center justify-center gap-2 mt-2 p-2 rounded bg-mana/20 text-mana hover:bg-mana/30 transition-colors">
-                        <span class="material-symbols-outlined text-base">attachment</span>
-                        <span class="text-sm font-bold">Ver Anexo</span>
-                    </a>
-                `;
-            }
-
-            let subtasksHTML = '';
-            if (task.subtarefas && task.subtarefas.length > 0) {
-                const topBorder = task.notas ? '' : 'border-t';
-                subtasksHTML += `<div class="mt-3 pt-3 ${topBorder} border-border-dark space-y-2">`;
-                task.subtarefas.forEach((sub, index) => {
-                    const subIsCompleted = sub.concluida;
-                    subtasksHTML += `
-                        <div class="flex items-center gap-3 ml-4">
-                            <div data-task-id="${task.id}" data-subtask-index="${index}" class="subtask-checkbox flex h-5 w-5 items-center justify-center rounded border-2 border-primary ${subIsCompleted ? 'bg-primary' : ''} cursor-pointer">
-                                ${subIsCompleted ? '<span class="material-symbols-outlined text-background-dark text-sm font-bold">check</span>' : ''}
-                            </div>
-                            <label class="flex-1 text-sm ${subIsCompleted ? 'line-through text-text-dark-secondary' : 'text-white/90'}">${sub.titulo}</label>
-                        </div>
-                    `;
-                });
-                subtasksHTML += '</div>';
+            let statusText = (task.status || 'PENDENTE').replace('_', ' ');
+            let statusColor = "text-text-dark-secondary";
+            if (task.status === 'EM_ANDAMENTO') {
+                statusColor = "text-primary animate-pulse";
+            } else if (task.status === 'PAUSADA') {
+                statusColor = "text-yellow-400";
             }
 
             taskEl.innerHTML = `
@@ -1201,46 +1275,276 @@
                     </div>
                     <div class="flex-1">
                       <p class="font-bold ${isCompleted ? 'line-through' : ''}">${task.titulo || 'Missão sem título'}</p>
-                      <p class="text-sm text-text-dark-secondary ${isCompleted ? 'line-through' : ''}">Atributo: ${task.atributo_associado || 'Nenhum'}</p>
+                      <p class="text-sm ${statusColor} ${isCompleted ? 'line-through' : ''} capitalize">${statusText}</p>
                     </div>
-                    <div class="flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary ${isCompleted ? 'bg-primary' : ''}">
-                      ${isCompleted ? '<span class="material-symbols-outlined text-background-dark text-base font-bold">check</span>' : ''}
+                    <div class="text-text-dark-secondary">
+                        <span class="material-symbols-outlined text-3xl">chevron_right</span>
                     </div>
                 </div>
-                ${notesHTML}
-                ${attachmentHTML}
-                ${subtasksHTML}
             `;
             missionContainer.appendChild(taskEl);
         });
     }
 
+    // Event Listener atualizado para lidar com cliques nos cards de missão
     document.getElementById('hub-mission-list').addEventListener('click', async (e) => {
-        const checkbox = e.target.closest('.subtask-checkbox');
-        if (!checkbox || !currentUserId) return;
-
-        const taskId = checkbox.dataset.taskId;
-        const subtaskIndex = parseInt(checkbox.dataset.subtaskIndex, 10);
-
-        const taskRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId);
-
-        try {
-            const taskDoc = await getDoc(taskRef);
-            if (taskDoc.exists()) {
-                const taskData = taskDoc.data();
-                const subtarefas = taskData.subtarefas || [];
-
-                if (subtarefas[subtaskIndex]) {
-                    subtarefas[subtaskIndex].concluida = !subtarefas[subtaskIndex].concluida;
-                }
-
-                await updateDoc(taskRef, { subtarefas: subtarefas });
+        const missionCard = e.target.closest('.mission-card');
+        if (missionCard) {
+            const taskId = missionCard.dataset.taskId;
+            if (taskId) {
+                showScreen('missionDetails', taskId);
             }
-        } catch (error) {
-            console.error("Erro ao atualizar sub-tarefa:", error);
-            showMessage('Erro', 'Não foi possível atualizar o status da sub-tarefa.');
         }
     });
+
+
+    // --- LÓGICA DA TELA DE DETALHES DA MISSÃO ---
+
+    async function loadMissionDetails(taskId) {
+        if (!currentUserId) return;
+
+        // Resetar e mostrar estado de carregamento
+        document.getElementById('mission-details-title').textContent = 'Carregando...';
+        document.getElementById('mission-controls-container').innerHTML = '<p class="text-center w-full text-text-dark-secondary">Carregando...</p>';
+        document.getElementById('sub-task-list').innerHTML = '';
+
+        try {
+            const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId);
+            const subTasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId, 'sub_tasks');
+            const eventLogsRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId, 'event_logs');
+
+            const [missionSnap, subTasksSnap, eventLogsSnap] = await Promise.all([
+                getDoc(missionRef),
+                getDocs(subTasksRef),
+                getDocs(eventLogsRef)
+            ]);
+
+            if (!missionSnap.exists()) {
+                throw new Error("Missão não encontrada.");
+            }
+
+            const missionData = { id: missionSnap.id, ...missionSnap.data() };
+            const subTasks = subTasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const eventLogs = eventLogsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            currentMissionEventLogs = eventLogs; // Armazena os logs globalmente
+
+            populateMissionDetails(missionData, subTasks, eventLogs);
+
+        } catch (error) {
+            console.error("Erro ao carregar detalhes da missão:", error);
+            showMessage('Erro', 'Não foi possível carregar os detalhes da missão. Tente novamente.');
+            showScreen('dashboard');
+        }
+    }
+
+    function populateMissionDetails(missionData, subTasks, eventLogs) {
+        document.getElementById('mission-details-title').textContent = missionData.titulo;
+
+        const controlsContainer = document.getElementById('mission-controls-container');
+        controlsContainer.innerHTML = ''; // Limpa o container
+
+        const status = missionData.status || 'PENDENTE';
+
+        const primaryBtn = document.createElement('button');
+        primaryBtn.className = 'flex flex-1 min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-primary text-background-dark text-base font-bold';
+
+        const secondaryBtn = document.createElement('button');
+        secondaryBtn.className = 'flex flex-1 min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-[#28392f] text-white text-base font-bold';
+
+        switch (status) {
+            case 'EM_ANDAMENTO':
+                primaryBtn.innerHTML = `<span>Pausar Missão</span>`;
+                primaryBtn.onclick = () => pauseMission(missionData.id);
+                controlsContainer.appendChild(primaryBtn);
+
+                secondaryBtn.innerHTML = `<span>Concluir Missão</span>`;
+                secondaryBtn.onclick = () => completeMission(missionData.id);
+                controlsContainer.appendChild(secondaryBtn);
+                break;
+            case 'PAUSADA':
+                primaryBtn.innerHTML = `<span>Retomar Missão</span>`;
+                primaryBtn.onclick = () => resumeMission(missionData.id);
+                controlsContainer.appendChild(primaryBtn);
+
+                secondaryBtn.innerHTML = `<span>Cancelar Missão</span>`;
+                secondaryBtn.onclick = () => cancelMission(missionData.id);
+                controlsContainer.appendChild(secondaryBtn);
+                break;
+            case 'PENDENTE':
+            default:
+                primaryBtn.innerHTML = `<span>Iniciar Missão</span>`;
+                primaryBtn.onclick = () => startMission(missionData.id);
+                controlsContainer.appendChild(primaryBtn);
+                break;
+        }
+
+        // Inicia ou atualiza o cronômetro com base nos logs de eventos
+        startSessionTimer(eventLogs);
+    }
+
+    async function updateMissionStatus(taskId, newStatus, eventType) {
+        if (!currentUserId) return showMessage('Erro', 'Você não está logado.');
+
+        const batch = writeBatch(db);
+        const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId);
+        const eventLogRef = doc(collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId, 'event_logs'));
+
+        batch.update(missionRef, { status: newStatus });
+        batch.set(eventLogRef, { tipo: eventType, timestamp: Timestamp.now() });
+
+        try {
+            await batch.commit();
+            loadMissionDetails(taskId); // Recarrega a tela para refletir a mudança
+        } catch (error) {
+            console.error(`Erro ao atualizar missão para ${newStatus}:`, error);
+            showMessage('Erro de Rede', 'Não foi possível atualizar o estado da missão. Tente novamente.');
+        }
+    }
+
+    const startMission = (taskId) => updateMissionStatus(taskId, 'EM_ANDAMENTO', 'INICIO');
+    const pauseMission = (taskId) => updateMissionStatus(taskId, 'PAUSADA', 'PAUSA');
+    const resumeMission = (taskId) => updateMissionStatus(taskId, 'EM_ANDAMENTO', 'RETOMADA');
+    const completeMission = (taskId) => updateMissionStatus(taskId, 'CONCLUIDA', 'CONCLUSAO');
+    const cancelMission = (taskId) => updateMissionStatus(taskId, 'PENDENTE', 'CANCELAMENTO');
+
+    // --- LÓGICA DO CRONÔMETRO ---
+    function stopSessionTimer() {
+        if (sessionTimerInterval) {
+            clearInterval(sessionTimerInterval);
+            sessionTimerInterval = null;
+        }
+    }
+
+    function formatTime(totalSeconds) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = Math.floor(totalSeconds % 60);
+        return [hours, minutes, seconds]
+            .map(v => v.toString().padStart(2, '0'))
+            .join(':');
+    }
+
+    function updateTimers(startTime, accumulatedSeconds) {
+        const now = Date.now();
+        const sessionSeconds = Math.floor((now - startTime) / 1000);
+        const totalSeconds = accumulatedSeconds + sessionSeconds;
+
+        document.getElementById('session-timer').textContent = formatTime(sessionSeconds);
+        document.getElementById('total-timer').textContent = `Tempo Total Acumulado: ${formatTime(totalSeconds)}`;
+    }
+
+    function calculateAccumulatedTime(eventLogs) {
+        let totalSeconds = 0;
+        let lastStartTime = null;
+
+        // Ordena os logs por timestamp
+        eventLogs.sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
+
+        for (const log of eventLogs) {
+            const type = log.tipo;
+            const timestamp = log.timestamp.toDate();
+
+            if (type === 'INICIO' || type === 'RETOMADA') {
+                lastStartTime = timestamp;
+            } else if ((type === 'PAUSA' || type === 'CONCLUSAO') && lastStartTime) {
+                totalSeconds += (timestamp - lastStartTime) / 1000;
+                lastStartTime = null;
+            }
+        }
+        return totalSeconds;
+    }
+
+    function startSessionTimer(eventLogs) {
+        stopSessionTimer(); // Garante que não haja timers duplicados
+
+        accumulatedTime = calculateAccumulatedTime(eventLogs);
+
+        // Encontra o último evento de INICIO ou RETOMADA que não foi seguido por uma PAUSA
+        let lastActiveStartLog = null;
+        const sortedLogs = [...eventLogs].sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
+
+        const lastLog = sortedLogs[0];
+        if (lastLog && (lastLog.tipo === 'INICIO' || lastLog.tipo === 'RETOMADA')) {
+             lastActiveStartLog = lastLog;
+        }
+
+        if (lastActiveStartLog) {
+            const startTime = lastActiveStartLog.timestamp.toDate();
+            sessionTimerInterval = setInterval(() => {
+                updateTimers(startTime, accumulatedTime);
+            }, 1000);
+            updateTimers(startTime, accumulatedTime); // Chamada inicial para evitar atraso
+        } else {
+             // Se não houver timer ativo, apenas exibe o tempo acumulado
+             document.getElementById('session-timer').textContent = "00:00:00";
+             document.getElementById('total-timer').textContent = `Tempo Total Acumulado: ${formatTime(accumulatedTime)}`;
+        }
+    }
+
+    // --- LÓGICA DO MODAL DE HISTÓRICO ---
+    function showActivityLog(eventLogs) {
+        const content = activityLogModal.content;
+        content.innerHTML = ''; // Limpa o conteúdo anterior
+
+        if (!eventLogs || eventLogs.length === 0) {
+            content.innerHTML = '<p class="text-text-dark-secondary">Nenhum registro de atividade para esta missão.</p>';
+            activityLogModal.container.classList.remove('hidden');
+            return;
+        }
+
+        const sortedLogs = [...eventLogs].sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
+
+        let lastTimestamp = null;
+        let activitySessionCount = 0;
+        let pauseSessionCount = 0;
+
+        sortedLogs.forEach((log, index) => {
+            const currentTimestamp = log.timestamp.toDate();
+            let durationSeconds = 0;
+            if (lastTimestamp) {
+                durationSeconds = (currentTimestamp - lastTimestamp) / 1000;
+            }
+
+            const logEl = document.createElement('div');
+            logEl.className = 'flex items-center gap-3 p-2 rounded';
+
+            let icon = '';
+            let text = '';
+
+            if (log.tipo === 'INICIO' || log.tipo === 'RETOMADA') {
+                 if(index > 0) { // Se não for o primeiro evento, é uma pausa que terminou
+                    pauseSessionCount++;
+                    const durationFormatted = formatTime(durationSeconds);
+                    icon = `<span class="material-symbols-outlined text-yellow-400">shield</span>`;
+                    text = `Pausa ${pauseSessionCount} finalizada. Duração: <span class="font-bold">${durationFormatted}</span>`;
+                    logEl.innerHTML = `${icon} <p>${text}</p>`;
+                    content.appendChild(logEl);
+                 }
+            } else if (log.tipo === 'PAUSA' || log.tipo === 'CONCLUSAO') {
+                if (lastTimestamp) {
+                    activitySessionCount++;
+                    const durationFormatted = formatTime(durationSeconds);
+                    icon = `<span class="material-symbols-outlined text-primary">swords</span>`;
+                    text = `Sessão de Atividade ${activitySessionCount}. Duração: <span class="font-bold">${durationFormatted}</span>`;
+                     logEl.innerHTML = `${icon} <p>${text}</p>`;
+                    content.appendChild(logEl);
+                }
+            }
+             lastTimestamp = currentTimestamp;
+        });
+
+        activityLogModal.container.classList.remove('hidden');
+    }
+
+    activityLogModal.closeBtn.addEventListener('click', () => {
+        activityLogModal.container.classList.add('hidden');
+    });
+
+    document.getElementById('mission-history-btn').addEventListener('click', () => {
+        showActivityLog(currentMissionEventLogs);
+    });
+
 
     function resetRegistrationForm() {
       currentRegistrationStep = 1;
