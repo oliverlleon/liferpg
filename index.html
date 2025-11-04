@@ -89,6 +89,24 @@
         color: #ffffff !important;
         border-color: #3b82f6 !important;
     }
+
+    /* Animação Genérica de Missão Ativa */
+    @keyframes pulse-gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .mission-active-animation {
+        width: 100%;
+        height: 100%;
+        border-radius: 0.5rem; /* mesmo que rounded-lg */
+        background: linear-gradient(-45deg, #13ec6d, #1a3828, #335c47, #13ec6d);
+        background-size: 400% 400%;
+        animation: pulse-gradient 10s ease infinite;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
   </style>
 </head>
 
@@ -744,6 +762,88 @@
     </div>
   </div>
 
+  <!-- Modal de Adicionar Sub-tarefa (NOVO) -->
+  <div id="modal-add-subtask" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm">
+      <h3 class="text-primary text-xl font-bold mb-4">Adicionar Nova Sub-tarefa</h3>
+      <label class="flex flex-col w-full">
+          <p class="text-white text-base font-medium leading-normal pb-2">Título da Sub-tarefa</p>
+          <input id="subtask-modal-title" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#102218] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: Revisar o primeiro capítulo" value="" />
+      </label>
+      <div class="mt-6 flex justify-end gap-3">
+        <button id="subtask-modal-cancel-btn" class="px-4 py-2 rounded bg-surface-dark/50 text-white/80">Cancelar</button>
+        <button id="subtask-modal-save-btn" class="px-4 py-2 rounded bg-primary text-background-dark font-bold">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Editar Missão (NOVO E EXPANDIDO) -->
+    <div id="modal-edit-mission" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-md flex flex-col">
+            <h3 class="text-primary text-xl font-bold mb-4 flex-shrink-0">Editar Missão</h3>
+
+            <div class="space-y-4 overflow-y-auto pr-2 flex-grow max-h-[70vh]">
+                <!-- Título -->
+                <label class="flex flex-col w-full">
+                    <p class="text-white text-base font-medium leading-normal pb-2">Título da Missão</p>
+                    <input id="edit-mission-title" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#102218] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal" value="" />
+                </label>
+
+                <!-- Tipo de Missão -->
+                <div>
+                    <p class="text-white text-base font-medium leading-normal pb-2">Tipo</p>
+                    <div id="edit-mission-type-group" class="grid grid-cols-3 gap-2">
+                        <button data-type="habito" class="task-type-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-3 font-bold text-text-dark-secondary transition-all text-sm">Hábito</button>
+                        <button data-type="diaria" class="task-type-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-3 font-bold text-text-dark-secondary transition-all text-sm">Diária</button>
+                        <button data-type="projeto" class="task-type-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-3 font-bold text-text-dark-secondary transition-all text-sm">Projeto</button>
+                    </div>
+                </div>
+
+                <!-- Prioridade da Missão -->
+                <div>
+                    <p class="text-white text-base font-medium leading-normal pb-2">Prioridade</p>
+                    <div id="edit-mission-priority-group" class="grid grid-cols-3 gap-2">
+                        <button data-priority="secundaria" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-3 font-bold text-text-dark-secondary transition-all text-sm">Secundária</button>
+                        <button data-priority="contrato" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-3 font-bold text-text-dark-secondary transition-all text-sm">Contrato</button>
+                        <button data-priority="principal" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-3 font-bold text-text-dark-secondary transition-all text-sm">Principal</button>
+                    </div>
+                </div>
+
+                <!-- Duração -->
+                <div>
+                    <p class="text-white/70 text-base font-medium leading-normal pb-2">Duração Estimada</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input id="edit-mission-duration-hours" class="form-input w-full rounded-xl text-white border-primary/30 bg-[#102218] h-12" type="number" min="0" placeholder="Horas" />
+                        <input id="edit-mission-duration-minutes" class="form-input w-full rounded-xl text-white border-primary/30 bg-[#102218] h-12" type="number" min="0" max="59" placeholder="Minutos" />
+                    </div>
+                </div>
+
+                <!-- Sub-tarefas -->
+                <div>
+                    <p class="text-white text-base font-medium leading-normal pb-2">Sub-tarefas (Checklist)</p>
+                    <div class="flex gap-2">
+                        <input id="edit-mission-subtask-input" class="form-input flex-1 rounded-xl text-white border-primary/30 bg-[#102218] h-12" placeholder="Nova sub-tarefa" />
+                        <button id="edit-mission-add-subtask-btn" class="flex items-center justify-center rounded-xl bg-primary/20 h-12 w-12 text-primary text-2xl font-bold">+</button>
+                    </div>
+                    <div id="edit-mission-subtask-list" class="mt-2 space-y-1 max-h-24 overflow-y-auto">
+                        <!-- Sub-tarefas da missão aparecerão aqui -->
+                    </div>
+                </div>
+
+                <!-- Notas -->
+                <label class="flex flex-col w-full">
+                    <p class="text-white text-base font-medium leading-normal pb-2">Notas / Descrição</p>
+                    <textarea id="edit-mission-notes" class="form-textarea w-full rounded-xl text-white border-primary/30 bg-[#102218]" rows="3"></textarea>
+                </label>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3 flex-shrink-0">
+                <button id="edit-mission-cancel-btn" class="px-4 py-2 rounded bg-surface-dark/50 text-white/80">Cancelar</button>
+                <button id="edit-mission-save-btn" class="px-4 py-2 rounded bg-primary text-background-dark font-bold">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
 
   <!-- Firebase SDKs -->
   <script type="module">
@@ -934,6 +1034,28 @@
         container: document.getElementById('modal-history'),
         content: document.getElementById('history-log-content'),
         closeBtn: document.getElementById('history-close-btn')
+    };
+
+    const subtaskModal = {
+        container: document.getElementById('modal-add-subtask'),
+        titleInput: document.getElementById('subtask-modal-title'),
+        saveBtn: document.getElementById('subtask-modal-save-btn'),
+        cancelBtn: document.getElementById('subtask-modal-cancel-btn')
+    };
+
+    const editMissionModal = {
+        container: document.getElementById('modal-edit-mission'),
+        titleInput: document.getElementById('edit-mission-title'),
+        notesInput: document.getElementById('edit-mission-notes'),
+        typeGroup: document.getElementById('edit-mission-type-group'),
+        priorityGroup: document.getElementById('edit-mission-priority-group'),
+        durationHours: document.getElementById('edit-mission-duration-hours'),
+        durationMinutes: document.getElementById('edit-mission-duration-minutes'),
+        subtaskInput: document.getElementById('edit-mission-subtask-input'),
+        addSubtaskBtn: document.getElementById('edit-mission-add-subtask-btn'),
+        subtaskList: document.getElementById('edit-mission-subtask-list'),
+        saveBtn: document.getElementById('edit-mission-save-btn'),
+        cancelBtn: document.getElementById('edit-mission-cancel-btn')
     };
 
     // Inputs de Cadastro
@@ -1517,6 +1639,24 @@
             const totalTimeFormatted = await calculateTotalTime(taskId);
             document.getElementById('total-timer').textContent = `Tempo Total Acumulado: ${totalTimeFormatted}`;
 
+            // Implementar Animação Genérica
+            const animationContainer = document.getElementById('mission-animation-container');
+            animationContainer.innerHTML = ''; // Limpa o conteúdo
+            const animationEl = document.createElement('div');
+            animationEl.className = 'mission-active-animation';
+
+            const iconMap = {
+                FORCA: 'swords',
+                INTELIGENCIA: 'school',
+                VELOCIDADE: 'sprint',
+                VITALIDADE: 'shield',
+                CARISMA: 'sentiment_satisfied',
+                default: 'shield_person'
+            };
+            const iconName = iconMap[activeMission.data.atributo_associado] || iconMap.default;
+            animationEl.innerHTML = `<span class="material-symbols-outlined text-white/50 text-6xl">${iconName}</span>`;
+            animationContainer.appendChild(animationEl);
+
             // Popular Recompensas
             const rewards = activeMission.data.recompensa;
             const rewardsContainer = document.getElementById('mission-rewards-container').querySelector('div');
@@ -1602,26 +1742,188 @@
         });
     }
 
-    document.getElementById('details-add-subtask-btn').addEventListener('click', async () => {
+    document.getElementById('details-add-subtask-btn').addEventListener('click', () => {
         if (!activeMission.id) return;
+        subtaskModal.titleInput.value = ''; // Limpa o campo
+        subtaskModal.container.classList.remove('hidden');
+        subtaskModal.titleInput.focus();
+    });
 
-        const title = prompt("Digite o título da nova sub-tarefa:");
-        if (title && title.trim()) {
+    subtaskModal.cancelBtn.addEventListener('click', () => {
+        subtaskModal.container.classList.add('hidden');
+    });
+
+    subtaskModal.saveBtn.addEventListener('click', async () => {
+        const title = subtaskModal.titleInput.value.trim();
+        if (title && activeMission.id) {
             const subtasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks', activeMission.id, 'sub_tasks');
             try {
+                subtaskModal.saveBtn.disabled = true; // Previne cliques duplos
+                subtaskModal.saveBtn.textContent = 'Salvando...';
+
                 await addDoc(subtasksRef, {
-                    titulo: title.trim(),
+                    titulo: title,
                     status: 'PENDENTE',
                     createdAt: Timestamp.now()
                 });
-                // Recarrega os detalhes para mostrar a nova sub-tarefa
-                loadMissionDetails(activeMission.id);
+
+                subtaskModal.container.classList.add('hidden');
+                loadMissionDetails(activeMission.id); // Recarrega os detalhes para mostrar a nova sub-tarefa
+
             } catch (error) {
                 console.error("Erro ao adicionar sub-tarefa:", error);
                 showMessage('Erro', 'Não foi possível adicionar a sub-tarefa.');
+            } finally {
+                subtaskModal.saveBtn.disabled = false;
+                subtaskModal.saveBtn.textContent = 'Salvar';
             }
+        } else {
+            showMessage('Campo Vazio', 'Por favor, digite um título para a sub-tarefa.');
         }
     });
+
+    // --- Lógica de Edição de Missão ---
+    let missionSubtasksForEdit = []; // Variável temporária para a edição
+
+    function renderEditSubtasks() {
+        editMissionModal.subtaskList.innerHTML = '';
+        missionSubtasksForEdit.forEach((task, index) => {
+            const taskEl = document.createElement('div');
+            taskEl.className = 'flex items-center justify-between bg-background-dark p-2 rounded';
+            taskEl.innerHTML = `
+                <span class="text-white/80 text-sm">${task.titulo}</span>
+                <button data-index="${index}" class="remove-edit-subtask-btn flex items-center justify-center h-5 w-5 rounded text-red-400 hover:bg-red-400/20">
+                    <span class="material-symbols-outlined !text-sm">close</span>
+                </button>
+            `;
+            editMissionModal.subtaskList.appendChild(taskEl);
+        });
+    }
+
+    document.getElementById('details-edit-btn').addEventListener('click', () => {
+        if (!activeMission.data) return;
+
+        // Preenche o modal com os dados atuais da missão
+        editMissionModal.titleInput.value = activeMission.data.titulo;
+        editMissionModal.notesInput.value = activeMission.data.notas || '';
+
+        // Preenche tipo
+        editMissionModal.typeGroup.querySelectorAll('button').forEach(btn => {
+            btn.classList.toggle('task-type-selected', btn.dataset.type === activeMission.data.tipo);
+        });
+
+        // Preenche prioridade
+        editMissionModal.priorityGroup.querySelectorAll('button').forEach(btn => {
+            btn.classList.toggle('task-priority-selected', btn.dataset.priority === activeMission.data.prioridade);
+        });
+
+        // Preenche duração
+        const totalMinutes = activeMission.data.duracao_estimada_minutos || 0;
+        editMissionModal.durationHours.value = Math.floor(totalMinutes / 60);
+        editMissionModal.durationMinutes.value = totalMinutes % 60;
+
+        // Carrega e renderiza sub-tarefas
+        missionSubtasksForEdit = [...(activeMission.data.subtarefas || [])];
+        renderEditSubtasks();
+
+        editMissionModal.container.classList.remove('hidden');
+    });
+
+    editMissionModal.cancelBtn.addEventListener('click', () => {
+        editMissionModal.container.classList.add('hidden');
+    });
+
+    // --- Lógica de Interação no Modal de Edição (Adicionar/Remover Sub-tarefas) ---
+    editMissionModal.addSubtaskBtn.addEventListener('click', () => {
+        const title = editMissionModal.subtaskInput.value.trim();
+        if (title) {
+            missionSubtasksForEdit.push({ titulo: title, concluida: false });
+            editMissionModal.subtaskInput.value = '';
+            renderEditSubtasks();
+        }
+    });
+
+    editMissionModal.subtaskList.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-edit-subtask-btn');
+        if (removeBtn) {
+            const index = parseInt(removeBtn.dataset.index, 10);
+            missionSubtasksForEdit.splice(index, 1);
+            renderEditSubtasks();
+        }
+    });
+
+    editMissionModal.saveBtn.addEventListener('click', async () => {
+        const newTitle = editMissionModal.titleInput.value.trim();
+        if (!newTitle) {
+            return showMessage('Título Inválido', 'A missão precisa de um título.');
+        }
+        if (!activeMission.id) return;
+
+        // Coleta todos os dados do modal
+        const newNotes = editMissionModal.notesInput.value.trim();
+        const newType = editMissionModal.typeGroup.querySelector('.task-type-selected')?.dataset.type;
+        const newPriority = editMissionModal.priorityGroup.querySelector('.task-priority-selected')?.dataset.priority;
+        const newHours = parseInt(editMissionModal.durationHours.value, 10) || 0;
+        const newMinutes = parseInt(editMissionModal.durationMinutes.value, 10) || 0;
+        const newTotalMinutes = (newHours * 60) + newMinutes;
+
+        const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', activeMission.id);
+
+        try {
+            editMissionModal.saveBtn.disabled = true;
+            editMissionModal.saveBtn.textContent = 'Salvando...';
+
+            let updatedData = {
+                titulo: newTitle,
+                notas: newNotes,
+                tipo: newType,
+                prioridade: newPriority,
+                duracao_estimada_minutos: newTotalMinutes > 0 ? newTotalMinutes : null,
+                subtarefas: missionSubtasksForEdit
+            };
+
+            // Verifica se precisa recalcular as recompensas
+            const originalSubtaskTitles = (activeMission.data.subtarefas || []).map(t => t.titulo);
+            const newSubtaskTitles = missionSubtasksForEdit.map(t => t.titulo);
+            const subtasksChanged = JSON.stringify(originalSubtaskTitles.sort()) !== JSON.stringify(newSubtaskTitles.sort());
+
+            const needsRecalculation = newType !== activeMission.data.tipo ||
+                                     newTotalMinutes !== (activeMission.data.duracao_estimada_minutos || 0) ||
+                                     subtasksChanged;
+
+            if (needsRecalculation) {
+                console.log("Recalculando recompensas da IA...");
+                // Esta é uma chamada "silenciosa" da IA para obter os dados.
+                const tempAiResults = await analyzeTaskWithAI(newTitle, newTotalMinutes, newType, missionSubtasksForEdit, true);
+                if (tempAiResults) {
+                    updatedData.atributo_associado = tempAiResults.atributo_associado;
+                    updatedData.dificuldade = tempAiResults.dificuldade;
+                    // Recalcula recompensas com base nos novos dados
+                    const typeRewards = REWARDS_TYPE[newType.toLowerCase()] || { xp_global: 0, moedas: 0 };
+                    const difficultyRewards = REWARDS_DIFFICULTY[tempAiResults.dificuldade.toUpperCase()] || { xp_attr: 0 };
+                    updatedData.recompensa = {
+                        xp_global: typeRewards.xp_global,
+                        xp_atributo: difficultyRewards.xp_attr,
+                        moedas: typeRewards.moedas
+                    };
+                }
+            }
+
+            await updateDoc(missionRef, updatedData);
+
+            editMissionModal.container.classList.add('hidden');
+            loadMissionDetails(activeMission.id); // Recarrega para mostrar as alterações
+            showMessage('Sucesso', 'Missão atualizada!');
+
+        } catch (error) {
+            console.error("Erro ao editar missão:", error);
+            showMessage('Erro', 'Não foi possível salvar as alterações.');
+        } finally {
+            editMissionModal.saveBtn.disabled = false;
+            editMissionModal.saveBtn.textContent = 'Salvar Alterações';
+        }
+    });
+
 
     async function showHistoryLog(taskId) {
         if (!taskId) return;
@@ -1689,6 +1991,7 @@
 
         const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', activeMission.id);
         const eventLogsRef = collection(missionRef, 'event_logs');
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
 
         try {
             const batch = writeBatch(db);
@@ -1698,8 +2001,48 @@
 
             // 2. Adiciona um novo log de evento
             const newLog = { tipo: eventType, timestamp: Timestamp.now() };
-            const eventLogDoc = doc(eventLogsRef); // Cria uma referência com ID automático
+            const eventLogDoc = doc(eventLogsRef);
             batch.set(eventLogDoc, newLog);
+
+            // 3. Se a missão for concluída, concede as recompensas
+            if (eventType === 'CONCLUSAO') {
+                const profileSnap = await getDoc(profileRef);
+                if (!profileSnap.exists()) throw new Error("Perfil do usuário não encontrado!");
+
+                const profileData = profileSnap.data();
+                const missionData = activeMission.data;
+                const rewards = missionData.recompensa;
+
+                if (rewards) {
+                    const updates = {};
+
+                    // Atualiza moedas
+                    updates['character.moedas'] = (profileData.character.moedas || 0) + (rewards.moedas || 0);
+
+                    // Atualiza XP global e nível
+                    let newXp = (profileData.character.xp_atual || 0) + (rewards.xp_global || 0);
+                    let newLevel = profileData.character.level || 1;
+                    let xpToLevelUp = profileData.character.xp_para_upar || 1000;
+
+                    while (newXp >= xpToLevelUp) {
+                        newXp -= xpToLevelUp;
+                        newLevel++;
+                        xpToLevelUp = Math.floor(xpToLevelUp * 1.5);
+                    }
+
+                    updates['character.xp_atual'] = newXp;
+                    updates['character.level'] = newLevel;
+                    updates['character.xp_para_upar'] = xpToLevelUp;
+
+                    // Atualiza XP de atributo (se aplicável)
+                    const attr = missionData.atributo_associado?.toLowerCase();
+                    if (attr && profileData.stats[attr]) {
+                        // Lógica para XP de atributo pode ser adicionada aqui no futuro
+                    }
+
+                    batch.update(profileRef, updates);
+                }
+            }
 
             await batch.commit();
 
@@ -1713,16 +2056,19 @@
                 startSessionTimer();
             } else if (eventType === 'PAUSA' || eventType === 'CONCLUSAO') {
                 stopSessionTimer();
-                // Recalcula o tempo total final ao pausar ou concluir
                 const totalTimeFormatted = await calculateTotalTime(activeMission.id);
                 document.getElementById('total-timer').textContent = `Tempo Total Acumulado: ${totalTimeFormatted}`;
+                if (eventType === 'CONCLUSAO') {
+                    const rewardMsg = `Você ganhou +${activeMission.data.recompensa.xp_global || 0} XP e +${activeMission.data.recompensa.moedas || 0} moedas!`;
+                    showMessage('Missão Concluída!', rewardMsg);
+                }
             }
 
             console.log(`Missão ${activeMission.id} atualizada para ${newStatus} com evento ${eventType}.`);
 
         } catch (error) {
             console.error("Erro ao mudar estado da missão:", error);
-            showMessage('Erro de Rede', 'Não foi possível atualizar a missão. Tente novamente.');
+            showMessage('Erro de Rede', `Não foi possível atualizar a missão. Erro: ${error.message}`);
         }
     }
 
@@ -1908,7 +2254,7 @@
         aiResults = null;
         calculatedRewards = null;
         subtasksList = [];
-        renderSubtasks();
+        renderAddTaskSubtasks();
 
         taskForm.typeButtons.forEach(btn => btn.classList.remove('task-type-selected'));
         taskForm.priorityButtons.forEach(btn => btn.classList.remove('task-priority-selected'));
@@ -1919,12 +2265,27 @@
         rewardBox.results.classList.add('hidden');
     }
 
+    function renderAddTaskSubtasks() {
+        taskForm.subtaskList.innerHTML = '';
+        subtasksList.forEach((task, index) => {
+            const taskEl = document.createElement('div');
+            taskEl.className = 'flex items-center justify-between bg-surface-dark/50 p-3 rounded-lg';
+            taskEl.innerHTML = `
+                <span class="text-white/90">${task.titulo}</span>
+                <button data-index="${index}" class="remove-subtask-btn flex items-center justify-center h-6 w-6 rounded-full text-red-400 hover:bg-red-400/20">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            `;
+            taskForm.subtaskList.appendChild(taskEl);
+        });
+    }
+
     taskForm.addSubtaskBtn.addEventListener('click', () => {
         const title = taskForm.subtaskInput.value.trim();
         if (title) {
             subtasksList.push({ titulo: title, concluida: false });
             taskForm.subtaskInput.value = '';
-            renderSubtasks();
+            renderAddTaskSubtasks();
             triggerAIAnalysis();
         }
     });
@@ -1933,7 +2294,7 @@
         if (removeBtn) {
             const index = parseInt(removeBtn.dataset.index, 10);
             subtasksList.splice(index, 1);
-            renderSubtasks();
+            renderAddTaskSubtasks();
             triggerAIAnalysis();
         }
     });
@@ -2031,8 +2392,10 @@
         }
     });
 
-    async function analyzeTaskWithAI(taskTitle, totalMinutes, taskType, subtasks) {
-        console.log(`Analisando: Tipo=${taskType}, Título='${taskTitle}', Duração=${totalMinutes} min, Sub-tarefas=${subtasks.length}`);
+    async function analyzeTaskWithAI(taskTitle, totalMinutes, taskType, subtasks, isSilent = false) {
+        if (!isSilent) {
+            console.log(`Analisando: Tipo=${taskType}, Título='${taskTitle}', Duração=${totalMinutes} min, Sub-tarefas=${subtasks.length}`);
+        }
         
         const apiKey = "AIzaSyCF4tD2jq3pEHfuilwMq-fjdUnBZDxcoxM";
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
@@ -2102,18 +2465,27 @@ Sub-tarefas: ${subtasksString}`;
                  throw new Error("A IA não retornou uma análise válida.");
             }
 
-            aiResults = JSON.parse(text);
+            const parsedResult = JSON.parse(text);
+
+            if (isSilent) {
+                return parsedResult; // Retorna o resultado para uso interno
+            }
+
+            aiResults = parsedResult;
             console.log("Resultado da IA:", aiResults);
             
             updateRewardEstimation(aiResults.atributo_associado, aiResults.dificuldade);
 
         } catch (error) {
             console.error("Erro ao analisar tarefa:", error);
-            rewardBox.loading.classList.remove('hidden');
-            rewardBox.loadingText.textContent = 'Erro ao analisar. Tente novamente.';
-            rewardBox.spinner.classList.add('hidden');
-            rewardBox.results.classList.add('hidden');
+            if (!isSilent) {
+                rewardBox.loading.classList.remove('hidden');
+                rewardBox.loadingText.textContent = 'Erro ao analisar. Tente novamente.';
+                rewardBox.spinner.classList.add('hidden');
+                rewardBox.results.classList.add('hidden');
+            }
             aiResults = null;
+            return null; // Retorna nulo em caso de erro
         }
     }
     
