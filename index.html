@@ -89,6 +89,29 @@
         color: #ffffff !important;
         border-color: #3b82f6 !important;
     }
+
+    /* Animação de Missão em Andamento Aprimorada */
+    @keyframes sword-glow {
+        0%, 100% { filter: drop-shadow(0 0 2px #13ec6d); }
+        50% { filter: drop-shadow(0 0 10px #13ec6d); }
+    }
+    .animated-sword {
+        animation: sword-glow 2s ease-in-out infinite;
+        font-size: 6rem; /* Tamanho do ícone principal */
+        color: #13ec6d;
+    }
+    @keyframes particle-rise {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(-80px); opacity: 0; }
+    }
+    .particle {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: #13ec6d;
+        border-radius: 50%;
+        animation: particle-rise 3s infinite ease-out;
+    }
   </style>
 </head>
 
@@ -815,6 +838,7 @@
     let selectedAvatarUrl = null;
 
     // --- Variáveis da Tela de Tarefas ---
+    let editingTaskId = null; // Armazena o ID da tarefa em edição
     let selectedTaskType = null;
     let selectedTaskPriority = 'contrato';
     let recurrenceRule = null;
@@ -987,9 +1011,47 @@
     document.getElementById('forgot-back-btn').addEventListener('click', () => showScreen('login'));
     document.getElementById('forgot-cancel-btn').addEventListener('click', () => showScreen('login'));
     document.getElementById('btn-show-add-task').addEventListener('click', () => {
+        editingTaskId = null; // Garante que não estamos em modo de edição
         resetTaskForm();
         showScreen('addTask');
     });
+
+    // Função para popular o formulário com dados da missão para edição
+    function populateTaskFormForEdit(missionData) {
+        resetTaskForm();
+        editingTaskId = missionData.id;
+
+        taskForm.title.value = missionData.titulo || '';
+
+        // Seleciona o tipo
+        selectedTaskType = missionData.tipo || null;
+        taskForm.typeButtons.forEach(btn => {
+            if (btn.dataset.type === selectedTaskType) {
+                btn.classList.add('task-type-selected');
+            }
+        });
+
+        // Seleciona a prioridade
+        selectedTaskPriority = missionData.prioridade || 'contrato';
+        taskForm.priorityButtons.forEach(btn => {
+             if (btn.dataset.priority === selectedTaskPriority) {
+                btn.classList.add('task-priority-selected');
+            }
+        });
+
+        subtasksList = [...(missionData.subtarefas || [])];
+        renderSubtasks();
+
+        taskForm.notes.value = missionData.notas || '';
+
+        // TODO: Popular outros campos como duração, prazo, etc.
+
+        taskForm.saveBtn.textContent = 'Atualizar Missão';
+        triggerAIAnalysis(); // Re-analisa para mostrar os dados da IA
+        showScreen('addTask');
+    }
+
+
     taskForm.backBtn.addEventListener('click', () => showScreen('dashboard'));
     document.getElementById('mission-details-back-btn').addEventListener('click', () => {
         stopSessionTimer();
@@ -1341,10 +1403,53 @@
     function populateMissionDetails(missionData, subTasks, eventLogs) {
         document.getElementById('mission-details-title').textContent = missionData.titulo;
 
+        // Adiciona o listener para o botão de editar AQUI, onde temos acesso a missionData
+        const editBtn = document.getElementById('mission-details-edit-btn');
+        editBtn.onclick = () => populateTaskFormForEdit(missionData);
+
         const controlsContainer = document.getElementById('mission-controls-container');
         controlsContainer.innerHTML = ''; // Limpa o container
 
         const status = missionData.status || 'PENDENTE';
+
+        // --- LÓGICA DA ANIMAÇÃO CONDICIONAL ---
+        const animationContainer = document.getElementById('mission-animation-container');
+        if (missionData.videoURL && status === 'EM_ANDAMENTO') {
+            // Se um videoURL existir E a missão estiver em andamento, exibe o vídeo
+            animationContainer.innerHTML = `<video src="${missionData.videoURL}" loop autoplay muted class="w-full h-full object-cover rounded-lg"></video>`;
+        } else if (status === 'EM_ANDAMENTO') {
+            // Animação CSS Aprimorada
+            let particlesHTML = '';
+            for (let i = 0; i < 15; i++) {
+                const style = `left: ${Math.random() * 100}%; bottom: ${Math.random() * 20}%; animation-delay: ${Math.random() * 3}s;`;
+                particlesHTML += `<div class="particle" style="${style}"></div>`;
+            }
+            animationContainer.innerHTML = `
+                <div class="relative w-full h-full flex items-center justify-center">
+                   ${particlesHTML}
+                   <span class="material-symbols-outlined animated-sword">swords</span>
+                </div>
+                <p class="absolute bottom-4 text-center text-text-dark-secondary">Missão em Andamento</p>`;
+        } else if (status === 'PAUSADA') {
+            animationContainer.innerHTML = `
+                <div class="text-center text-text-dark-secondary">
+                   <span class="material-symbols-outlined text-6xl text-yellow-400">pause_circle</span>
+                   <p>Missão Pausada</p>
+                </div>`;
+        } else if (status === 'CONCLUIDA') {
+             animationContainer.innerHTML = `
+                <div class="text-center text-text-dark-secondary">
+                   <span class="material-symbols-outlined text-6xl text-gray-500">check_circle</span>
+                   <p>Missão Concluída</p>
+                </div>`;
+        } else { // PENDENTE
+            animationContainer.innerHTML = `
+                <div class="text-center text-text-dark-secondary">
+                   <span class="material-symbols-outlined text-6xl text-gray-400">hourglass_empty</span>
+                   <p>Missão Pendente</p>
+                </div>`;
+        }
+
 
         const primaryBtn = document.createElement('button');
         primaryBtn.className = 'flex flex-1 min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-primary text-background-dark text-base font-bold';
@@ -1377,6 +1482,42 @@
                 primaryBtn.onclick = () => startMission(missionData.id);
                 controlsContainer.appendChild(primaryBtn);
                 break;
+        }
+
+        // --- LÓGICA PARA RENDERIZAR SUB-TAREFAS ---
+        const subtaskListEl = document.getElementById('sub-task-list');
+        subtaskListEl.innerHTML = ''; // Limpa a lista
+
+        // As sub-tarefas estão salvas no array 'subtarefas' do documento da missão principal
+        const subtasks = missionData.subtarefas || [];
+
+        if (subtasks.length === 0) {
+            subtaskListEl.innerHTML = '<p class="text-text-dark-secondary p-4 text-center">Nenhuma sub-tarefa adicionada a esta missão.</p>';
+        } else {
+            subtasks.forEach(subtask => {
+                const subtaskEl = document.createElement('div');
+                subtaskEl.className = 'flex items-center gap-x-3 py-4';
+
+                const isCompleted = subtask.concluida;
+
+                // Baseado no HTML de inspiração
+                subtaskEl.innerHTML = `
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} class="h-6 w-6 shrink-0 rounded border-[#3b5445] border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 cursor-pointer"/>
+                    <div class="flex-grow">
+                        <p class="text-white text-base font-normal leading-normal ${isCompleted ? 'line-through opacity-60' : ''}">${subtask.titulo}</p>
+                        <div class="flex items-center gap-x-3 text-sm text-gray-400 mt-1">
+                           <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined !text-base">hourglass_empty</span> Pendente</span>
+                        </div>
+                    </div>
+                    <button class="ml-auto flex shrink-0 items-center justify-center rounded-full size-10 bg-[#28392f] text-white" title="Editar Sub-tarefa">
+                        <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button class="ml-2 flex shrink-0 items-center justify-center rounded-full size-10 bg-[#28392f] text-white" title="Iniciar Sub-tarefa">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                    </button>
+                `;
+                subtaskListEl.appendChild(subtaskEl);
+            });
         }
 
         // Inicia ou atualiza o cronômetro com base nos logs de eventos
@@ -1975,64 +2116,66 @@ Sub-tarefas: ${subtasksString}`;
         const minutes = parseInt(taskForm.durationMinutes.value, 10) || 0;
         const totalMinutes = (hours * 60) + minutes;
         
-        if (title.length < 3) {
-            return showMessage('Missão Inválida', 'O título da missão é muito curto.');
-        }
-        if (!selectedTaskType) {
-            return showMessage('Missão Inválida', 'Selecione um tipo de missão (Hábito, Diária ou Projeto).');
-        }
-        if (!aiResults || !calculatedRewards) {
-            return showMessage('Missão Inválida', 'Aguarde a análise da IA terminar antes de salvar.');
-        }
-        if (!currentUserId) {
-            return showMessage('Erro', 'Usuário não encontrado. Tente relogar.');
-        }
+        if (title.length < 3) return showMessage('Missão Inválida', 'O título da missão é muito curto.');
+        if (!selectedTaskType) return showMessage('Missão Inválida', 'Selecione um tipo de missão.');
+        if (!aiResults || !calculatedRewards) return showMessage('Missão Inválida', 'Aguarde a análise da IA terminar.');
+        if (!currentUserId) return showMessage('Erro', 'Usuário não encontrado. Tente relogar.');
         
         const isRecurrenceTemplate = recurrenceRule !== null;
 
+        // Monta o objeto base com os dados do formulário
         let taskData = {
             titulo: title,
             tipo: selectedTaskType,
             prioridade: selectedTaskPriority,
             notas: taskForm.notes.value.trim() || null,
             recorrencia: recurrenceRule,
-            isTemplate: isRecurrenceTemplate,
-            lastGenerated: null,
             duracao_estimada_minutos: totalMinutes > 0 ? totalMinutes : null,
             atributo_associado: aiResults.atributo_associado,
             dificuldade: aiResults.dificuldade,
             recompensa: calculatedRewards,
-            concluida: false,
-            createdAt: Timestamp.now(),
             prazo_final: taskForm.deadline.value || null,
             subtarefas: subtasksList,
-            anexo_url: null // <-- ADICIONADO
         };
         
         try {
-            // Primeiro, faz o upload do anexo, se houver
+            // Faz o upload do anexo, se houver um novo
             if (attachmentFile) {
-                const timestamp = Date.now();
-                const attachmentRef = ref(storage, `attachments/${currentUserId}/${timestamp}-${attachmentFile.name}`);
-
-                showMessage('Enviando Anexo...', 'Aguarde enquanto o arquivo é enviado.');
-
-                await uploadBytes(attachmentRef, attachmentFile);
-                const downloadURL = await getDownloadURL(attachmentRef);
-                taskData.anexo_url = downloadURL;
-
-                console.log('Anexo enviado:', downloadURL);
+                 const timestamp = Date.now();
+                 const attachmentRef = ref(storage, `attachments/${currentUserId}/${timestamp}-${attachmentFile.name}`);
+                 showMessage('Enviando Anexo...', 'Aguarde...');
+                 await uploadBytes(attachmentRef, attachmentFile);
+                 taskData.anexo_url = await getDownloadURL(attachmentRef);
             }
 
-            const tasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks');
-            await addDoc(tasksRef, taskData);
+            if (editingTaskId) {
+                // --- ATUALIZAR MISSÃO EXISTENTE ---
+                const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', editingTaskId);
+                await updateDoc(missionRef, taskData);
+
+                console.log('Missão atualizada:', editingTaskId);
+                showMessage('Sucesso!', 'Sua missão foi atualizada!');
+
+            } else {
+                // --- CRIAR NOVA MISSÃO ---
+                taskData.isTemplate = isRecurrenceTemplate;
+                taskData.lastGenerated = null;
+                taskData.concluida = false; // Status inicial
+                taskData.status = 'PENDENTE'; // Status inicial
+                taskData.createdAt = Timestamp.now();
+
+                const tasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks');
+                await addDoc(tasksRef, taskData);
+
+                console.log('Nova missão salva:', taskData);
+                showMessage('Sucesso!', 'Sua nova missão foi adicionada ao registro!');
+            }
             
-            console.log('Missão salva:', taskData);
-            showMessage('Sucesso!', 'Sua nova missão foi adicionada ao registro!');
+            editingTaskId = null; // Reseta o modo de edição
             showScreen('dashboard');
             
         } catch (error) {
-            console.error("Erro ao salvar missão ou anexo:", error);
+            console.error("Erro ao salvar missão:", error);
             showMessage('Erro', `Não foi possível salvar sua missão. Erro: ${error.message}`);
         }
     });
