@@ -1028,6 +1028,11 @@
         debounceTimer = setTimeout(func, delay);
     }
 
+    function normalizeString(str) {
+        if (!str) return '';
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
     // --- Lógica de Navegação ---
     document.getElementById('btn-goto-register').addEventListener('click', () => showScreen('register'));
     document.getElementById('btn-goto-login').addEventListener('click', () => showScreen('login'));
@@ -1579,7 +1584,7 @@
 
         if (missionData.recompensa && (status === 'PENDENTE' || status === 'EM_ANDAMENTO' || status === 'CONCLUIDA')) {
             const recompensa = missionData.recompensa;
-            const atributo = missionData.atributo_associado || 'ATTR';
+            const atributo = normalizeString(missionData.atributo_associado || 'ATTR').toUpperCase();
 
             const iconMap = {
                 FORCA: 'swords',
@@ -1738,7 +1743,7 @@
                     }
 
                     // --- ATUALIZAÇÃO DO ATRIBUTO ---
-                    const attrKey = atributo_associado.toLowerCase();
+                    const attrKey = normalizeString(atributo_associado).toLowerCase();
                     if (profileData.stats[attrKey]) {
                         const attr = profileData.stats[attrKey];
                         attr.xp_atual += recompensa.xp_atributo || 0;
