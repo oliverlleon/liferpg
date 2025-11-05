@@ -413,21 +413,8 @@
           <!-- Atributos -->
           <div class="flex flex-col gap-2 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
             <h2 class="text-base font-bold text-primary">Atributos</h2>
-            <div id="hub-stats-forca" class="flex items-center gap-2 text-sm">
-              <span class="material-symbols-outlined text-red-400 text-base">swords</span>
-              <span>Força: 1</span>
-            </div>
-            <div id="hub-stats-inteligencia" class="flex items-center gap-2 text-sm">
-              <span class="material-symbols-outlined text-blue-400 text-base">school</span>
-              <span>Inteligência: 1</span>
-            </div>
-            <div id="hub-stats-vitalidade" class="flex items-center gap-2 text-sm">
-              <span class="material-symbols-outlined text-green-400 text-base">shield</span>
-              <span>Vitalidade: 1</span>
-            </div>
-            <div id="hub-stats-velocidade" class="flex items-center gap-2 text-sm">
-              <span class="material-symbols-outlined text-yellow-400 text-base">sprint</span>
-              <span>Velocidade: 1</span>
+            <div id="hub-attributes-list" class="flex flex-col gap-4 mt-2">
+              <!-- Atributos serão inseridos dinamicamente aqui -->
             </div>
           </div>
           <!-- Status Atuais -->
@@ -1232,22 +1219,47 @@
             'hub-level': `Nv. ${character.level || 1}`,
             'hub-hp-text': `${character.hp_atual}/${character.hp_max}`,
             'hub-mana-text': `${character.mana_atual}/${character.mana_max}`,
-            'hub-xp-text': `${character.xp_atual}/${character.xp_para_upar}`,
-            'hub-stats-forca': `<span class="material-symbols-outlined text-red-400 text-base">swords</span> <span>Força: ${stats.forca?.level || 1}</span>`,
-            'hub-stats-inteligencia': `<span class="material-symbols-outlined text-blue-400 text-base">school</span> <span>Inteligência: ${stats.inteligencia?.level || 1}</span>`,
-            'hub-stats-vitalidade': `<span class="material-symbols-outlined text-green-400 text-base">shield</span> <span>Vitalidade: ${stats.vitalidade?.level || 1}</span>`,
-            'hub-stats-velocidade': `<span class="material-symbols-outlined text-yellow-400 text-base">sprint</span> <span>Velocidade: ${stats.velocidade?.level || 1}</span>`
+            'hub-xp-text': `${character.xp_atual}/${character.xp_para_upar}`
         };
 
         for (const id in elements) {
             const el = document.getElementById(id);
             if (el) {
-                if (id.startsWith('hub-stats')) {
-                    el.innerHTML = elements[id];
-                } else {
-                    el.textContent = elements[id];
-                }
+                el.textContent = elements[id];
             }
+        }
+
+        // --- ATUALIZAÇÃO DINÂMICA DOS ATRIBUTOS ---
+        const attributesContainer = document.getElementById('hub-attributes-list');
+        attributesContainer.innerHTML = ''; // Limpa a lista antes de popular
+
+        const attributeConfig = {
+            forca: { icon: 'swords', color: 'text-red-400', name: 'Força' },
+            inteligencia: { icon: 'school', color: 'text-blue-400', name: 'Inteligência' },
+            vitalidade: { icon: 'shield', color: 'text-green-400', name: 'Vitalidade' },
+            velocidade: { icon: 'sprint', color: 'text-yellow-400', name: 'Velocidade' },
+            carisma: { icon: 'sentiment_satisfied', color: 'text-pink-400', name: 'Carisma' }
+        };
+
+        for (const key in attributeConfig) {
+            const config = attributeConfig[key];
+            const stat = stats[key] || { level: 1, xp_atual: 0, xp_para_upar: 100 };
+            const xpPercent = (stat.xp_atual / stat.xp_para_upar) * 100;
+
+            const attributeEl = document.createElement('div');
+            attributeEl.innerHTML = `
+                <div class="flex items-center justify-between text-sm mb-1">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined ${config.color} text-base">${config.icon}</span>
+                        <span>${config.name}: ${stat.level}</span>
+                    </div>
+                    <span class="text-xs text-text-dark-secondary">${stat.xp_atual}/${stat.xp_para_upar}</span>
+                </div>
+                <div class="h-2 w-full rounded-full bg-background-dark">
+                    <div class="h-2 rounded-full bg-primary" style="width: ${xpPercent}%"></div>
+                </div>
+            `;
+            attributesContainer.appendChild(attributeEl);
         }
 
         const hpPercent = (character.hp_atual / character.hp_max) * 100 || 100;
