@@ -678,6 +678,11 @@
             </button>
         </div>
 
+        <!-- Container para Recompensas da Missão -->
+        <div id="mission-rewards-container" class="px-4 pb-4">
+            <!-- As recompensas serão inseridas aqui via JS -->
+        </div>
+
         <div class="px-4 pb-24">
             <div id="sub-task-list" class="flex flex-col divide-y divide-[#28392f]">
                 <!-- Sub-tarefas inseridas via JS -->
@@ -1563,6 +1568,53 @@
                 controlsContainer.appendChild(primaryBtn);
                 break;
         }
+
+        // --- LÓGICA PARA RENDERIZAR RECOMPENSAS ---
+        const rewardsContainer = document.getElementById('mission-rewards-container');
+        rewardsContainer.innerHTML = ''; // Limpa o container
+
+        if (missionData.recompensa && (status === 'EM_ANDAMENTO' || status === 'CONCLUIDA')) {
+            const recompensa = missionData.recompensa;
+            const atributo = missionData.atributo_associado || 'ATTR';
+
+            const iconMap = {
+                FORCA: 'swords',
+                INTELIGENCIA: 'school',
+                VELOCIDADE: 'sprint',
+                VITALIDADE: 'shield',
+                CARISMA: 'sentiment_satisfied',
+                default: 'shield_person'
+            };
+            const attr_icon = iconMap[atributo] || iconMap.default;
+
+            const rewardsHTML = `
+                <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+                    <h3 class="text-lg font-bold text-primary mb-3 text-center">Recompensas da Missão</h3>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <!-- XP Global -->
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-xp text-4xl">star</span>
+                            <span class="text-xl font-bold text-white">${recompensa.xp_global || 0}</span>
+                            <span class="text-sm text-text-dark-secondary">XP Global</span>
+                        </div>
+                        <!-- XP de Atributo -->
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-primary text-4xl">${attr_icon}</span>
+                            <span class="text-xl font-bold text-white">${recompensa.xp_atributo || 0}</span>
+                            <span class="text-sm text-text-dark-secondary">XP de ${atributo}</span>
+                        </div>
+                        <!-- Moedas -->
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-yellow-400 text-4xl">monetization_on</span>
+                            <span class="text-xl font-bold text-white">${recompensa.moedas || 0}</span>
+                            <span class="text-sm text-text-dark-secondary">Moedas</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            rewardsContainer.innerHTML = rewardsHTML;
+        }
+
 
         // --- LÓGICA PARA RENDERIZAR SUB-TAREFAS ---
         const subtaskListEl = document.getElementById('sub-task-list');
