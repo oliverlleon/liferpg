@@ -758,6 +758,18 @@
     </div>
   </div>
 
+  <!-- Modal de Adicionar/Editar Sub-tarefa -->
+    <div id="modal-subtask" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm">
+            <h3 id="subtask-modal-title" class="text-primary text-xl font-bold mb-4">Nova Sub-tarefa</h3>
+            <input id="subtask-modal-input" type="text" class="form-input w-full bg-[#102218] border-border-dark rounded mb-4" placeholder="Título da sub-tarefa">
+            <div class="flex justify-end gap-3">
+                <button id="subtask-modal-cancel-btn" class="px-4 py-2 rounded bg-surface-dark/50 text-white/80">Cancelar</button>
+                <button id="subtask-modal-save-btn" class="px-4 py-2 rounded bg-primary text-background-dark font-bold">Salvar</button>
+            </div>
+        </div>
+    </div>
+
 
   <!-- Firebase SDKs -->
   <script type="module">
@@ -852,6 +864,13 @@
     let sessionTimerInterval = null;
     let accumulatedTime = 0; // Armazena o tempo já trabalhado em segundos
     let currentMissionEventLogs = [];
+    let currentMissionId = null; // Armazena o ID da missão sendo visualizada
+    let activeSubtaskModal = {
+        isOpen: false,
+        missionId: null,
+        subtaskIndex: null // null para nova, index para editar
+    };
+    let activeSubtaskTimers = {}; // Objeto para rastrear os timers ativos { subtaskId: intervalId }
 
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
@@ -1055,8 +1074,16 @@
     taskForm.backBtn.addEventListener('click', () => showScreen('dashboard'));
     document.getElementById('mission-details-back-btn').addEventListener('click', () => {
         stopSessionTimer();
+        clearAllSubtaskTimers();
         showScreen('dashboard');
     });
+
+    function clearAllSubtaskTimers() {
+        for (const subtaskId in activeSubtaskTimers) {
+            clearInterval(activeSubtaskTimers[subtaskId]);
+        }
+        activeSubtaskTimers = {};
+    }
 
 
     // --- Lógica de Cadastro (Etapas) ---
@@ -1180,42 +1207,69 @@
     });
 
     function populateDashboard(user, profileData) {
-      const character = profileData.character || {};
-      const vitals = profileData.vitals || {};
-      const stats = profileData.stats || {};
+        const character = profileData.character || {};
+        const vitals = profileData.vitals || {};
+        const stats = profileData.stats || {};
 
-      document.getElementById('hub-avatar').src = character.avatar_url || 'https://placehold.co/100x100/1a3828/13ec6d?text=?';
-      document.getElementById('hub-nickname').textContent = profileData.nickname || 'Aventureiro';
-      document.getElementById('hub-level').textContent = `Nv. ${character.level || 1}`;
+        const hubAvatar = document.getElementById('hub-avatar');
+        if (hubAvatar) {
+            hubAvatar.src = character.avatar_url || 'https://placehold.co/100x100/1a3828/13ec6d?text=?';
+        }
 
-      const hpPercent = (character.hp_atual / character.hp_max) * 100 || 100;
-      const manaPercent = (character.mana_atual / character.mana_max) * 100 || 100;
-      const xpPercent = (character.xp_atual / character.xp_para_upar) * 100 || 0;
+        const elements = {
+            'hub-nickname': profileData.nickname || 'Aventureiro',
+            'hub-level': `Nv. ${character.level || 1}`,
+            'hub-hp-text': `${character.hp_atual}/${character.hp_max}`,
+            'hub-mana-text': `${character.mana_atual}/${character.mana_max}`,
+            'hub-xp-text': `${character.xp_atual}/${character.xp_para_upar}`,
+            'hub-stats-forca': `<span class="material-symbols-outlined text-red-400 text-base">swords</span> <span>Força: ${stats.forca?.level || 1}</span>`,
+            'hub-stats-inteligencia': `<span class="material-symbols-outlined text-blue-400 text-base">school</span> <span>Inteligência: ${stats.inteligencia?.level || 1}</span>`,
+            'hub-stats-vitalidade': `<span class="material-symbols-outlined text-green-400 text-base">shield</span> <span>Vitalidade: ${stats.vitalidade?.level || 1}</span>`,
+            'hub-stats-velocidade': `<span class="material-symbols-outlined text-yellow-400 text-base">sprint</span> <span>Velocidade: ${stats.velocidade?.level || 1}</span>`
+        };
 
-      document.getElementById('hub-hp-bar').style.width = `${hpPercent}%`;
-      document.getElementById('hub-hp-text').textContent = `${character.hp_atual}/${character.hp_max}`;
-      document.getElementById('hub-mana-bar').style.width = `${manaPercent}%`;
-      document.getElementById('hub-mana-text').textContent = `${character.mana_atual}/${character.mana_max}`;
-      document.getElementById('hub-xp-bar').style.width = `${xpPercent}%`;
-      document.getElementById('hub-xp-text').textContent = `${character.xp_atual}/${character.xp_para_upar}`;
+        for (const id in elements) {
+            const el = document.getElementById(id);
+            if (el) {
+                if (id.startsWith('hub-stats')) {
+                    el.innerHTML = elements[id];
+                } else {
+                    el.textContent = elements[id];
+                }
+            }
+        }
 
-      document.getElementById('hub-stats-forca').innerHTML = `<span class="material-symbols-outlined text-red-400 text-base">swords</span> <span>Força: ${stats.forca?.level || 1}</span>`;
-      document.getElementById('hub-stats-inteligencia').innerHTML = `<span class="material-symbols-outlined text-blue-400 text-base">school</span> <span>Inteligência: ${stats.inteligencia?.level || 1}</span>`;
-      document.getElementById('hub-stats-vitalidade').innerHTML = `<span class="material-symbols-outlined text-green-400 text-base">shield</span> <span>Vitalidade: ${stats.vitalidade?.level || 1}</span>`;
-      document.getElementById('hub-stats-velocidade').innerHTML = `<span class="material-symbols-outlined text-yellow-400 text-base">sprint</span> <span>Velocidade: ${stats.velocidade?.level || 1}</span>`;
+        const hpPercent = (character.hp_atual / character.hp_max) * 100 || 100;
+        const manaPercent = (character.mana_atual / character.mana_max) * 100 || 100;
+        const xpPercent = (character.xp_atual / character.xp_para_upar) * 100 || 0;
 
-      const statusContainer = document.getElementById('hub-status-effects');
-      statusContainer.innerHTML = '';
-      if (profileData.status_effects && profileData.status_effects.length > 0) {
-        profileData.status_effects.forEach(effect => {
-          const effectEl = document.createElement('div');
-          effectEl.className = 'flex items-center gap-2 text-sm';
-          effectEl.innerHTML = `<span class="material-symbols-outlined text-yellow-500 text-base">spark</span> <span>${effect.label}</span>`;
-          statusContainer.appendChild(effectEl);
-        });
-      } else {
-        statusContainer.innerHTML = '<p class="text-sm text-text-dark-secondary">Nenhum efeito ativo.</p>';
-      }
+        const bars = {
+            'hub-hp-bar': `${hpPercent}%`,
+            'hub-mana-bar': `${manaPercent}%`,
+            'hub-xp-bar': `${xpPercent}%`
+        };
+
+        for (const id in bars) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.width = bars[id];
+            }
+        }
+
+        const statusContainer = document.getElementById('hub-status-effects');
+        if (statusContainer) {
+            statusContainer.innerHTML = '';
+            if (profileData.status_effects && profileData.status_effects.length > 0) {
+                profileData.status_effects.forEach(effect => {
+                    const effectEl = document.createElement('div');
+                    effectEl.className = 'flex items-center gap-2 text-sm';
+                    effectEl.innerHTML = `<span class="material-symbols-outlined text-yellow-500 text-base">spark</span> <span>${effect.label}</span>`;
+                    statusContainer.appendChild(effectEl);
+                });
+            } else {
+                statusContainer.innerHTML = '<p class="text-sm text-text-dark-secondary">Nenhum efeito ativo.</p>';
+            }
+        }
     }
 
     async function checkAndGenerateRecurrentTasks(tasks) {
@@ -1281,6 +1335,10 @@
 
     function populateMissions(tasks) {
         const missionContainer = document.getElementById('hub-mission-list');
+        if (!missionContainer) {
+            console.log("Container de missões não encontrado, adiando a população.");
+            return;
+        }
         missionContainer.innerHTML = '';
 
         const visibleTasks = tasks.filter(t => !t.isTemplate);
@@ -1365,6 +1423,8 @@
     async function loadMissionDetails(taskId) {
         if (!currentUserId) return;
 
+        currentMissionId = taskId; // Armazena o ID da missão atual
+
         // Resetar e mostrar estado de carregamento
         document.getElementById('mission-details-title').textContent = 'Carregando...';
         document.getElementById('mission-controls-container').innerHTML = '<p class="text-center w-full text-text-dark-secondary">Carregando...</p>';
@@ -1372,24 +1432,44 @@
 
         try {
             const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId);
-            const subTasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId, 'sub_tasks');
-            const eventLogsRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId, 'event_logs');
-
-            const [missionSnap, subTasksSnap, eventLogsSnap] = await Promise.all([
-                getDoc(missionRef),
-                getDocs(subTasksRef),
-                getDocs(eventLogsRef)
-            ]);
+            const missionSnap = await getDoc(missionRef);
 
             if (!missionSnap.exists()) {
                 throw new Error("Missão não encontrada.");
             }
 
-            const missionData = { id: missionSnap.id, ...missionSnap.data() };
-            const subTasks = subTasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            let missionData = { id: missionSnap.id, ...missionSnap.data() };
+
+            // --- Migração lazy de subtarefas de array para sub-coleção ---
+            if (missionData.subtarefas && missionData.subtarefas.length > 0) {
+                console.log(`Migrando ${missionData.subtarefas.length} subtarefas para a sub-coleção...`);
+                const batch = writeBatch(db);
+                const subtasksCollectionRef = collection(missionRef, 'subtarefas');
+
+                missionData.subtarefas.forEach(subtask => {
+                    const newSubtaskRef = doc(subtasksCollectionRef);
+                    batch.set(newSubtaskRef, subtask);
+                });
+
+                // Limpa o array antigo
+                batch.update(missionRef, { subtarefas: [] });
+                await batch.commit();
+                console.log("Migração concluída.");
+            }
+
+            // --- Carregamento Padrão ---
+            const subtasksCollectionRef = collection(missionRef, 'subtarefas');
+            const eventLogsRef = collection(missionRef, 'event_logs');
+
+            const [subtasksSnap, eventLogsSnap] = await Promise.all([
+                getDocs(subtasksCollectionRef),
+                getDocs(eventLogsRef)
+            ]);
+
+            const subTasks = subtasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const eventLogs = eventLogsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            currentMissionEventLogs = eventLogs; // Armazena os logs globalmente
+            currentMissionEventLogs = eventLogs;
 
             populateMissionDetails(missionData, subTasks, eventLogs);
 
@@ -1486,34 +1566,36 @@
 
         // --- LÓGICA PARA RENDERIZAR SUB-TAREFAS ---
         const subtaskListEl = document.getElementById('sub-task-list');
-        subtaskListEl.innerHTML = ''; // Limpa a lista
+        subtaskListEl.innerHTML = '';
 
-        // As sub-tarefas estão salvas no array 'subtarefas' do documento da missão principal
-        const subtasks = missionData.subtarefas || [];
-
-        if (subtasks.length === 0) {
+        if (!subTasks || subTasks.length === 0) {
             subtaskListEl.innerHTML = '<p class="text-text-dark-secondary p-4 text-center">Nenhuma sub-tarefa adicionada a esta missão.</p>';
         } else {
-            subtasks.forEach(subtask => {
+            subTasks.forEach((subtask, index) => {
                 const subtaskEl = document.createElement('div');
                 subtaskEl.className = 'flex items-center gap-x-3 py-4';
 
-                const isCompleted = subtask.concluida;
+                const isCompleted = subtask.status === 'CONCLUIDA';
+                const isRunning = subtask.status === 'EM_ANDAMENTO';
 
-                // Baseado no HTML de inspiração
+                const timeFormatted = formatTime(subtask.tempoAcumulado || 0);
+
                 subtaskEl.innerHTML = `
                     <input type="checkbox" ${isCompleted ? 'checked' : ''} class="h-6 w-6 shrink-0 rounded border-[#3b5445] border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 cursor-pointer"/>
                     <div class="flex-grow">
                         <p class="text-white text-base font-normal leading-normal ${isCompleted ? 'line-through opacity-60' : ''}">${subtask.titulo}</p>
-                        <div class="flex items-center gap-x-3 text-sm text-gray-400 mt-1">
-                           <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined !text-base">hourglass_empty</span> Pendente</span>
+                        <div id="subtask-timer-${subtask.id}" class="flex items-center gap-x-3 text-sm text-gray-400 mt-1">
+                           <span class="inline-flex items-center gap-1">
+                                <span class="material-symbols-outlined !text-base">${isRunning ? 'timer' : 'hourglass_empty'}</span>
+                                <span class="timer-text">${isRunning ? 'Em Andamento' : `Tempo: ${timeFormatted}`}</span>
+                           </span>
                         </div>
                     </div>
-                    <button class="ml-auto flex shrink-0 items-center justify-center rounded-full size-10 bg-[#28392f] text-white" title="Editar Sub-tarefa">
+                    <button data-index="${index}" data-subtask-id="${subtask.id}" class="edit-subtask-btn ml-auto flex shrink-0 items-center justify-center rounded-full size-10 bg-[#28392f] text-white" title="Editar Sub-tarefa">
                         <span class="material-symbols-outlined">edit</span>
                     </button>
-                    <button class="ml-2 flex shrink-0 items-center justify-center rounded-full size-10 bg-[#28392f] text-white" title="Iniciar Sub-tarefa">
-                        <span class="material-symbols-outlined">play_arrow</span>
+                    <button data-subtask-id="${subtask.id}" class="toggle-subtask-timer-btn ml-2 flex shrink-0 items-center justify-center rounded-full size-10 ${isRunning ? 'bg-primary text-background-dark' : 'bg-[#28392f] text-white'}" title="${isRunning ? 'Pausar Sub-tarefa' : 'Iniciar Sub-tarefa'}">
+                        <span class="material-symbols-outlined">${isRunning ? 'pause' : 'play_arrow'}</span>
                     </button>
                 `;
                 subtaskListEl.appendChild(subtaskEl);
@@ -1522,6 +1604,13 @@
 
         // Inicia ou atualiza o cronômetro com base nos logs de eventos
         startSessionTimer(eventLogs);
+
+        // Inicia os cronômetros para subtarefas que já estão em andamento
+        subTasks.forEach(subtask => {
+            if (subtask.status === 'EM_ANDAMENTO') {
+                startSubtaskTimerInterval(subtask.id, subtask.tempoAcumulado);
+            }
+        });
     }
 
     async function updateMissionStatus(taskId, newStatus, eventType) {
@@ -1686,6 +1775,79 @@
         showActivityLog(currentMissionEventLogs);
     });
 
+    // --- LÓGICA DO MODAL DE SUB-TAREFA ---
+    async function openSubtaskModal(missionId, subtaskId = null) {
+        const modal = document.getElementById('modal-subtask');
+        const title = document.getElementById('subtask-modal-title');
+        const input = document.getElementById('subtask-modal-input');
+
+        activeSubtaskModal = { isOpen: true, missionId, subtaskId };
+
+        if (subtaskId) {
+            title.textContent = 'Editar Sub-tarefa';
+            const subtaskRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', missionId, 'subtarefas', subtaskId);
+            const subtaskSnap = await getDoc(subtaskRef);
+            if (subtaskSnap.exists()) {
+                input.value = subtaskSnap.data().titulo;
+            }
+        } else {
+            title.textContent = 'Nova Sub-tarefa';
+            input.value = '';
+        }
+        modal.classList.remove('hidden');
+        input.focus();
+    }
+
+    function closeSubtaskModal() {
+        document.getElementById('modal-subtask').classList.add('hidden');
+        activeSubtaskModal = { isOpen: false, missionId: null, subtaskId: null };
+    }
+
+    document.getElementById('btn-add-subtask-modal').addEventListener('click', () => {
+        if (currentMissionId) {
+            openSubtaskModal(currentMissionId);
+        }
+    });
+
+    document.getElementById('subtask-modal-cancel-btn').addEventListener('click', closeSubtaskModal);
+
+    document.getElementById('subtask-modal-save-btn').addEventListener('click', async () => {
+        const { missionId, subtaskId } = activeSubtaskModal;
+        const newTitle = document.getElementById('subtask-modal-input').value.trim();
+
+        if (!missionId || newTitle === '') return;
+
+        await saveSubtask(missionId, newTitle, subtaskId);
+        closeSubtaskModal();
+    });
+
+    async function saveSubtask(missionId, title, subtaskId = null) {
+        if (!currentUserId || !missionId) return;
+
+        const subtasksCollectionRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks', missionId, 'subtarefas');
+
+        try {
+            if (subtaskId) {
+                // Atualizar subtarefa existente
+                const subtaskRef = doc(subtasksCollectionRef, subtaskId);
+                await updateDoc(subtaskRef, { titulo: title });
+            } else {
+                // Criar nova subtarefa
+                await addDoc(subtasksCollectionRef, {
+                    titulo: title,
+                    status: 'PENDENTE',
+                    tempoAcumulado: 0,
+                    createdAt: Timestamp.now()
+                });
+            }
+            console.log("Subtarefa salva com sucesso!");
+            loadMissionDetails(missionId); // Recarrega
+        } catch (error) {
+            console.error("Erro ao salvar subtarefa:", error);
+            showMessage('Erro', 'Não foi possível salvar a subtarefa.');
+        }
+    }
+
 
     function resetRegistrationForm() {
       currentRegistrationStep = 1;
@@ -1835,6 +1997,106 @@
             showMessage('Erro', 'Não foi possível sair da aventura no momento.');
         }
     });
+
+    document.getElementById('sub-task-list').addEventListener('click', (e) => {
+        const editButton = e.target.closest('.edit-subtask-btn');
+        if (editButton && currentMissionId) {
+            const subtaskId = editButton.dataset.subtaskId;
+            openSubtaskModal(currentMissionId, subtaskId);
+            return;
+        }
+
+        const timerButton = e.target.closest('.toggle-subtask-timer-btn');
+        if (timerButton && currentMissionId) {
+            const subtaskId = timerButton.dataset.subtaskId;
+            toggleSubtaskTimer(currentMissionId, subtaskId);
+            return;
+        }
+    });
+
+    async function startSubtaskTimerInterval(subtaskId, accumulatedSeconds) {
+        if (activeSubtaskTimers[subtaskId]) {
+            clearInterval(activeSubtaskTimers[subtaskId]);
+        }
+
+        const subtaskRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', currentMissionId, 'subtarefas', subtaskId);
+        const eventLogsRef = collection(subtaskRef, 'event_logs');
+
+        const eventLogsSnap = await getDocs(eventLogsRef);
+        const eventLogs = eventLogsSnap.docs.map(d => d.data()).sort((a,b) => b.timestamp.seconds - a.timestamp.seconds);
+        const lastStartEvent = eventLogs.find(log => log.tipo === 'INICIO');
+
+        if (!lastStartEvent) return;
+
+        const startTime = lastStartEvent.timestamp.toDate();
+
+        const intervalId = setInterval(() => {
+            const now = new Date();
+            const sessionSeconds = Math.floor((now - startTime) / 1000);
+            const totalSeconds = accumulatedSeconds + sessionSeconds;
+
+            const timerDisplay = document.querySelector(`#subtask-timer-${subtaskId} .timer-text`);
+            if (timerDisplay) {
+                timerDisplay.textContent = formatTime(totalSeconds);
+            }
+        }, 1000);
+
+        activeSubtaskTimers[subtaskId] = intervalId;
+    }
+
+    async function toggleSubtaskTimer(missionId, subtaskId) {
+        if (!currentUserId) return;
+
+        const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', missionId);
+        const subtaskRef = doc(collection(missionRef, 'subtarefas'), subtaskId);
+        const eventLogsRef = collection(subtaskRef, 'event_logs');
+
+        try {
+            const missionSnap = await getDoc(missionRef);
+            if (!missionSnap.exists() || missionSnap.data().status !== 'EM_ANDAMENTO') {
+                showMessage('Ação Bloqueada', 'A missão principal precisa estar "EM ANDAMENTO" para iniciar o cronômetro de uma subtarefa.');
+                return;
+            }
+
+            const subtaskSnap = await getDoc(subtaskRef);
+            if (!subtaskSnap.exists()) return;
+
+            const subtaskData = subtaskSnap.data();
+
+            if (subtaskData.status === 'EM_ANDAMENTO') {
+                // Pausar o timer
+                if (activeSubtaskTimers[subtaskId]) {
+                    clearInterval(activeSubtaskTimers[subtaskId]);
+                    delete activeSubtaskTimers[subtaskId];
+                }
+
+                const eventLogsSnap = await getDocs(eventLogsRef);
+                const eventLogs = eventLogsSnap.docs.map(d => d.data()).sort((a,b) => b.timestamp.seconds - a.timestamp.seconds);
+                const lastStartEvent = eventLogs.find(log => log.tipo === 'INICIO');
+
+                let accumulatedTime = subtaskData.tempoAcumulado || 0;
+                if (lastStartEvent) {
+                    const now = Timestamp.now();
+                    const secondsElapsed = now.seconds - lastStartEvent.timestamp.seconds;
+                    accumulatedTime += secondsElapsed;
+                }
+
+                await updateDoc(subtaskRef, { status: 'PAUSADA', tempoAcumulado: accumulatedTime });
+                await addDoc(eventLogsRef, { tipo: 'PAUSA', timestamp: Timestamp.now() });
+                loadMissionDetails(missionId);
+
+            } else {
+                // Iniciar o timer
+                await updateDoc(subtaskRef, { status: 'EM_ANDAMENTO' });
+                await addDoc(eventLogsRef, { tipo: 'INICIO', timestamp: Timestamp.now() });
+                loadMissionDetails(missionId);
+            }
+
+        } catch (error) {
+            console.error("Erro ao alternar timer da subtarefa:", error);
+            showMessage('Erro', 'Ocorreu um erro ao controlar o cronômetro.');
+        }
+    }
 
     // --- LÓGICA DA TELA DE CRIAR TAREFAS (IA) ---
     function resetTaskForm() {
