@@ -1207,12 +1207,6 @@
     });
 
     function populateDashboard(user, profileData) {
-        // Verifica se a tela do dashboard está visível antes de popular
-        if (screens.dashboard.classList.contains('hidden')) {
-            console.log("Dashboard não está visível, adiando a população dos dados.");
-            return;
-        }
-
         const character = profileData.character || {};
         const vitals = profileData.vitals || {};
         const stats = profileData.stats || {};
@@ -2095,9 +2089,6 @@
                 // Iniciar o timer
                 await updateDoc(subtaskRef, { status: 'EM_ANDAMENTO' });
                 await addDoc(eventLogsRef, { tipo: 'INICIO', timestamp: Timestamp.now() });
-
-                // Inicia o intervalo visual
-                startSubtaskTimerInterval(subtaskId, subtaskData.tempoAcumulado || 0);
                 loadMissionDetails(missionId);
             }
 
