@@ -1744,7 +1744,16 @@
 
                     // --- ATUALIZAÇÃO DO ATRIBUTO ---
                     const attrKey = normalizeString(atributo_associado).toLowerCase();
-                    if (profileData.stats[attrKey]) {
+                    if (attrKey) {
+                        // Garante que o objeto stats exista
+                        if (!profileData.stats) {
+                            profileData.stats = {};
+                        }
+                        // Garante que o atributo exista no perfil antes de tentar atualizá-lo
+                        if (!profileData.stats[attrKey]) {
+                            profileData.stats[attrKey] = { level: 1, xp_atual: 0, xp_para_upar: 100 };
+                        }
+
                         const attr = profileData.stats[attrKey];
                         attr.xp_atual += recompensa.xp_atributo || 0;
 
