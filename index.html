@@ -1281,6 +1281,10 @@
 
     function populateMissions(tasks) {
         const missionContainer = document.getElementById('hub-mission-list');
+        if (!missionContainer) {
+            console.warn("Mission container not found, skipping population.");
+            return;
+        }
         missionContainer.innerHTML = '';
 
         const visibleTasks = tasks.filter(t => !t.isTemplate);
@@ -1361,6 +1365,82 @@
 
 
     // --- LÓGICA DA TELA DE DETALHES DA MISSÃO ---
+
+    // --- FUNÇÕES DE INTERAÇÃO COM SUB-TAREFAS ---
+    document.getElementById('sub-task-list').addEventListener('click', (e) => {
+        const missionId = e.target.closest('[data-mission-id]')?.dataset.missionId;
+        const subtaskIndex = e.target.closest('[data-index]')?.dataset.index;
+
+        if (missionId === undefined || subtaskIndex === undefined) return;
+        const subtaskIndexNum = parseInt(subtaskIndex, 10);
+
+        if (e.target.closest('.subtask-checkbox')) {
+            toggleSubtaskStatus(missionId, subtaskIndexNum);
+        } else if (e.target.closest('.subtask-edit-btn')) {
+            editSubtaskTitle(missionId, subtaskIndexNum);
+        } else if (e.target.closest('.subtask-play-btn')) {
+            startMissionFromSubtask(missionId);
+        }
+    });
+
+    async function updateSubtasksArray(missionId, updateFunction) {
+        if (!currentUserId) return;
+        const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', missionId);
+        try {
+            const missionSnap = await getDoc(missionRef);
+            if (!missionSnap.exists()) throw new Error("Missão não encontrada");
+
+            let missionData = missionSnap.data();
+            let subtasks = missionData.subtarefas || [];
+
+            subtasks = updateFunction(subtasks);
+
+            await updateDoc(missionRef, { subtarefas: subtasks });
+            loadMissionDetails(missionId); // Recarrega a tela para refletir a mudança
+        } catch (error) {
+            console.error("Erro ao atualizar sub-tarefas:", error);
+            showMessage('Erro', 'Não foi possível atualizar a sub-tarefa.');
+        }
+    }
+
+    async function toggleSubtaskStatus(missionId, subtaskIndex) {
+        await updateSubtasksArray(missionId, (subtasks) => {
+            if (subtasks[subtaskIndex]) {
+                subtasks[subtaskIndex].concluida = !subtasks[subtaskIndex].concluida;
+            }
+            return subtasks;
+        });
+    }
+
+    async function editSubtaskTitle(missionId, subtaskIndex) {
+        const currentTitle = document.querySelector(`[data-mission-id="${missionId}"][data-index="${subtaskIndex}"] .flex-grow p`).textContent;
+        const newTitle = prompt("Digite o novo título para a sub-tarefa:", currentTitle);
+        if (newTitle && newTitle.trim() !== "") {
+            await updateSubtasksArray(missionId, (subtasks) => {
+                if (subtasks[subtaskIndex]) {
+                    subtasks[subtaskIndex].titulo = newTitle.trim();
+                }
+                return subtasks;
+            });
+        }
+    }
+
+    async function startMissionFromSubtask(missionId) {
+        const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', missionId);
+        try {
+            const missionSnap = await getDoc(missionRef);
+            if (missionSnap.exists()) {
+                const missionStatus = missionSnap.data().status;
+                if (missionStatus === 'PENDENTE' || missionStatus === 'PAUSADA') {
+                    startMission(missionId);
+                } else {
+                    showMessage('Aviso', 'A missão principal já está em andamento.');
+                }
+            }
+        } catch(error) {
+             console.error("Erro ao iniciar missão via sub-tarefa:", error);
+        }
+    }
 
     async function loadMissionDetails(taskId) {
         if (!currentUserId) return;
@@ -1494,25 +1574,27 @@
         if (subtasks.length === 0) {
             subtaskListEl.innerHTML = '<p class="text-text-dark-secondary p-4 text-center">Nenhuma sub-tarefa adicionada a esta missão.</p>';
         } else {
-            subtasks.forEach(subtask => {
+            subtasks.forEach((subtask, index) => {
                 const subtaskEl = document.createElement('div');
                 subtaskEl.className = 'flex items-center gap-x-3 py-4';
+                subtaskEl.dataset.index = index;
+                subtaskEl.dataset.missionId = missionData.id;
 
                 const isCompleted = subtask.concluida;
 
                 // Baseado no HTML de inspiração
                 subtaskEl.innerHTML = `
-                    <input type="checkbox" ${isCompleted ? 'checked' : ''} class="h-6 w-6 shrink-0 rounded border-[#3b5445] border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 cursor-pointer"/>
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} class="subtask-checkbox h-6 w-6 shrink-0 rounded border-[#3b5445] border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 cursor-pointer"/>
                     <div class="flex-grow">
                         <p class="text-white text-base font-normal leading-normal ${isCompleted ? 'line-through opacity-60' : ''}">${subtask.titulo}</p>
                         <div class="flex items-center gap-x-3 text-sm text-gray-400 mt-1">
                            <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined !text-base">hourglass_empty</span> Pendente</span>
                         </div>
                     </div>
-                    <button class="ml-auto flex shrink-0 items-center justify-center rounded-full size-10 bg-[#28392f] text-white" title="Editar Sub-tarefa">
+                    <button class="subtask-edit-btn ml-auto flex shrink-0 items-center justify-center rounded-full size-10 bg-[#28392f] text-white" title="Editar Sub-tarefa">
                         <span class="material-symbols-outlined">edit</span>
                     </button>
-                    <button class="ml-2 flex shrink-0 items-center justify-center rounded-full size-10 bg-[#28392f] text-white" title="Iniciar Sub-tarefa">
+                    <button class="subtask-play-btn ml-2 flex shrink-0 items-center justify-center rounded-full size-10 bg-[#28392f] text-white" title="Iniciar Sub-tarefa">
                         <span class="material-symbols-outlined">play_arrow</span>
                     </button>
                 `;
