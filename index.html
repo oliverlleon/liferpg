@@ -1231,6 +1231,10 @@
 
         // --- ATUALIZAÇÃO DINÂMICA DOS ATRIBUTOS ---
         const attributesContainer = document.getElementById('hub-attributes-list');
+        if (!attributesContainer) {
+            console.warn("O contêiner de atributos 'hub-attributes-list' não foi encontrado no DOM. A renderização será adiada.");
+            return;
+        }
         attributesContainer.innerHTML = ''; // Limpa a lista antes de popular
 
         const attributeConfig = {
