@@ -678,15 +678,15 @@
             </button>
         </div>
 
-        <!-- Container para Recompensas da Missão -->
-        <div id="mission-rewards-container" class="px-4 pb-4">
-            <!-- As recompensas serão inseridas aqui via JS -->
-        </div>
-
         <div class="px-4 pb-24">
             <div id="sub-task-list" class="flex flex-col divide-y divide-[#28392f]">
                 <!-- Sub-tarefas inseridas via JS -->
             </div>
+        </div>
+
+        <!-- Container para Recompensas da Missão -->
+        <div id="mission-rewards-container" class="px-4 pb-4">
+            <!-- As recompensas serão inseridas aqui via JS -->
         </div>
 
         <div class="fixed bottom-6 right-6 z-30">
@@ -1573,7 +1573,7 @@
         const rewardsContainer = document.getElementById('mission-rewards-container');
         rewardsContainer.innerHTML = ''; // Limpa o container
 
-        if (missionData.recompensa && (status === 'EM_ANDAMENTO' || status === 'CONCLUIDA')) {
+        if (missionData.recompensa && (status === 'PENDENTE' || status === 'EM_ANDAMENTO' || status === 'CONCLUIDA')) {
             const recompensa = missionData.recompensa;
             const atributo = missionData.atributo_associado || 'ATTR';
 
