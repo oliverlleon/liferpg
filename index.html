@@ -2014,21 +2014,10 @@
         }
     });
 
-    async function startSubtaskTimerInterval(subtaskId, accumulatedSeconds) {
+    async function startSubtaskTimerInterval(subtaskId, accumulatedSeconds, startTime) {
         if (activeSubtaskTimers[subtaskId]) {
             clearInterval(activeSubtaskTimers[subtaskId]);
         }
-
-        const subtaskRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', currentMissionId, 'subtarefas', subtaskId);
-        const eventLogsRef = collection(subtaskRef, 'event_logs');
-
-        const eventLogsSnap = await getDocs(eventLogsRef);
-        const eventLogs = eventLogsSnap.docs.map(d => d.data()).sort((a,b) => b.timestamp.seconds - a.timestamp.seconds);
-        const lastStartEvent = eventLogs.find(log => log.tipo === 'INICIO');
-
-        if (!lastStartEvent) return;
-
-        const startTime = lastStartEvent.timestamp.toDate();
 
         const intervalId = setInterval(() => {
             const now = new Date();
@@ -2051,6 +2040,11 @@
         const subtaskRef = doc(collection(missionRef, 'subtarefas'), subtaskId);
         const eventLogsRef = collection(subtaskRef, 'event_logs');
 
+        // Elementos da UI para atualização otimista
+        const timerButton = document.querySelector(`button[data-subtask-id="${subtaskId}"]`);
+        const timerIcon = timerButton.querySelector('span');
+        const timerDisplay = document.querySelector(`#subtask-timer-${subtaskId} .timer-text`);
+
         try {
             const missionSnap = await getDoc(missionRef);
             if (!missionSnap.exists() || missionSnap.data().status !== 'EM_ANDAMENTO') {
@@ -2064,7 +2058,7 @@
             const subtaskData = subtaskSnap.data();
 
             if (subtaskData.status === 'EM_ANDAMENTO') {
-                // Pausar o timer
+                // --- PAUSAR O TIMER ---
                 if (activeSubtaskTimers[subtaskId]) {
                     clearInterval(activeSubtaskTimers[subtaskId]);
                     delete activeSubtaskTimers[subtaskId];
@@ -2083,13 +2077,31 @@
 
                 await updateDoc(subtaskRef, { status: 'PAUSADA', tempoAcumulado: accumulatedTime });
                 await addDoc(eventLogsRef, { tipo: 'PAUSA', timestamp: Timestamp.now() });
-                loadMissionDetails(missionId);
+
+                // Atualização otimista da UI
+                if(timerDisplay) timerDisplay.textContent = `Tempo: ${formatTime(accumulatedTime)}`;
+                if(timerIcon) timerIcon.textContent = 'play_arrow';
+                if(timerButton) {
+                    timerButton.classList.remove('bg-primary', 'text-background-dark');
+                    timerButton.classList.add('bg-[#28392f]', 'text-white');
+                }
+
 
             } else {
-                // Iniciar o timer
+                // --- INICIAR O TIMER ---
+                const startTime = new Date();
                 await updateDoc(subtaskRef, { status: 'EM_ANDAMENTO' });
-                await addDoc(eventLogsRef, { tipo: 'INICIO', timestamp: Timestamp.now() });
-                loadMissionDetails(missionId);
+                await addDoc(eventLogsRef, { tipo: 'INICIO', timestamp: Timestamp.fromDate(startTime) });
+
+                // Inicia o intervalo visual passando o tempo de início
+                startSubtaskTimerInterval(subtaskId, subtaskData.tempoAcumulado || 0, startTime);
+
+                // Atualização otimista da UI
+                if(timerIcon) timerIcon.textContent = 'pause';
+                 if(timerButton) {
+                    timerButton.classList.add('bg-primary', 'text-background-dark');
+                    timerButton.classList.remove('bg-[#28392f]', 'text-white');
+                }
             }
 
         } catch (error) {
