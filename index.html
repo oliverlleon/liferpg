@@ -413,21 +413,8 @@
           <!-- Atributos -->
           <div class="flex flex-col gap-2 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
             <h2 class="text-base font-bold text-primary">Atributos</h2>
-            <div id="hub-stats-forca" class="flex items-center gap-2 text-sm">
-              <span class="material-symbols-outlined text-red-400 text-base">swords</span>
-              <span>Força: 1</span>
-            </div>
-            <div id="hub-stats-inteligencia" class="flex items-center gap-2 text-sm">
-              <span class="material-symbols-outlined text-blue-400 text-base">school</span>
-              <span>Inteligência: 1</span>
-            </div>
-            <div id="hub-stats-vitalidade" class="flex items-center gap-2 text-sm">
-              <span class="material-symbols-outlined text-green-400 text-base">shield</span>
-              <span>Vitalidade: 1</span>
-            </div>
-            <div id="hub-stats-velocidade" class="flex items-center gap-2 text-sm">
-              <span class="material-symbols-outlined text-yellow-400 text-base">sprint</span>
-              <span>Velocidade: 1</span>
+            <div id="hub-attributes-list" class="flex flex-col gap-4 mt-2">
+              <!-- Atributos serão inseridos dinamicamente aqui -->
             </div>
           </div>
           <!-- Status Atuais -->
@@ -684,6 +671,11 @@
             </div>
         </div>
 
+        <!-- Container para Recompensas da Missão -->
+        <div id="mission-rewards-container" class="px-4 pb-4">
+            <!-- As recompensas serão inseridas aqui via JS -->
+        </div>
+
         <div class="fixed bottom-6 right-6 z-30">
             <button id="btn-add-subtask-modal" class="flex items-center justify-center gap-2 h-14 pl-5 pr-6 rounded-full bg-primary text-background-dark shadow-lg">
                 <span class="material-symbols-outlined !text-2xl">post_add</span>
@@ -800,7 +792,8 @@
       addDoc,
       writeBatch,
       setLogLevel,
-      Timestamp
+      Timestamp,
+      runTransaction
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import {
         getStorage,
@@ -1022,6 +1015,11 @@
         debounceTimer = setTimeout(func, delay);
     }
 
+    function normalizeString(str) {
+        if (!str) return '';
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
     // --- Lógica de Navegação ---
     document.getElementById('btn-goto-register').addEventListener('click', () => showScreen('register'));
     document.getElementById('btn-goto-login').addEventListener('click', () => showScreen('login'));
@@ -1221,22 +1219,50 @@
             'hub-level': `Nv. ${character.level || 1}`,
             'hub-hp-text': `${character.hp_atual}/${character.hp_max}`,
             'hub-mana-text': `${character.mana_atual}/${character.mana_max}`,
-            'hub-xp-text': `${character.xp_atual}/${character.xp_para_upar}`,
-            'hub-stats-forca': `<span class="material-symbols-outlined text-red-400 text-base">swords</span> <span>Força: ${stats.forca?.level || 1}</span>`,
-            'hub-stats-inteligencia': `<span class="material-symbols-outlined text-blue-400 text-base">school</span> <span>Inteligência: ${stats.inteligencia?.level || 1}</span>`,
-            'hub-stats-vitalidade': `<span class="material-symbols-outlined text-green-400 text-base">shield</span> <span>Vitalidade: ${stats.vitalidade?.level || 1}</span>`,
-            'hub-stats-velocidade': `<span class="material-symbols-outlined text-yellow-400 text-base">sprint</span> <span>Velocidade: ${stats.velocidade?.level || 1}</span>`
+            'hub-xp-text': `${character.xp_atual}/${character.xp_para_upar}`
         };
 
         for (const id in elements) {
             const el = document.getElementById(id);
             if (el) {
-                if (id.startsWith('hub-stats')) {
-                    el.innerHTML = elements[id];
-                } else {
-                    el.textContent = elements[id];
-                }
+                el.textContent = elements[id];
             }
+        }
+
+        // --- ATUALIZAÇÃO DINÂMICA DOS ATRIBUTOS ---
+        const attributesContainer = document.getElementById('hub-attributes-list');
+        if (!attributesContainer) {
+            console.warn("O contêiner de atributos 'hub-attributes-list' não foi encontrado no DOM. A renderização será adiada.");
+            return;
+        }
+        attributesContainer.innerHTML = ''; // Limpa a lista antes de popular
+
+        const attributeConfig = {
+            forca: { icon: 'swords', color: 'text-red-400', name: 'Força' },
+            inteligencia: { icon: 'school', color: 'text-blue-400', name: 'Inteligência' },
+            vitalidade: { icon: 'shield', color: 'text-green-400', name: 'Vitalidade' },
+            velocidade: { icon: 'sprint', color: 'text-yellow-400', name: 'Velocidade' },
+            carisma: { icon: 'sentiment_satisfied', color: 'text-pink-400', name: 'Carisma' }
+        };
+
+        for (const key in attributeConfig) {
+            const config = attributeConfig[key];
+            const stat = stats[key] || { level: 1, xp_atual: 0, xp_para_upar: 100 };
+            const xpPercent = (stat.xp_atual / stat.xp_para_upar) * 100;
+
+            const attributeEl = document.createElement('div');
+            attributeEl.innerHTML = `
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined ${config.color} text-base">${config.icon}</span>
+                        <span>${config.name}: ${stat.level}</span>
+                    </div>
+                </div>
+                <div class="h-1 w-full rounded-full bg-background-dark mt-1">
+                    <div class="h-1 rounded-full bg-primary" style="width: ${xpPercent}%"></div>
+                </div>
+            `;
+            attributesContainer.appendChild(attributeEl);
         }
 
         const hpPercent = (character.hp_atual / character.hp_max) * 100 || 100;
@@ -1556,6 +1582,9 @@
                 secondaryBtn.onclick = () => cancelMission(missionData.id);
                 controlsContainer.appendChild(secondaryBtn);
                 break;
+            case 'CONCLUIDA':
+                // No buttons for completed missions
+                break;
             case 'PENDENTE':
             default:
                 primaryBtn.innerHTML = `<span>Iniciar Missão</span>`;
@@ -1563,6 +1592,53 @@
                 controlsContainer.appendChild(primaryBtn);
                 break;
         }
+
+        // --- LÓGICA PARA RENDERIZAR RECOMPENSAS ---
+        const rewardsContainer = document.getElementById('mission-rewards-container');
+        rewardsContainer.innerHTML = ''; // Limpa o container
+
+        if (missionData.recompensa && (status === 'PENDENTE' || status === 'EM_ANDAMENTO' || status === 'CONCLUIDA')) {
+            const recompensa = missionData.recompensa;
+            const atributo = normalizeString(missionData.atributo_associado || 'ATTR').toUpperCase();
+
+            const iconMap = {
+                FORCA: 'swords',
+                INTELIGENCIA: 'school',
+                VELOCIDADE: 'sprint',
+                VITALIDADE: 'shield',
+                CARISMA: 'sentiment_satisfied',
+                default: 'shield_person'
+            };
+            const attr_icon = iconMap[atributo] || iconMap.default;
+
+            const rewardsHTML = `
+                <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+                    <h3 class="text-lg font-bold text-primary mb-3 text-center">Recompensas da Missão</h3>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <!-- XP Global -->
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-xp text-4xl">star</span>
+                            <span class="text-xl font-bold text-white">${recompensa.xp_global || 0}</span>
+                            <span class="text-sm text-text-dark-secondary">XP Global</span>
+                        </div>
+                        <!-- XP de Atributo -->
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-primary text-4xl">${attr_icon}</span>
+                            <span class="text-xl font-bold text-white">${recompensa.xp_atributo || 0}</span>
+                            <span class="text-sm text-text-dark-secondary">XP de ${atributo}</span>
+                        </div>
+                        <!-- Moedas -->
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-yellow-400 text-4xl">monetization_on</span>
+                            <span class="text-xl font-bold text-white">${recompensa.moedas || 0}</span>
+                            <span class="text-sm text-text-dark-secondary">Moedas</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            rewardsContainer.innerHTML = rewardsHTML;
+        }
+
 
         // --- LÓGICA PARA RENDERIZAR SUB-TAREFAS ---
         const subtaskListEl = document.getElementById('sub-task-list');
@@ -1635,8 +1711,98 @@
     const startMission = (taskId) => updateMissionStatus(taskId, 'EM_ANDAMENTO', 'INICIO');
     const pauseMission = (taskId) => updateMissionStatus(taskId, 'PAUSADA', 'PAUSA');
     const resumeMission = (taskId) => updateMissionStatus(taskId, 'EM_ANDAMENTO', 'RETOMADA');
-    const completeMission = (taskId) => updateMissionStatus(taskId, 'CONCLUIDA', 'CONCLUSAO');
     const cancelMission = (taskId) => updateMissionStatus(taskId, 'PENDENTE', 'CANCELAMENTO');
+
+    async function completeMission(taskId) {
+        if (!currentUserId) return showMessage('Erro', 'Você não está logado.');
+
+        const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId);
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const missionSnap = await transaction.get(missionRef);
+                const profileSnap = await transaction.get(profileRef);
+
+                if (!missionSnap.exists() || !profileSnap.exists()) {
+                    throw new Error("Missão ou Perfil não encontrado.");
+                }
+
+                if (missionSnap.data().status === 'CONCLUIDA') {
+                    showMessage('Aviso', 'Esta missão já foi concluída.');
+                    return; // Aborta a transação
+                }
+
+                const missionData = missionSnap.data();
+                const profileData = profileSnap.data();
+                const { recompensa, atributo_associado } = missionData;
+
+                if (!recompensa) {
+                    console.warn("Missão sem recompensa. Apenas marcando como concluída.");
+                } else {
+                    // --- ATUALIZAÇÃO DO PERSONAGEM ---
+                    const character = profileData.character;
+                    character.xp_atual += recompensa.xp_global || 0;
+                    character.moedas += recompensa.moedas || 0;
+
+                    // Lógica de Level Up do Personagem
+                    while (character.xp_atual >= character.xp_para_upar) {
+                        character.level += 1;
+                        character.xp_atual -= character.xp_para_upar;
+                        // Aumenta a necessidade de XP para o próximo nível (ex: 10% a mais)
+                        character.xp_para_upar = Math.floor(character.xp_para_upar * 1.1);
+                        // Bônus de Level Up (ex: recupera HP e Mana)
+                        character.hp_atual = character.hp_max;
+                        character.mana_atual = character.mana_max;
+                        showMessage(`NÍVEL UP!`, `Parabéns, você alcançou o nível ${character.level}!`);
+                    }
+
+                    // --- ATUALIZAÇÃO DO ATRIBUTO ---
+                    const attrKey = normalizeString(atributo_associado).toLowerCase();
+                    if (attrKey) {
+                        // Garante que o objeto stats exista
+                        if (!profileData.stats) {
+                            profileData.stats = {};
+                        }
+                        // Garante que o atributo exista no perfil antes de tentar atualizá-lo
+                        if (!profileData.stats[attrKey]) {
+                            profileData.stats[attrKey] = { level: 1, xp_atual: 0, xp_para_upar: 100 };
+                        }
+
+                        const attr = profileData.stats[attrKey];
+                        attr.xp_atual += recompensa.xp_atributo || 0;
+
+                        // Lógica de Level Up do Atributo
+                        while (attr.xp_atual >= attr.xp_para_upar) {
+                            attr.level += 1;
+                            attr.xp_atual -= attr.xp_para_upar;
+                            attr.xp_para_upar = Math.floor(attr.xp_para_upar * 1.15); // Atributos evoluem um pouco mais devagar
+
+                            // Aumenta HP/MANA Max com base no atributo
+                            if(attrKey === 'vitalidade') profileData.character.hp_max += 10;
+                            if(attrKey === 'inteligencia') profileData.character.mana_max += 10;
+                        }
+                    }
+                }
+
+                // Atualiza o perfil e a missão na transação
+                transaction.update(profileRef, profileData);
+                transaction.update(missionRef, { status: 'CONCLUIDA' });
+
+                // Adiciona o log de evento
+                const eventLogRef = doc(collection(missionRef, 'event_logs'));
+                transaction.set(eventLogRef, { tipo: 'CONCLUSAO', timestamp: Timestamp.now() });
+            });
+
+            console.log("Transação de conclusão de missão bem-sucedida!");
+            showMessage('Missão Concluída!', 'Você recebeu suas recompensas!');
+            loadMissionDetails(taskId); // Recarrega a tela para refletir a mudança
+
+        } catch (error) {
+            console.error("Erro ao concluir a missão:", error);
+            showMessage('Erro de Transação', `Não foi possível concluir a missão. ${error.message}`);
+        }
+    }
 
     // --- LÓGICA DO CRONÔMETRO ---
     function stopSessionTimer() {
