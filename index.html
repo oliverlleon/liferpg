@@ -1248,15 +1248,14 @@
 
             const attributeEl = document.createElement('div');
             attributeEl.innerHTML = `
-                <div class="flex items-center justify-between text-sm mb-1">
+                <div class="flex items-center justify-between text-sm">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined ${config.color} text-base">${config.icon}</span>
                         <span>${config.name}: ${stat.level}</span>
                     </div>
-                    <span class="text-xs text-text-dark-secondary">${stat.xp_atual}/${stat.xp_para_upar}</span>
                 </div>
-                <div class="h-2 w-full rounded-full bg-background-dark">
-                    <div class="h-2 rounded-full bg-primary" style="width: ${xpPercent}%"></div>
+                <div class="h-1 w-full rounded-full bg-background-dark mt-1">
+                    <div class="h-1 rounded-full bg-primary" style="width: ${xpPercent}%"></div>
                 </div>
             `;
             attributesContainer.appendChild(attributeEl);
