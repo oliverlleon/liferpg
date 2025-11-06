@@ -64,11 +64,11 @@
 <div class="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
 <img alt="Avatar do Aventureiro" id="avatar-img" class="w-32 h-32 rounded-full border-4 border-primary object-cover shadow-lg" src="https://placehold.co/128x128/1a241e/13ec6d?text=?"/>
 </div>
-<div id="slot-cabeca" data-slot="cabeca" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 0; left: 50%; transform: translateX(-50%);"><span class="material-symbols-outlined">block</span></div>
-<div id="slot-peitoral" data-slot="peitoral" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 50%; left: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">block</span></div>
-<div id="slot-mao_direita" data-slot="mao_direita" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 50%; right: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">block</span></div>
-<div id="slot-amuleto" data-slot="amuleto" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="bottom: 0; left: 25%; transform: translateX(-50%);"><span class="material-symbols-outlined">block</span></div>
-<div id="slot-botas" data-slot="botas" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="bottom: 0; right: 25%; transform: translateX(50%);"><span class="material-symbols-outlined">block</span></div>
+<div id="slot-cabeca" data-slot="cabeca" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 0; left: 50%; transform: translateX(-50%);"><span class="material-symbols-outlined">skull</span></div>
+<div id="slot-peitoral" data-slot="peitoral" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 50%; left: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">shield</span></div>
+<div id="slot-mao_direita" data-slot="mao_direita" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 50%; right: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">swords</span></div>
+<div id="slot-amuleto" data-slot="amuleto" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="bottom: 0; left: 25%; transform: translateX(-50%);"><span class="material-symbols-outlined">diamond</span></div>
+<div id="slot-botas" data-slot="botas" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="bottom: 0; right: 25%; transform: translateX(50%);"><span class="material-symbols-outlined">foot_bones</span></div>
 </div>
 <h1 id="character-level-title" class="text-2xl font-bold mt-4">Carregando...</h1>
 <p id="character-name" class="text-text-secondary">...</p>
@@ -235,6 +235,13 @@
 
         const equipment = character.equipment || {};
         const slots = ['cabeca', 'peitoral', 'mao_direita', 'amuleto', 'botas'];
+        const defaultIcons = {
+            cabeca: 'skull',
+            peitoral: 'shield',
+            mao_direita: 'swords',
+            amuleto: 'diamond',
+            botas: 'foot_bones'
+        };
 
         slots.forEach(slot => {
             const slotEl = document.getElementById(`slot-${slot}`);
@@ -243,7 +250,7 @@
                 slotEl.innerHTML = `<span class="material-symbols-outlined !text-4xl text-primary">${item.icon}</span>`;
                 slotEl.dataset.equippedItem = JSON.stringify(item);
             } else {
-                slotEl.innerHTML = `<span class="material-symbols-outlined">block</span>`;
+                slotEl.innerHTML = `<span class="material-symbols-outlined">${defaultIcons[slot]}</span>`;
                 delete slotEl.dataset.equippedItem;
             }
         });
@@ -256,11 +263,16 @@
         const effectsContainer = document.getElementById('status-effects-container');
         effectsContainer.innerHTML = '<h3 class="font-bold mb-2">Efeitos Ativos</h3>';
         if (statusEffects && statusEffects.length > 0) {
+            const effectMap = {
+                energia_max: "Energia Máxima",
+                hp_max: "HP Máximo"
+            };
             statusEffects.forEach(effect => {
+                const effectText = effectMap[effect.effect] || effect.effect;
                 effectsContainer.innerHTML += `
                     <div class="flex items-center gap-3 text-debuff">
                         <span class="material-symbols-outlined">sentiment_dissatisfied</span>
-                        <p class="text-sm">"${effect.label}": ${effect.value}% ${effect.effect}</p>
+                        <p class="text-sm">"${effect.label}": ${effect.value}% ${effectText}</p>
                     </div>
                 `;
             });
