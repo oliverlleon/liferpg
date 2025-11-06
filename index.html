@@ -117,13 +117,6 @@
         border-radius: 50%;
         animation: particle-rise 3s infinite ease-out;
     }
-    #app-container {
-        opacity: 0;
-        transition: opacity 0.3s ease-in-out;
-    }
-    #app-container.loaded {
-        opacity: 1;
-    }
   </style>
 </head>
 
@@ -132,15 +125,8 @@
   <!-- Container Principal da Aplicação -->
   <div id="app-container">
 
-    <!-- Tela 0: Carregando -->
-    <div id="screen-loading" class="flex min-h-screen w-full flex-col items-center justify-center bg-background-dark">
-        <div class="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full"></div>
-        <p class="mt-4 text-text-dark-secondary">Carregando sua aventura...</p>
-    </div>
-
-
     <!-- Tela 1: Abertura (Splash) -->
-    <div id="screen-splash" class="hidden relative flex min-h-screen w-full flex-col dark group/design-root overflow-x-hidden">
+    <div id="screen-splash" class="relative flex min-h-screen w-full flex-col dark group/design-root overflow-x-hidden">
       <!-- Background Image -->
       <div class="absolute inset-0 z-0">
         <div class="h-full w-full bg-center bg-no-repeat bg-cover opacity-10" data-alt="A subtle, stylized texture resembling an old, weathered fantasy map." style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6sSjEhz7hgGMCO9BdTp0pHGvGbE3XMpV6jPLsVzsYPwCqNXpNCbXwpEujggDvZYrE9pQH3Y5d5BVF7gvg7jPZ0AXCp2Nwx2A7FFDzew_5BcOaQSLjVdbARuQ92QAHPYPKFF8zuiCOXoXUsMSviMA_KKbTiUtBIpnFlJBm280neUs4DCq_Bfit7g90h0YuQrldqBiXPliiGMqqxXfOBfNx_NLz-YaO63IyoVmNdwY8nkPEARovFkiWn0qj-T5XhZjUWMi1i1P7O7tL_");'></div>
@@ -488,7 +474,7 @@
       <!-- Navegação Principal -->
       <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
         <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
-          <a class="flex flex-col items-center gap-1 text-primary" href="#">
+          <a classa="flex flex-col items-center gap-1 text-primary" href="#">
             <span class="material-symbols-outlined">home</span>
             <span class="text-xs font-bold">Início</span>
           </a>
@@ -977,7 +963,6 @@
 
     // --- Seletores de Elementos ---
     const screens = {
-      loading: document.getElementById('screen-loading'),
       splash: document.getElementById('screen-splash'),
       register: document.getElementById('screen-register'),
       login: document.getElementById('screen-login'),
@@ -1077,13 +1062,7 @@
     // --- Funções Auxiliares ---
     function showScreen(screenId, data = null) {
       console.log(`Navegando para: ${screenId}`, data ? `com dados: ${JSON.stringify(data)}` : '');
-
-      // Esconde todas as telas, exceto a de carregamento
-      Object.keys(screens).forEach(key => {
-        if (key !== 'loading') {
-            screens[key].classList.add('hidden');
-        }
-      });
+      Object.values(screens).forEach(screen => screen.classList.add('hidden'));
 
       if (screens[screenId]) {
         screens[screenId].classList.remove('hidden');
@@ -1346,8 +1325,6 @@
             checkAndGenerateRecurrentTasks(allUserTasks); // Passa a lista completa
             filterAndRenderMissions(); // Chama a nova função de filtragem
         });
-
-            setupSpaNavigation();
 
       } else {
         console.log('Usuário deslogado.');
@@ -2972,28 +2949,6 @@ Sub-tarefas: ${subtasksString}`;
 
     document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
 
-
-    // --- Lógica de Navegação SPA ---
-    function setupSpaNavigation() {
-        const navLinks = document.querySelectorAll('nav a');
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                const href = link.getAttribute('href');
-                if (href && href.startsWith('./')) { // Trata links internos
-                    e.preventDefault();
-                    const targetScreen = href.substring(2, href.indexOf('.html')); // Extrai 'character' de './character.html'
-
-                    if (targetScreen === 'index') {
-                        showScreen('dashboard');
-                    } else if (targetScreen === 'character') {
-                         window.location.href = './character.html'; // Navegação normal para character.html
-                    }
-                }
-            });
-        });
-    }
-
-    // A inicialização da navegação SPA deve ser feita após o login
   </script>
 
 </body>
