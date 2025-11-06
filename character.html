@@ -193,7 +193,7 @@
     // Importações do Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, runTransaction, writeBatch, deleteField, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, runTransaction, writeBatch, deleteField, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     document.addEventListener('DOMContentLoaded', () => {
         // --- Configuração do Firebase ---
@@ -272,44 +272,49 @@
 
             const labels = logs.map(log => new Date(log.timestamp.seconds * 1000).toLocaleDateString('pt-BR'));
             const weightData = logs.map(log => log.peso_kg);
-            const fatData = logs.map(log => log.gordura_perc);
+            const fatData = logs.map(log => log.gordura_perc); // NOVO
 
+            // Dataset base para o peso
             const datasets = [{
                 label: 'Peso (kg)',
                 data: weightData,
-                borderColor: 'rgba(19, 236, 109, 1)',
+                borderColor: 'rgba(19, 236, 109, 1)', // Verde Primário
                 backgroundColor: 'rgba(19, 236, 109, 0.2)',
                 fill: true,
                 yAxisID: 'y-weight',
             }];
 
-            if (fatData.some(d => d != null)) {
+            // NOVO: Adiciona o dataset de gordura corporal se houver dados
+            if (fatData.some(d => d != null && d > 0)) {
                 datasets.push({
                     label: '% Gordura Corporal',
                     data: fatData,
-                    borderColor: 'rgba(245, 158, 11, 1)',
+                    borderColor: 'rgba(245, 158, 11, 1)', // Laranja
                     backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                    fill: false,
+                    fill: false, // Linha sem preenchimento
                     yAxisID: 'y-fat',
                 });
             }
 
-            if (vitals.meta_peso_kg) {
+            // Adiciona a linha de meta de peso, se existir
+            if (vitals && vitals.meta_peso_kg) {
                 datasets.push({
                     label: 'Meta de Peso',
                     data: Array(labels.length).fill(vitals.meta_peso_kg),
-                    borderColor: 'rgba(239, 68, 68, 1)',
-                    borderDash: [5, 5],
+                    borderColor: 'rgba(239, 68, 68, 1)', // Vermelho (Debuff)
+                    borderDash: [5, 5], // Linha tracejada
                     fill: false,
                     pointRadius: 0,
                     yAxisID: 'y-weight',
                 });
             }
 
+            // Destrói o gráfico antigo para evitar sobreposição
             if (healthChart) {
                 healthChart.destroy();
             }
 
+            // Cria o novo gráfico
             healthChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -323,19 +328,19 @@
                             ticks: { color: '#a0a0a0' },
                             grid: { color: '#3b5445' }
                         },
-                        'y-weight': {
+                        'y-weight': { // Eixo Y para o Peso (Esquerda)
                             type: 'linear',
                             position: 'left',
                             title: { display: true, text: 'Peso (kg)', color: '#13ec6d' },
                             ticks: { color: '#a0a0a0' },
                             grid: { color: '#3b5445' }
                         },
-                        'y-fat': {
+                        'y-fat': { // NOVO: Eixo Y para a Gordura (Direita)
                             type: 'linear',
                             position: 'right',
                             title: { display: true, text: '% Gordura', color: '#f59e0b' },
                             ticks: { color: '#a0a0a0' },
-                            grid: { drawOnChartArea: false } // Só desenha a grade para o eixo principal
+                            grid: { drawOnChartArea: false } // Não desenha a grade para este eixo
                         }
                     },
                     plugins: {
@@ -375,24 +380,56 @@
 
         function renderVitalsPanel(vitals, statusEffects) {
             document.getElementById('current-weight').textContent = `${vitals.peso_atual_kg || '-'} kg`;
-            document.getElementById('current-imc').textContent = vitals.imc || '-';
+            document.getElementById('current-imc').textContent = vitals.imc_atual || '-';
 
             const effectsContainer = document.getElementById('status-effects-container');
             effectsContainer.innerHTML = '<h3 class="font-bold mb-2">Efeitos Ativos</h3>';
+
             if (statusEffects && statusEffects.length > 0) {
-                const effectMap = {
-                    energia_max: "Energia Máxima",
-                    hp_max: "HP Máximo"
+                const effectDisplayConfig = {
+                    // Buffs (valor > 0)
+                    buff_composicao_saudavel: { icon: 'health_and_safety', color: 'text-primary' },
+                    buff_descansado: { icon: 'bedtime', color: 'text-blue-400' },
+                    buff_focado: { icon: 'psychology', color: 'text-purple-400' },
+                    // Debuffs (valor < 0)
+                    debuff_gordura_alta: { icon: 'sentiment_very_dissatisfied', color: 'text-debuff' },
+                    debuff_gordura_baixa: { icon: 'sentiment_dissatisfied', color: 'text-debuff' },
+                    debuff_imc_alto: { icon: 'sentiment_dissatisfied', color: 'text-debuff' },
+                    debuff_imc_baixo: { icon: 'sentiment_dissatisfied', color: 'text-debuff' },
+                    debuff_cansado: { icon: 'battery_alert', color: 'text-yellow-500' },
+                    debuff_estressado: { icon: 'bolt', color: 'text-orange-500' },
                 };
+
+                const effectNameMap = {
+                    energia_max: "Energia Máx",
+                    hp_max: "HP Máx",
+                    regeneracao_mana_energia: "Regen. Energia",
+                    custo_mana: "Custo de Habilidade"
+                };
+
                 statusEffects.forEach(effect => {
-                    const effectText = effectMap[effect.effect] || effect.effect;
+                    const config = effectDisplayConfig[effect.id] || { icon: 'help', color: 'text-text-secondary' };
+                    const isBuff = (effect.id.startsWith('buff') && effect.value > 0) || (effect.id.startsWith('debuff') && effect.value > 0);
+                    const effectText = effectNameMap[effect.effect] || effect.effect;
+
+                    let valuePrefix = (effect.value > 0) ? '+' : '';
+                    // Casos especiais onde um valor "positivo" é um debuff (ex: +10% custo de mana)
+                    if (effect.id === 'debuff_estressado') {
+                         valuePrefix = '+';
+                    } else if (effect.id === 'buff_focado') {
+                         valuePrefix = ''; // O valor já é negativo
+                    }
+
+                    const valueColor = isBuff ? config.color : 'text-debuff';
+
                     effectsContainer.innerHTML += `
-                        <div class="flex items-center gap-3 text-debuff">
-                            <span class="material-symbols-outlined">sentiment_dissatisfied</span>
-                            <p class="text-sm">"${effect.label}": ${effect.value}% ${effectText}</p>
+                        <div class="flex items-center gap-3 ${config.color}">
+                            <span class="material-symbols-outlined">${config.icon}</span>
+                            <p class="text-sm">"${effect.label}": ${valuePrefix}${effect.value}% ${effectText}</p>
                         </div>
                     `;
                 });
+
             } else {
                 effectsContainer.innerHTML += `<p class="text-sm text-text-secondary">Nenhum efeito ativo.</p>`;
             }
@@ -568,23 +605,40 @@
 
             try {
                 await runTransaction(db, async (transaction) => {
-                    // Passo 1 (Ler): Lê o perfil do usuário e prepara as referências
                     const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
                     const dailyLogCollectionRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'daily_log');
-                    const newLogRef = doc(dailyLogCollectionRef); // Cria uma referência para o novo log
 
+                    // Passo 1 (Ler): Lê o perfil e os últimos logs
                     const profileSnap = await transaction.get(profileRef);
                     if (!profileSnap.exists()) throw "Documento de perfil não existe!";
 
+                    const recentLogsQuery = query(dailyLogCollectionRef, orderBy("timestamp", "desc"), limit(6));
+                    const recentLogsSnap = await getDocs(recentLogsQuery); // Executa fora da transação para leitura
+                    const recentLogs = recentLogsSnap.docs.map(d => d.data());
+
                     const profileData = profileSnap.data();
 
-                    // Passo 2 (Calcular): Calcula o novo IMC e os novos status
+                    // Adiciona o log atual aos recentes para o cálculo da média
+                    const allLogsForAverage = [{ horas_sono: newSleepHours, nivel_estresse: newStressLevel }, ...recentLogs];
+
+                    // Passo 2 (Calcular): Calcula médias, IMC e status
+                    const calculateAverage = (logs, field) => {
+                        const validEntries = logs.map(log => log[field]).filter(val => val !== null && val !== undefined);
+                        if (validEntries.length === 0) return null;
+                        const sum = validEntries.reduce((acc, val) => acc + val, 0);
+                        return parseFloat((sum / validEntries.length).toFixed(1));
+                    };
+
+                    const avgSleep = calculateAverage(allLogsForAverage, 'horas_sono');
+                    const avgStress = calculateAverage(allLogsForAverage, 'nivel_estresse');
+
                     const altura_m = profileData.vitals.altura_cm / 100;
                     const newImc = parseFloat((newWeight / (altura_m * altura_m)).toFixed(1));
                     const novosStatus = calcularNovosStatus(newImc, newFatPerc, newSleepHours, newStressLevel);
                     const atributosDerivados = recalcularAtributosDerivados(novosStatus, profileData.stats);
 
-                    // Passo 3 (Escrever - Write 1: O Histórico): Cria o novo documento de log diário
+                    // Passo 3 (Escrever - Write 1: O Histórico)
+                    const newLogRef = doc(dailyLogCollectionRef);
                     const logData = {
                         timestamp: new Date(),
                         peso_kg: newWeight,
@@ -594,14 +648,14 @@
                     };
                     transaction.set(newLogRef, logData);
 
-                    // Passo 4 (Escrever - Write 2: O Snapshot): Prepara a atualização do perfil
+                    // Passo 4 (Escrever - Write 2: O Snapshot)
                     const vitalsUpdate = {
                         ...profileData.vitals,
                         peso_atual_kg: newWeight,
                         imc_atual: newImc,
-                        gordura_corporal_perc: newFatPerc || profileData.vitals.gordura_corporal_perc || null,
-                        horas_sono_media: newSleepHours || profileData.vitals.horas_sono_media || null, // Simplificado por enquanto
-                        estresse_medio: newStressLevel || profileData.vitals.estresse_medio || null // Simplificado
+                        gordura_corporal_perc: newFatPerc !== null ? newFatPerc : (profileData.vitals.gordura_corporal_perc || null),
+                        horas_sono_media: avgSleep,
+                        estresse_medio: avgStress
                     };
 
                     const characterUpdate = {
@@ -610,7 +664,6 @@
                         energia_max: atributosDerivados.energia_max_final
                     };
 
-                    // Atualiza o documento principal com todos os novos dados
                     transaction.update(profileRef, {
                         vitals: vitalsUpdate,
                         status_effects: novosStatus,
