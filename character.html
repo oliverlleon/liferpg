@@ -8,6 +8,7 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     tailwind.config = {
@@ -96,47 +97,8 @@
 </div>
 </div>
 </section>
-<section class="relative">
-    <h2 class="text-xl font-bold mb-4">Jornada da Saúde</h2>
-    <div id="health-carousel" class="relative overflow-hidden">
-        <div id="health-slides" class="flex transition-transform duration-500 ease-in-out">
-            <!-- Slide 1: Gráfico Principal -->
-            <div class="w-full flex-shrink-0">
-                <div class="bg-surface rounded-lg p-4">
-                    <canvas id="health-chart"></canvas>
-                </div>
-            </div>
-            <!-- Slide 2: Estatísticas -->
-            <div class="w-full flex-shrink-0">
-                <div class="bg-surface rounded-lg p-4 h-full">
-                    <h3 class="text-lg font-bold text-primary text-center mb-4">Análise de Progresso</h3>
-                    <div id="progress-stats-container" class="text-center">
-                        <p class="text-text-secondary">Carregando estatísticas...</p>
-                    </div>
-                </div>
-            </div>
-            <!-- Slide 3: Oscilação de Peso -->
-            <div class="w-full flex-shrink-0">
-                <div class="bg-surface rounded-lg p-4">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-primary">Oscilação de Peso</h3>
-                        <div id="oscillation-period-btns" class="flex items-center bg-surface-secondary rounded-full p-1 text-sm">
-                            <button data-period="day" class="oscillation-btn bg-primary text-background-dark rounded-full px-3 py-1">Dia</button>
-                            <button data-period="month" class="oscillation-btn text-text-secondary rounded-full px-3 py-1">Mês</button>
-                            <button data-period="year" class="oscillation-btn text-text-secondary rounded-full px-3 py-1">Ano</button>
-                        </div>
-                    </div>
-                    <canvas id="weight-oscillation-chart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Navegação do Carrossel -->
-    <div id="carousel-dots" class="flex justify-center mt-4 space-x-2">
-        <button data-slide-to="0" class="carousel-dot h-3 w-3 rounded-full bg-primary"></button>
-        <button data-slide-to="1" class="carousel-dot h-3 w-3 rounded-full bg-surface-secondary"></button>
-        <button data-slide-to="2" class="carousel-dot h-3 w-3 rounded-full bg-surface-secondary"></button>
-    </div>
+<section id="health-chart-container" class="bg-surface rounded-lg p-4">
+    <canvas id="healthChart"></canvas>
 </section>
 <section>
 <h2 class="text-xl font-bold mb-4">Atributos</h2>
@@ -177,39 +139,39 @@
 </div>
 
 <!-- Modal de Adicionar Log Diário -->
-<div id="modal-add-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-<div class="bg-surface border border-border-color rounded-lg p-6 w-full max-w-sm">
-<h3 class="text-primary text-xl font-bold mb-2 text-center">Adicionar Log Diário</h3>
-<p class="text-text-secondary mb-6 text-center text-sm">Registre suas métricas de hoje.</p>
+<div id="modal-daily-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-surface border border-border-color rounded-lg p-6 w-full max-w-sm space-y-4">
+        <h3 class="text-primary text-xl font-bold text-center">Adicionar Log Diário</h3>
 
-<div class="space-y-4">
-<div>
-<label for="log-weight-input" class="text-text-secondary text-sm font-bold mb-1 block">Novo Peso (kg) <span class="text-debuff">*</span></label>
-<input id="log-weight-input" type="number" class="form-input w-full bg-background-dark border-border-color rounded-md text-center text-lg" placeholder="Ex: 75.5">
-</div>
+        <div>
+            <label for="log-peso" class="block text-sm font-medium text-text-secondary mb-1">Novo Peso (kg) <span class="text-debuff">*</span></label>
+            <input id="log-peso" type="number" placeholder="Obrigatório" class="form-input w-full bg-background-dark border-border-color rounded-md text-center text-lg">
+        </div>
 
-<div>
-<label for="log-fat-perc-input" class="text-text-secondary text-sm font-bold mb-1 block">Gordura Corporal (%) <span class="text-xs">(Opcional)</span></label>
-<input id="log-fat-perc-input" type="number" class="form-input w-full bg-background-dark border-border-color rounded-md text-center text-lg" placeholder="Ex: 18.5">
-</div>
+        <div class="border-t border-border-color my-4"></div>
 
-<div class="grid grid-cols-2 gap-4">
-<div>
-<label for="log-sleep-hours-input" class="text-text-secondary text-sm font-bold mb-1 block">Horas de Sono <span class="text-xs">(Opcional)</span></label>
-<input id="log-sleep-hours-input" type="number" class="form-input w-full bg-background-dark border-border-color rounded-md text-center text-lg" placeholder="Ex: 8">
-</div>
-<div>
-<label for="log-stress-level-input" class="text-text-secondary text-sm font-bold mb-1 block">Nível Estresse (1-5) <span class="text-xs">(Opcional)</span></label>
-<input id="log-stress-level-input" type="number" min="1" max="5" class="form-input w-full bg-background-dark border-border-color rounded-md text-center text-lg" placeholder="Ex: 2">
-</div>
-</div>
-</div>
+        <p class="text-center text-sm text-text-secondary">Opcional - Para cálculos mais precisos:</p>
 
-<div class="flex gap-4 mt-8">
-<button id="cancel-log-update" class="flex-1 rounded-full h-12 bg-surface-secondary text-text-primary font-bold">Cancelar</button>
-<button id="confirm-log-update" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
-</div>
-</div>
+        <div>
+            <label for="log-gordura" class="block text-sm font-medium text-text-secondary mb-1">Gordura Corporal (%)</label>
+            <input id="log-gordura" type="number" placeholder="Ex: 15.2" class="form-input w-full bg-background-dark border-border-color rounded-md text-center text-lg">
+        </div>
+
+        <div>
+            <label for="log-sono" class="block text-sm font-medium text-text-secondary mb-1">Horas de Sono</label>
+            <input id="log-sono" type="number" placeholder="Ex: 8" class="form-input w-full bg-background-dark border-border-color rounded-md text-center text-lg">
+        </div>
+
+        <div>
+            <label for="log-estresse" class="block text-sm font-medium text-text-secondary mb-1">Nível de Estresse (1-5)</label>
+            <input id="log-estresse" type="number" min="1" max="5" placeholder="1 (baixo) - 5 (alto)" class="form-input w-full bg-background-dark border-border-color rounded-md text-center text-lg">
+        </div>
+
+        <div class="flex gap-4 pt-4">
+            <button id="cancel-daily-log" class="flex-1 rounded-full h-12 bg-surface-secondary text-text-primary font-bold">Cancelar</button>
+            <button id="confirm-daily-log" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
+        </div>
+    </div>
 </div>
 
 <!-- Modal de Ação de Item -->
@@ -229,7 +191,7 @@
     // Importações do Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, runTransaction, writeBatch, deleteField, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, runTransaction, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     document.addEventListener('DOMContentLoaded', () => {
         // --- Configuração do Firebase ---
@@ -270,14 +232,12 @@
             const profileRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'details');
             const inventoryRef = collection(db, 'artifacts', appId, 'users', uid, 'inventory');
             const goalsRef = collection(db, 'artifacts', appId, 'users', uid, 'goals');
-            const dailyLogRef = collection(db, 'artifacts', appId, 'users', uid, 'daily_log');
 
             try {
-                const [profileSnap, inventorySnap, goalsSnap, dailyLogSnap] = await Promise.all([
+                const [profileSnap, inventorySnap, goalsSnap] = await Promise.all([
                     getDoc(profileRef),
                     getDocs(inventoryRef),
-                    getDocs(goalsRef),
-                    getDocs(query(dailyLogRef, orderBy("timestamp", "asc")))
+                    getDocs(goalsRef)
                 ]);
 
                 if (profileSnap.exists()) {
@@ -293,99 +253,9 @@
                 const goals = goalsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderAchievements(goals);
 
-                characterDailyLogs = dailyLogSnap.docs.map(d => d.data()); // Armazena os logs
-                renderHealthChart(characterDailyLogs, fullProfileData.vitals);
-                renderProgressStats(characterDailyLogs, fullProfileData.vitals);
-                renderWeightOscillationChart(characterDailyLogs, 'day');
-
             } catch (error) {
                 console.error("Error loading character data:", error);
             }
-        }
-
-        let healthChart = null; // Variável para manter a instância do gráfico
-        function renderHealthChart(logs, vitals) {
-            const ctx = document.getElementById('health-chart').getContext('2d');
-            if (!ctx) return;
-
-            const labels = logs.map(log => new Date(log.timestamp.seconds * 1000).toLocaleDateString('pt-BR'));
-            const weightData = logs.map(log => log.peso_kg);
-            const fatData = logs.map(log => log.gordura_perc); // NOVO
-
-            // Dataset base para o peso
-            const datasets = [{
-                label: 'Peso (kg)',
-                data: weightData,
-                borderColor: 'rgba(19, 236, 109, 1)', // Verde Primário
-                backgroundColor: 'rgba(19, 236, 109, 0.2)',
-                fill: true,
-                yAxisID: 'y-weight',
-            }];
-
-            // NOVO: Adiciona o dataset de gordura corporal se houver dados
-            if (fatData.some(d => d != null && d > 0)) {
-                datasets.push({
-                    label: '% Gordura Corporal',
-                    data: fatData,
-                    borderColor: 'rgba(245, 158, 11, 1)', // Laranja
-                    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                    fill: false, // Linha sem preenchimento
-                    yAxisID: 'y-fat',
-                });
-            }
-
-            // Adiciona a linha de meta de peso, se existir
-            if (vitals && vitals.meta_peso_kg) {
-                datasets.push({
-                    label: 'Meta de Peso',
-                    data: Array(labels.length).fill(vitals.meta_peso_kg),
-                    borderColor: 'rgba(239, 68, 68, 1)', // Vermelho (Debuff)
-                    borderDash: [5, 5], // Linha tracejada
-                    fill: false,
-                    pointRadius: 0,
-                    yAxisID: 'y-weight',
-                });
-            }
-
-            // Destrói o gráfico antigo para evitar sobreposição
-            if (healthChart) {
-                healthChart.destroy();
-            }
-
-            // Cria o novo gráfico
-            healthChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: {
-                            ticks: { color: '#a0a0a0' },
-                            grid: { color: '#3b5445' }
-                        },
-                        'y-weight': { // Eixo Y para o Peso (Esquerda)
-                            type: 'linear',
-                            position: 'left',
-                            title: { display: true, text: 'Peso (kg)', color: '#13ec6d' },
-                            ticks: { color: '#a0a0a0' },
-                            grid: { color: '#3b5445' }
-                        },
-                        'y-fat': { // NOVO: Eixo Y para a Gordura (Direita)
-                            type: 'linear',
-                            position: 'right',
-                            title: { display: true, text: '% Gordura', color: '#f59e0b' },
-                            ticks: { color: '#a0a0a0' },
-                            grid: { drawOnChartArea: false } // Não desenha a grade para este eixo
-                        }
-                    },
-                    plugins: {
-                        legend: { labels: { color: '#ffffff' } }
-                    }
-                }
-            });
         }
 
         function renderAdventurerPanel(character, nickname) {
@@ -550,20 +420,20 @@
         }
 
         // --- Modals Logic ---
-        const dailyLogModal = document.getElementById('modal-add-log');
+        const dailyLogModal = document.getElementById('modal-daily-log');
         const itemActionModal = document.getElementById('modal-item-action');
+        let healthChart = null;
+
 
         document.getElementById('add-daily-log-btn').addEventListener('click', () => dailyLogModal.classList.remove('hidden'));
-        document.getElementById('cancel-log-update').addEventListener('click', () => dailyLogModal.classList.add('hidden'));
-        document.getElementById('confirm-log-update').addEventListener('click', handleAddDailyLog);
+        document.getElementById('cancel-daily-log').addEventListener('click', () => dailyLogModal.classList.add('hidden'));
+        document.getElementById('confirm-daily-log').addEventListener('click', handleDailyLogUpdate);
         document.getElementById('item-action-cancel-btn').addEventListener('click', () => itemActionModal.classList.add('hidden'));
 
         function calcularNovosStatus(imc, gordura_perc, sono, estresse) {
             let status_array = [];
 
-            // --- Lógica 1: Gordura vs IMC (O "Override") ---
             if (gordura_perc && gordura_perc > 0) {
-                // LÓGICA AVANÇADA (Usuário informou % de gordura)
                 if (gordura_perc > 30) {
                     status_array.push({ id: "debuff_gordura_alta", label: "Gordura Elevada", effect: "energia_max", value: -15 });
                 } else if (gordura_perc < 10) {
@@ -572,7 +442,6 @@
                     status_array.push({ id: "buff_composicao_saudavel", label: "Composição Saudável", effect: "energia_max", value: 5 });
                 }
             } else {
-                // LÓGICA BÁSICA (Fallback para IMC)
                 if (imc > 25) {
                     status_array.push({ id: "debuff_imc_alto", label: "Sobrepeso", effect: "energia_max", value: -10 });
                 } else if (imc < 18.5) {
@@ -580,75 +449,59 @@
                 }
             }
 
-            // --- Lógica 2: Buffs Opcionais (Sono) ---
             if (sono && sono >= 8) {
                 status_array.push({ id: "buff_descansado", label: "Descansado", effect: "regeneracao_mana_energia", value: 10 });
             } else if (sono && sono < 5) {
                 status_array.push({ id: "debuff_cansado", label: "Cansado", effect: "regeneracao_mana_energia", value: -10 });
             }
 
-            // --- Lógica 3: Buffs Opcionais (Estresse) ---
-            if (estresse && estresse === 1) { // Nível 1 (Baixo)
+            if (estresse && estresse === 1) {
                 status_array.push({ id: "buff_focado", label: "Focado", effect: "custo_mana", value: -5 });
-            } else if (estresse && estresse === 5) { // Nível 5 (Alto)
+            } else if (estresse && estresse === 5) {
                 status_array.push({ id: "debuff_estressado", label: "Estressado", effect: "custo_mana", value: 10 });
             }
 
             return status_array;
         }
 
-        function recalcularAtributosDerivados(novos_status, stats) {
-            // Garante que stats não é nulo ou indefinido
-            const safeStats = stats || {};
-            const forca = safeStats.forca?.level || 1;
-            const vitalidade = safeStats.vitalidade?.level || 1;
-            const velocidade = safeStats.velocidade?.level || 1;
+        function recalcularAtributosDerivados(status, stats) {
+            let hp_max = 100 + (stats.vitalidade.level * 10) + (stats.forca.level * 2);
+            let energia_max = 100 + (stats.forca.level * 5) + (stats.velocidade.level * 5);
 
-            // Fórmulas base
-            let hp_max_base = 100 + (vitalidade * 10) + (forca * 2);
-            let energia_max_base = 100 + (forca * 5) + (velocidade * 5);
-
-            // Aplica efeitos do array de status
-            novos_status.forEach(effect => {
-                if (effect.effect === "hp_max") {
-                    hp_max_base *= (1 + (effect.value / 100));
-                } else if (effect.effect === "energia_max") {
-                    energia_max_base *= (1 + (effect.value / 100));
+            status.forEach(effect => {
+                if (effect.id === "debuff_gordura_alta" || effect.id === "debuff_imc_alto") {
+                    energia_max += (energia_max * (effect.value / 100));
+                } else if (effect.id === "debuff_gordura_baixa" || effect.id === "debuff_imc_baixo") {
+                    hp_max += (hp_max * (effect.value / 100));
+                } else if (effect.id === "buff_composicao_saudavel") {
+                    energia_max += (energia_max * (effect.value / 100));
                 }
             });
 
-            return {
-                hp_max_final: Math.round(hp_max_base),
-                energia_max_final: Math.round(energia_max_base)
-            };
+            return { hp_max: Math.round(hp_max), energia_max: Math.round(energia_max) };
         }
 
-        async function handleAddDailyLog() {
-            const getNumericValue = (id) => {
-                const value = document.getElementById(id).value;
-                if (value === '' || value === null) return null;
-                const parsed = parseFloat(value);
-                return isNaN(parsed) ? null : parsed;
+        async function handleDailyLogUpdate() {
+            const inputs = {
+                novo_peso: parseFloat(document.getElementById('log-peso').value),
+                nova_gordura_perc: parseFloat(document.getElementById('log-gordura').value) || null,
+                horas_sono_hoje: parseInt(document.getElementById('log-sono').value) || null,
+                estresse_hoje: parseInt(document.getElementById('log-estresse').value) || null
             };
 
-            const newWeight = getNumericValue('log-weight-input');
-            const newFatPerc = getNumericValue('log-fat-perc-input');
-            const newSleepHours = getNumericValue('log-sleep-hours-input');
-            const newStressLevel = getNumericValue('log-stress-level-input');
-
-            if (newWeight === null || newWeight <= 0) {
-                alert("Por favor, insira um peso válido.");
+            if (isNaN(inputs.novo_peso) || inputs.novo_peso <= 0) {
+                alert("O peso é obrigatório e deve ser um número válido.");
                 return;
             }
 
             try {
                 await runTransaction(db, async (transaction) => {
                     const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
-                    const dailyLogCollectionRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'daily_log');
+                    const dailyLogRef = doc(collection(db, 'artifacts', appId, 'users', currentUserId, 'daily_log'));
 
                     // Passo 1 (Ler): Lê o perfil e os últimos logs
                     const profileSnap = await transaction.get(profileRef);
-                    if (!profileSnap.exists()) throw "Documento de perfil não existe!";
+                    if (!profileSnap.exists()) throw "Perfil não encontrado!";
 
                     const recentLogsQuery = query(dailyLogCollectionRef, orderBy("timestamp", "desc"), limit(6));
                     const recentLogsSnap = await getDocs(recentLogsQuery); // Executa fora da transação para leitura
@@ -656,72 +509,112 @@
 
                     const profileData = profileSnap.data();
 
-                    // Adiciona o log atual aos recentes para o cálculo da média
-                    const allLogsForAverage = [{ horas_sono: newSleepHours, nivel_estresse: newStressLevel }, ...recentLogs];
+                    const novo_imc = parseFloat((inputs.novo_peso / ((profileData.vitals.altura_cm / 100) ** 2)).toFixed(1));
+                    const novos_status = calcularNovosStatus(novo_imc, inputs.nova_gordura_perc, inputs.horas_sono_hoje, inputs.estresse_hoje);
+                    const { hp_max, energia_max } = recalcularAtributosDerivados(novos_status, profileData.stats);
 
-                    // Passo 2 (Calcular): Calcula médias, IMC e status
-                    const calculateAverage = (logs, field) => {
-                        const validEntries = logs.map(log => log[field]).filter(val => val !== null && val !== undefined);
-                        if (validEntries.length === 0) return null;
-                        const sum = validEntries.reduce((acc, val) => acc + val, 0);
-                        return parseFloat((sum / validEntries.length).toFixed(1));
-                    };
-
-                    const avgSleep = calculateAverage(allLogsForAverage, 'horas_sono');
-                    const avgStress = calculateAverage(allLogsForAverage, 'nivel_estresse');
-
-                    const altura_m = profileData.vitals.altura_cm / 100;
-                    const newImc = parseFloat((newWeight / (altura_m * altura_m)).toFixed(1));
-                    const novosStatus = calcularNovosStatus(newImc, newFatPerc, newSleepHours, newStressLevel);
-                    const atributosDerivados = recalcularAtributosDerivados(novosStatus, profileData.stats);
-
-                    // Passo 3 (Escrever - Write 1: O Histórico)
-                    const newLogRef = doc(dailyLogCollectionRef);
-                    const logData = {
+                    // Write 1: O Histórico
+                    transaction.set(dailyLogRef, {
                         timestamp: new Date(),
-                        peso_kg: newWeight,
-                        gordura_perc: newFatPerc,
-                        horas_sono: newSleepHours,
-                        nivel_estresse: newStressLevel
-                    };
-                    transaction.set(newLogRef, logData);
-
-                    // Passo 4 (Escrever - Write 2: O Snapshot)
-                    const vitalsUpdate = {
-                        ...profileData.vitals,
-                        peso_atual_kg: newWeight,
-                        imc_atual: newImc,
-                        gordura_corporal_perc: newFatPerc !== null ? newFatPerc : (profileData.vitals.gordura_corporal_perc || null),
-                        horas_sono_media: avgSleep,
-                        estresse_medio: avgStress
-                    };
-
-                    const characterUpdate = {
-                        ...profileData.character,
-                        hp_max: atributosDerivados.hp_max_final,
-                        energia_max: atributosDerivados.energia_max_final
-                    };
-
-                    transaction.update(profileRef, {
-                        vitals: vitalsUpdate,
-                        status_effects: novosStatus,
-                        character: characterUpdate
+                        peso_kg: inputs.novo_peso,
+                        gordura_perc: inputs.nova_gordura_perc,
+                        horas_sono: inputs.horas_sono_hoje,
+                        nivel_estresse: inputs.estresse_hoje
                     });
+
+                    // Write 2: O Snapshot
+                    profileData.vitals.peso_atual_kg = inputs.novo_peso;
+                    profileData.vitals.imc_atual = novo_imc;
+                    if(inputs.nova_gordura_perc) profileData.vitals.gordura_corporal_perc = inputs.nova_gordura_perc;
+                    profileData.status_effects = novos_status;
+
+                    // Write 3: Os Atributos Derivados
+                    profileData.character.hp_max = hp_max;
+                    profileData.character.energia_max = energia_max;
+
+                    transaction.update(profileRef, profileData);
                 });
 
                 dailyLogModal.classList.add('hidden');
-                document.getElementById('log-weight-input').value = '';
-                document.getElementById('log-fat-perc-input').value = '';
-                document.getElementById('log-sleep-hours-input').value = '';
-                document.getElementById('log-stress-level-input').value = '';
-
+                ['log-peso', 'log-gordura', 'log-sono', 'log-estresse'].forEach(id => document.getElementById(id).value = '');
                 loadCharacterData(currentUserId);
-                alert("Log diário adicionado com sucesso!");
 
             } catch (e) {
-                console.error("Transação falhou: ", e);
-                alert("Falha ao adicionar o log diário. Tente novamente.");
+                console.error("Transação de log diário falhou: ", e);
+                alert("Falha ao salvar o log diário. Tente novamente.");
             }
+        }
+
+        async function renderHealthChart() {
+            const dailyLogRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'daily_log');
+            const logSnap = await getDocs(dailyLogRef);
+            const logs = logSnap.docs.map(d => d.data()).sort((a,b) => a.timestamp.seconds - b.timestamp.seconds);
+
+            const labels = logs.map(log => log.timestamp.toDate().toLocaleDateString('pt-BR'));
+            const weightData = logs.map(log => log.peso_kg);
+            const fatData = logs.map(log => log.gordura_perc);
+
+            const ctx = document.getElementById('healthChart').getContext('2d');
+
+            if (healthChart) {
+                healthChart.destroy();
+            }
+
+            healthChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Peso (kg)',
+                            data: weightData,
+                            borderColor: '#13ec6d',
+                            backgroundColor: 'rgba(19, 236, 109, 0.1)',
+                            fill: true,
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: '% Gordura Corporal',
+                            data: fatData,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            fill: true,
+                            yAxisID: 'y1',
+                            hidden: !fatData.some(d => d) // Esconde se não houver dados de gordura
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: { color: '#a0a0a0' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: { color: '#a0a0a0' }
+                        },
+                        x: {
+                           ticks: { color: '#a0a0a0' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#a0a0a0'
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         document.getElementById('inventory-grid').addEventListener('click', (e) => {
