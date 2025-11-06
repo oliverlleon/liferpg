@@ -1249,6 +1249,8 @@
       console.log(`Navegando para: ${screenId}`, data ? `com dados: ${JSON.stringify(data)}` : '');
       Object.values(screens).forEach(screen => screen.classList.add('hidden'));
 
+      updateNavActiveState(screenId);
+
       if (screens[screenId]) {
         screens[screenId].classList.remove('hidden');
       }
@@ -3134,18 +3136,46 @@ Sub-tarefas: ${subtasksString}`;
         showScreen('calendar');
     });
 
-    document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
+    window.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
 
-    document.getElementById('nav-character').addEventListener('click', (e) => {
-        e.preventDefault();
-        loadCharacterScreen();
-        showScreen('character');
+        document.getElementById('nav-character').addEventListener('click', (e) => {
+            e.preventDefault();
+            loadCharacterScreen();
+            showScreen('character');
+        });
+
+        document.getElementById('nav-dashboard').addEventListener('click', (e) => {
+            e.preventDefault();
+            showScreen('dashboard');
+        });
     });
 
-    document.getElementById('nav-dashboard').addEventListener('click', (e) => {
-        e.preventDefault();
-        showScreen('dashboard');
-    });
+    function updateNavActiveState(activeScreenId) {
+        const navLinks = {
+            dashboard: document.getElementById('nav-dashboard'),
+            character: document.getElementById('nav-character'),
+        };
+
+        Object.values(navLinks).forEach(link => {
+            if (link) {
+                link.classList.remove('text-primary');
+                link.classList.add('text-text-dark-secondary');
+            }
+        });
+
+        let activeLink = null;
+        if (activeScreenId === 'dashboard') {
+            activeLink = navLinks.dashboard;
+        } else if (activeScreenId === 'character') {
+            activeLink = navLinks.character;
+        }
+
+        if (activeLink) {
+            activeLink.classList.remove('text-text-dark-secondary');
+            activeLink.classList.add('text-primary');
+        }
+    }
 
     // --- LÓGICA DA TELA DE PERSONAGEM ---
     async function loadCharacterScreen() {
@@ -3167,7 +3197,11 @@ Sub-tarefas: ${subtasksString}`;
             ]);
 
             if (!profileSnap.exists()) {
-                throw new Error("Perfil não encontrado.");
+                showMessage('Personagem Incompleto', 'Complete a criação do seu personagem para acessar esta tela.');
+                currentRegistrationStep = 2; // Pula para a etapa de dados vitais
+                updateRegistrationStepUI();
+                showScreen('register');
+                return;
             }
 
             const profileData = profileSnap.data();
