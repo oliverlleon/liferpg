@@ -8,7 +8,9 @@
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script>
     tailwind.config = {
       darkMode: "class",
@@ -56,6 +58,12 @@
     .equipment-slot:hover {
         background-color: #28392f;
     }
+    .health-swiper .swiper-pagination-bullet {
+        background-color: #3b5445;
+    }
+    .health-swiper .swiper-pagination-bullet-active {
+        background-color: #13ec6d;
+    }
   </style>
 </head>
 <body class="bg-background-dark font-display text-text-primary">
@@ -98,8 +106,26 @@
 </section>
 <section>
 <h2 class="text-xl font-bold mb-4">Histórico de Saúde</h2>
-<div class="bg-surface rounded-lg p-4">
+<div class="swiper health-swiper bg-surface rounded-lg">
+<div class="swiper-wrapper">
+<!-- Slide 1: Gráfico de Linha Principal -->
+<div class="swiper-slide p-4">
 <canvas id="health-chart"></canvas>
+</div>
+<!-- Slide 2: Análise e Projeções -->
+<div class="swiper-slide p-4">
+<div id="health-analytics-container" class="flex flex-col justify-center items-center h-full">
+<!-- Conteúdo será preenchido via JS -->
+<p class="text-text-secondary">Carregando análise...</p>
+</div>
+</div>
+<!-- Slide 3: Gráfico de Oscilação -->
+<div class="swiper-slide p-4">
+<canvas id="oscillation-chart"></canvas>
+</div>
+</div>
+<!-- Paginação -->
+<div class="swiper-pagination"></div>
 </div>
 </section>
 <section>
@@ -258,6 +284,8 @@
 
                 const dailyLogs = dailyLogSnap.docs.map(d => d.data());
                 renderHealthChart(dailyLogs, fullProfileData.vitals);
+                renderHealthAnalytics(dailyLogs, fullProfileData.vitals);
+                renderOscillationChart(dailyLogs);
 
 
             } catch (error) {
@@ -344,6 +372,125 @@
                 }
             });
         }
+
+        function renderHealthAnalytics(logs, vitals) {
+            const container = document.getElementById('health-analytics-container');
+            if (!logs || logs.length < 2) {
+                container.innerHTML = `<p class="text-text-secondary text-center">Dados insuficientes para análise. Continue registrando!</p>`;
+                return;
+            }
+
+            // Calcula a mudança nos últimos 7 e 30 dias
+            const now = new Date();
+            const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+            const recentLogs = logs.filter(log => new Date(log.timestamp.seconds * 1000) > thirtyDaysAgo);
+            if (recentLogs.length < 2) {
+                 container.innerHTML = `<p class="text-text-secondary text-center">Continue registrando para ver a análise de 30 dias.</p>`;
+                return; // Precisa de pelo menos 2 logs no período para calcular a média
+            }
+
+            const firstLog = recentLogs[0];
+            const lastLog = recentLogs[recentLogs.length - 1];
+
+            const totalDays = (new Date(lastLog.timestamp.seconds * 1000) - new Date(firstLog.timestamp.seconds * 1000)) / (1000 * 60 * 60 * 24);
+            const totalWeightChange = lastLog.peso_kg - firstLog.peso_kg;
+            const avgDailyChange = totalDays > 0 ? totalWeightChange / totalDays : 0;
+
+            let projectionHtml = `<p class="text-sm text-text-secondary text-center">Mantenha o ritmo!</p>`;
+            if (vitals.meta_peso_kg && avgDailyChange !== 0) {
+                const weightToGoal = vitals.meta_peso_kg - lastLog.peso_kg;
+                if ((weightToGoal > 0 && avgDailyChange > 0) || (weightToGoal < 0 && avgDailyChange < 0)) {
+                    const daysToGoal = Math.abs(Math.round(weightToGoal / avgDailyChange));
+                    projectionHtml = `
+                        <p class="text-lg font-bold text-primary">${daysToGoal} dias</p>
+                        <p class="text-sm text-text-secondary text-center">É o tempo estimado para alcançar sua meta de ${vitals.meta_peso_kg} kg.</p>
+                    `;
+                } else {
+                     projectionHtml = `<p class="text-sm text-text-secondary text-center">Você está se afastando da sua meta. Ajuste o curso!</p>`;
+                }
+            }
+
+
+            container.innerHTML = `
+                <h3 class="text-lg font-bold text-primary mb-4">Análise de Progresso</h3>
+                <div class="text-center mb-6">
+                     <p class="text-3xl font-bold">${(avgDailyChange * 7).toFixed(2)} kg</p>
+                     <p class="text-sm text-text-secondary">Foi sua mudança média nos últimos 7 dias.</p>
+                </div>
+                <div class="text-center">
+                    ${projectionHtml}
+                </div>
+            `;
+        }
+
+        let oscillationChart = null;
+        function renderOscillationChart(logs) {
+            const ctx = document.getElementById('oscillation-chart').getContext('2d');
+            if (!ctx) return;
+
+            if (logs.length < 2) {
+                // Não é possível calcular oscilação com menos de 2 pontos
+                return;
+            }
+
+            const labels = [];
+            const data = [];
+            const backgroundColors = [];
+
+            for (let i = 1; i < logs.length; i++) {
+                const prevLog = logs[i - 1];
+                const currentLog = logs[i];
+
+                const date = new Date(currentLog.timestamp.seconds * 1000).toLocaleDateString('pt-BR');
+                const weightChange = currentLog.peso_kg - prevLog.peso_kg;
+
+                labels.push(date);
+                data.push(weightChange.toFixed(2));
+
+                // Verde para perda de peso, Vermelho para ganho
+                if (weightChange < 0) {
+                    backgroundColors.push('rgba(19, 236, 109, 0.7)');
+                } else {
+                    backgroundColors.push('rgba(239, 68, 68, 0.7)');
+                }
+            }
+
+            if (oscillationChart) {
+                oscillationChart.destroy();
+            }
+
+            oscillationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Variação Diária (kg)',
+                        data: data,
+                        backgroundColor: backgroundColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                         x: {
+                            ticks: { color: '#a0a0a0' },
+                            grid: { color: '#3b5445' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Variação (kg)', color: '#a0a0a0' },
+                            ticks: { color: '#a0a0a0' },
+                            grid: { color: '#3b5445' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
 
         function renderAdventurerPanel(character, nickname) {
             document.getElementById('avatar-img').src = character.avatar_url || 'https://placehold.co/128x128/1a241e/13ec6d?text=?';
@@ -618,14 +765,19 @@
                     });
                 });
 
+                // Primeiro, esconde o modal e limpa os campos
                 dailyLogModal.classList.add('hidden');
                 document.getElementById('log-weight-input').value = '';
                 document.getElementById('log-fat-perc-input').value = '';
                 document.getElementById('log-sleep-hours-input').value = '';
                 document.getElementById('log-stress-level-input').value = '';
 
+                // Atualiza a UI imediatamente para uma resposta mais rápida
+                document.getElementById('current-weight').textContent = `${newWeight} kg`;
+                document.getElementById('current-imc').textContent = newImc;
+
+                // Depois, carrega os novos dados em segundo plano para atualizar os gráficos e o resto
                 loadCharacterData(currentUserId);
-                alert("Log diário adicionado com sucesso!");
 
             } catch (e) {
                 console.error("Transação falhou: ", e);
@@ -709,6 +861,16 @@
             await batch.commit();
             loadCharacterData(currentUserId);
         }
+
+        const healthSwiper = new Swiper('.health-swiper', {
+            // Optional parameters
+            loop: false,
+            // If we need pagination
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            },
+        });
     });
 </script>
 </body></html>
