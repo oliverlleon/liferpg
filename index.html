@@ -478,7 +478,7 @@
             <span class="material-symbols-outlined">home</span>
             <span class="text-xs font-bold">Início</span>
           </a>
-          <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+          <a id="nav-character" class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
             <span class="material-symbols-outlined">shield_person</span>
             <span class="text-xs">Personagem</span>
           </a>
@@ -716,6 +716,161 @@
         <!-- Background -->
         <div class="absolute inset-0 z-0">
             <div class="h-full w-full bg-center bg-no-repeat bg-cover opacity-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6sSjEhz7hgGMCO9BdTp0pHGvGbE3XMpV6jPLsVzsYPwCqNXpNCbXwpEujggDvZYrE9pQH3Y5d5BVF7gvg7jPZ0AXCp2Nwx2A7FFDzew_5BcOaQSLjVdbARuQ92QAHPYPKFF8zuiCOXoXUsMSviMA_KKbTiUtBIpnFlJBm280neUs4DCq_Bfit7g90h0YuQrldqBiXPliiGMqqxXfOBfNx_NLz-YaO63IyoVmNdwY8nkPEARovFkiWn0qj-T5XhZjUWMi1i1P7O7tL_");'></div>
+    </div>
+
+    <!-- Tela 9: Ficha de Personagem & Inventário -->
+    <div id="screen-character" class="hidden bg-background-dark font-display text-text-primary">
+        <div class="flex h-auto min-h-screen w-full flex-col">
+            <header class="flex flex-col items-center p-4 pt-8">
+                <div class="relative w-full max-w-sm mx-auto h-72">
+                    <div class="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <img alt="Avatar do Aventureiro" class="w-32 h-32 rounded-full border-4 border-primary object-cover shadow-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA42BVRws7E9gcedx-PIHCRtGIUGOSw9xkCxaIx918TkSVFxm6_CWOxTYGU7KxHkXTkT6RKWE_0pbpllIPPztMhu6N8oC_N-MzWJAKmzVE7WZZlOzKcxrkLl9dbtyxD61mDAeqtAzBxZeB-H2CqTKvKf1xZoz56ExLmX7FUmNtizTG3GX7cMEhZFCIqz8QUmaDNeL6ZD5BQqXYkRMvvzIcRYJMXEXRvABssIMbmx7As8d-GU3Iu32Dj0g6N3sRGNn-pC5KsISXENrYh"/>
+                    </div>
+                    <div class="absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 0; left: 50%; transform: translateX(-50%);"><span class="material-symbols-outlined">skull</span></div>
+                    <div class="absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 50%; left: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">shield</span></div>
+                    <div class="absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 50%; right: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">swords</span></div>
+                    <div class="absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="bottom: 0; left: 25%; transform: translateX(-50%);"><span class="material-symbols-outlined">diamond</span></div>
+                    <div class="absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="bottom: 0; right: 25%; transform: translateX(50%);"><span class="material-symbols-outlined">foot_bones</span></div>
+                </div>
+                <h1 class="text-2xl font-bold mt-4">Nível 12 - Patrulheiro Arcano</h1>
+                <p class="text-text-secondary">Elara Vespertina</p>
+            </header>
+            <main class="flex-1 pb-24 px-4 space-y-8">
+                <section>
+                    <div class="bg-surface rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <p class="text-text-secondary text-sm">Peso Atual</p>
+                                <p class="text-xl font-bold">72.5 kg</p>
+                            </div>
+                            <div>
+                                <p class="text-text-secondary text-sm text-right">IMC</p>
+                                <p class="text-xl font-bold text-right">22.4</p>
+                            </div>
+                            <button class="flex items-center justify-center gap-2 rounded-full h-10 px-4 bg-surface-secondary text-primary text-sm font-bold">
+                                <span class="material-symbols-outlined !text-base">weight</span>
+                                <span>Atualizar</span>
+                            </button>
+                        </div>
+                        <div class="border-t border-border-color pt-4">
+                            <h3 class="font-bold mb-2">Efeitos Ativos</h3>
+                            <div class="flex items-center gap-3 text-debuff">
+                                <span class="material-symbols-outlined">sentiment_dissatisfied</span>
+                                <p class="text-sm">"Sobrepeso": -10% Energia Máxima</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <h2 class="text-xl font-bold mb-4">Atributos</h2>
+                    <div class="bg-surface rounded-lg p-4 space-y-4">
+                        <div class="flex items-center gap-4">
+                            <div class="flex size-10 items-center justify-center rounded-full bg-surface-secondary text-primary"><span class="material-symbols-outlined">fitness_center</span></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-baseline">
+                                    <p class="font-bold">FORÇA</p>
+                                    <p class="text-text-secondary text-xs">Nível: 8</p>
+                                </div>
+                                <div class="w-full bg-surface-secondary rounded-full h-2 mt-1">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 60%"></div>
+                                </div>
+                                <p class="text-text-secondary text-xs text-right mt-1">1200 / 2000 XP</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex size-10 items-center justify-center rounded-full bg-surface-secondary text-primary"><span class="material-symbols-outlined">school</span></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-baseline">
+                                    <p class="font-bold">INTELIGÊNCIA</p>
+                                    <p class="text-text-secondary text-xs">Nível: 15</p>
+                                </div>
+                                <div class="w-full bg-surface-secondary rounded-full h-2 mt-1">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 30%"></div>
+                                </div>
+                                <p class="text-text-secondary text-xs text-right mt-1">1500 / 5000 XP</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex size-10 items-center justify-center rounded-full bg-surface-secondary text-primary"><span class="material-symbols-outlined">sprint</span></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-baseline">
+                                    <p class="font-bold">VELOCIDADE</p>
+                                    <p class="text-text-secondary text-xs">Nível: 11</p>
+                                </div>
+                                <div class="w-full bg-surface-secondary rounded-full h-2 mt-1">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 85%"></div>
+                                </div>
+                                <p class="text-text-secondary text-xs text-right mt-1">2550 / 3000 XP</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex size-10 items-center justify-center rounded-full bg-surface-secondary text-primary"><span class="material-symbols-outlined">favorite</span></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-baseline">
+                                    <p class="font-bold">VITALIDADE</p>
+                                    <p class="text-text-secondary text-xs">Nível: 10</p>
+                                </div>
+                                <div class="w-full bg-surface-secondary rounded-full h-2 mt-1">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 50%"></div>
+                                </div>
+                                <p class="text-text-secondary text-xs text-right mt-1">1250 / 2500 XP</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="flex size-10 items-center justify-center rounded-full bg-surface-secondary text-primary"><span class="material-symbols-outlined">star</span></div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-baseline">
+                                    <p class="font-bold">CARISMA</p>
+                                    <p class="text-text-secondary text-xs">Nível: 13</p>
+                                </div>
+                                <div class="w-full bg-surface-secondary rounded-full h-2 mt-1">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 20%"></div>
+                                </div>
+                                <p class="text-text-secondary text-xs text-right mt-1">800 / 4000 XP</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section>
+                    <h2 class="text-xl font-bold mb-4">Inventário</h2>
+                    <div class="grid grid-cols-4 sm:grid-cols-5 gap-4">
+                        <div class="aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center"><span class="material-symbols-outlined !text-4xl text-primary">science</span></div>
+                        <div class="aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center"><span class="material-symbols-outlined !text-4xl text-primary">directions_run</span></div>
+                        <div class="aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center"><span class="material-symbols-outlined !text-4xl text-text-secondary opacity-50">add</span></div>
+                        <div class="aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center"><span class="material-symbols-outlined !text-4xl text-text-secondary opacity-50">add</span></div>
+                        <div class="aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center"><span class="material-symbols-outlined !text-4xl text-text-secondary opacity-50">add</span></div>
+                        <div class="aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center"><span class="material-symbols-outlined !text-4xl text-text-secondary opacity-50">add</span></div>
+                        <div class="aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center"><span class="material-symbols-outlined !text-4xl text-text-secondary opacity-50">add</span></div>
+                        <div class="aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center"><span class="material-symbols-outlined !text-4xl text-text-secondary opacity-50">add</span></div>
+                    </div>
+                </section>
+                <section>
+                    <h2 class="text-xl font-bold mb-4">Conquistas</h2>
+                    <div class="space-y-3">
+                        <div class="bg-surface rounded-lg p-4 flex items-center gap-4">
+                            <span class="material-symbols-outlined !text-4xl text-yellow-400">emoji_events</span>
+                            <div class="flex-1">
+                                <p class="font-bold">Leitor Voraz - Nv. 1</p>
+                                <p class="text-text-secondary text-sm">Leia 10 livros</p>
+                                <div class="w-full bg-surface-secondary rounded-full h-2 my-1">
+                                    <div class="bg-yellow-400 h-2 rounded-full" style="width: 70%;"></div>
+                                </div>
+                                <p class="text-text-secondary text-xs">7 / 10 livros</p>
+                            </div>
+                        </div>
+                        <div class="bg-surface rounded-lg p-4 flex items-center gap-4 opacity-70">
+                            <span class="material-symbols-outlined !text-4xl text-primary">military_tech</span>
+                            <div class="flex-1">
+                                <p class="font-bold">Maratonista Iniciante</p>
+                                <p class="text-text-secondary text-sm">Corra 5km sem parar</p>
+                                <p class="text-primary text-sm font-semibold mt-1">Recompensa: [Tênis de Hermes]</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
         </div>
         <!-- Conteúdo -->
         <div class="relative z-10 flex w-full grow flex-col pb-24">
@@ -837,6 +992,34 @@
                 <button id="subtask-modal-cancel-btn" class="px-4 py-2 rounded bg-surface-dark/50 text-white/80">Cancelar</button>
                 <button id="subtask-modal-save-btn" class="px-4 py-2 rounded bg-primary text-background-dark font-bold">Salvar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal de Atualizar Peso -->
+    <div id="modal-update-weight" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm">
+            <h3 class="text-primary text-xl font-bold mb-4">Atualizar Peso</h3>
+            <input id="update-weight-input" type="number" step="0.1" class="form-input w-full bg-[#102218] border-border-dark rounded mb-4" placeholder="Novo peso (kg)">
+            <div class="flex justify-end gap-3">
+                <button id="update-weight-cancel-btn" class="px-4 py-2 rounded bg-surface-dark/50 text-white/80">Cancelar</button>
+                <button id="update-weight-save-btn" class="px-4 py-2 rounded bg-primary text-background-dark font-bold">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes do Item -->
+    <div id="modal-item-details" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm text-center">
+            <span id="item-details-icon" class="material-symbols-outlined !text-6xl text-primary mx-auto"></span>
+            <h3 id="item-details-name" class="text-primary text-xl font-bold my-3">Nome do Item</h3>
+            <p id="item-details-effect" class="text-white/90 mb-6">Efeito: +5% XP de INT</p>
+            <div class="flex justify-center gap-3">
+                <button id="item-details-discard-btn" class="px-4 py-2 rounded bg-red-500/20 text-red-400">Descartar</button>
+                <button id="item-details-equip-btn" class="px-6 py-2 rounded bg-primary text-background-dark font-bold">Equipar</button>
+            </div>
+            <button id="item-details-close-btn" class="absolute top-2 right-2 text-white/80 hover:text-white">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
     </div>
 
@@ -970,7 +1153,8 @@
       dashboard: document.getElementById('screen-dashboard'),
       addTask: document.getElementById('screen-add-task'),
       missionDetails: document.getElementById('screen-mission-details'),
-      calendar: document.getElementById('screen-calendar')
+      calendar: document.getElementById('screen-calendar'),
+      character: document.getElementById('screen-character')
     };
 
     const registerSteps = {
@@ -2948,6 +3132,331 @@ Sub-tarefas: ${subtasksString}`;
     });
 
     document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
+
+    document.getElementById('nav-character').addEventListener('click', (e) => {
+        e.preventDefault();
+        loadCharacterScreen();
+        showScreen('character');
+    });
+
+    // --- LÓGICA DA TELA DE PERSONAGEM ---
+    async function loadCharacterScreen() {
+        if (!currentUserId) return;
+
+        console.log("Carregando tela de personagem...");
+        // Exibir um estado de carregamento inicial
+        // (Opcional, mas bom para UX)
+
+        try {
+            const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+            const inventoryRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'inventory');
+            const goalsRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'goals');
+
+            const [profileSnap, inventorySnap, goalsSnap] = await Promise.all([
+                getDoc(profileRef),
+                getDocs(inventoryRef),
+                getDocs(goalsRef)
+            ]);
+
+            if (!profileSnap.exists()) {
+                throw new Error("Perfil não encontrado.");
+            }
+
+            const profileData = profileSnap.data();
+            const inventoryData = inventorySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const goalsData = goalsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Chamar as funções para popular cada painel
+            // populateAdventurerPanel(profileData.character, profileData.nickname);
+            // populateVitalsPanel(profileData.vitals, profileData.status_effects);
+            // populateAttributesPanel(profileData.stats);
+            populateAdventurerPanel(profileData.character, profileData.nickname);
+            populateVitalsPanel(profileData.vitals, profileData.status_effects);
+            populateAttributesPanel(profileData.stats);
+            populateInventoryPanel(inventoryData);
+            populateGoalsPanel(goalsData);
+
+        } catch (error) {
+            console.error("Erro ao carregar dados do personagem:", error);
+            showMessage('Erro', 'Não foi possível carregar os dados do seu personagem. Tente novamente.');
+            showScreen('dashboard');
+        }
+    }
+
+    function populateAdventurerPanel(characterData, nickname) {
+        const header = document.querySelector('#screen-character header');
+        if (!header || !characterData) return;
+
+        header.querySelector('img').src = characterData.avatar_url || 'https://placehold.co/128x128';
+        header.querySelector('h1').textContent = `Nível ${characterData.level || 1} - ${characterData.title || 'Aventureiro'}`;
+        header.querySelector('p').textContent = nickname || 'Nome não encontrado';
+
+        // Lógica para popular os slots de equipamento (simplificado por enquanto)
+        // const equipment = characterData.equipment || {};
+        // header.querySelector('[style*="top: 0"]').innerHTML = equipment.head ? `<img src="${equipment.head.icon_url}" />` : '<span class="material-symbols-outlined">skull</span>';
+        // ... e assim por diante para outros slots
+
+        // Adiciona o event listener ao botão "Atualizar Peso"
+        const updateWeightBtn = document.querySelector('#screen-character main section:nth-of-type(1) button');
+        if (updateWeightBtn) {
+            updateWeightBtn.onclick = () => {
+                document.getElementById('modal-update-weight').classList.remove('hidden');
+            };
+        }
+    }
+
+    function populateVitalsPanel(vitalsData, statusEffects) {
+        const section = document.querySelector('#screen-character main section:nth-of-type(1)');
+        if (!section || !vitalsData) return;
+
+        section.querySelector('.text-xl.font-bold').textContent = `${vitalsData.peso_atual_kg || 0} kg`;
+        section.querySelector('.text-xl.font-bold.text-right').textContent = vitalsData.imc || 0;
+
+        const effectsContainer = section.querySelector('.border-t');
+        const effectsList = effectsContainer.querySelector('div');
+        effectsList.innerHTML = ''; // Limpa a lista
+
+        if (statusEffects && statusEffects.length > 0) {
+            statusEffects.forEach(effect => {
+                effectsList.innerHTML += `
+                    <div class="flex items-center gap-3 text-debuff">
+                        <span class="material-symbols-outlined">sentiment_dissatisfied</span>
+                        <p class="text-sm">"${effect.label}": ${effect.description || ''}</p>
+                    </div>
+                `;
+            });
+        } else {
+            effectsList.innerHTML = '<p class="text-sm text-text-secondary">Nenhum efeito ativo.</p>';
+        }
+    }
+
+    function populateAttributesPanel(statsData) {
+        const container = document.querySelector('#screen-character main section:nth-of-type(2) .space-y-4');
+        if (!container || !statsData) return;
+        container.innerHTML = '';
+
+        const attributeConfig = {
+            forca: { name: "FORÇA", icon: "fitness_center" },
+            inteligencia: { name: "INTELIGÊNCIA", icon: "school" },
+            velocidade: { name: "VELOCIDADE", icon: "sprint" },
+            vitalidade: { name: "VITALIDADE", icon: "favorite" },
+            carisma: { name: "CARISMA", icon: "star" }
+        };
+
+        for (const key in attributeConfig) {
+            const config = attributeConfig[key];
+            const stat = statsData[key] || { level: 1, xp_atual: 0, xp_para_upar: 100 };
+            const xpPercent = (stat.xp_atual / stat.xp_para_upar) * 100;
+
+            container.innerHTML += `
+                <div class="flex items-center gap-4">
+                    <div class="flex size-10 items-center justify-center rounded-full bg-surface-secondary text-primary"><span class="material-symbols-outlined">${config.icon}</span></div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-baseline">
+                            <p class="font-bold">${config.name}</p>
+                            <p class="text-text-secondary text-xs">Nível: ${stat.level}</p>
+                        </div>
+                        <div class="w-full bg-surface-secondary rounded-full h-2 mt-1">
+                            <div class="bg-primary h-2 rounded-full" style="width: ${xpPercent}%"></div>
+                        </div>
+                        <p class="text-text-secondary text-xs text-right mt-1">${stat.xp_atual} / ${stat.xp_para_upar} XP</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function populateInventoryPanel(inventoryData) {
+        const grid = document.querySelector('#screen-character main section:nth-of-type(3) .grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const unequippedItems = inventoryData.filter(item => !item.equipado);
+
+        if (unequippedItems.length > 0) {
+            unequippedItems.forEach(item => {
+                grid.innerHTML += `
+                    <div class="aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center" data-item-id="${item.id}">
+                        <span class="material-symbols-outlined !text-4xl text-primary">${item.icon || 'help'}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // Preenche os slots vazios
+        const emptySlots = Math.max(0, 8 - unequippedItems.length);
+        for (let i = 0; i < emptySlots; i++) {
+             grid.innerHTML += `<div class="aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center"><span class="material-symbols-outlined !text-4xl text-text-secondary opacity-50">add</span></div>`;
+        }
+
+        grid.onclick = (e) => {
+            const itemElement = e.target.closest('[data-item-id]');
+            if (itemElement) {
+                openItemDetailsModal(itemElement.dataset.itemId);
+            }
+        };
+    }
+
+    function populateGoalsPanel(goalsData) {
+        const container = document.querySelector('#screen-character main section:nth-of-type(4) .space-y-3');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!goalsData || goalsData.length === 0) {
+            container.innerHTML = '<p class="text-text-secondary text-center">Nenhuma conquista definida ainda.</p>';
+            return;
+        }
+
+        goalsData.forEach(goal => {
+            const progressPercent = (goal.progresso_atual / goal.progresso_total) * 100;
+            const isCompleted = goal.concluido;
+
+            container.innerHTML += `
+                <div class="bg-surface rounded-lg p-4 flex items-center gap-4 ${isCompleted ? 'opacity-70' : ''}">
+                    <span class="material-symbols-outlined !text-4xl ${isCompleted ? 'text-primary' : 'text-yellow-400'}">${isCompleted ? 'military_tech' : 'emoji_events'}</span>
+                    <div class="flex-1">
+                        <p class="font-bold">${goal.titulo}</p>
+                        <p class="text-text-secondary text-sm">${goal.descricao}</p>
+                        ${!isCompleted ? `
+                        <div class="w-full bg-surface-secondary rounded-full h-2 my-1">
+                            <div class="bg-yellow-400 h-2 rounded-full" style="width: ${progressPercent}%;"></div>
+                        </div>
+                        <p class="text-text-secondary text-xs">${goal.progresso_atual} / ${goal.progresso_total} ${goal.unidade || ''}</p>
+                        ` : `
+                        <p class="text-primary text-sm font-semibold mt-1">Recompensa: ${goal.recompensa || 'N/A'}</p>
+                        `}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // --- LÓGICA DO MODAL DE ATUALIZAR PESO ---
+    document.getElementById('update-weight-cancel-btn').addEventListener('click', () => {
+        document.getElementById('modal-update-weight').classList.add('hidden');
+    });
+
+    document.getElementById('update-weight-save-btn').addEventListener('click', async () => {
+        const newWeight = parseFloat(document.getElementById('update-weight-input').value);
+        if (isNaN(newWeight) || newWeight <= 0) {
+            return showMessage('Valor Inválido', 'Por favor, insira um peso válido.');
+        }
+
+        if (!currentUserId) return showMessage('Erro', 'Usuário não encontrado.');
+
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const profileSnap = await transaction.get(profileRef);
+                if (!profileSnap.exists()) {
+                    throw new Error("Perfil não encontrado!");
+                }
+
+                const profileData = profileSnap.data();
+                const vitals = profileData.vitals;
+                const altura_m = vitals.altura_cm / 100;
+
+                vitals.peso_atual_kg = newWeight;
+                vitals.imc = parseFloat((newWeight / (altura_m * altura_m)).toFixed(1));
+
+                // Reavalia os status effects
+                let status_effects = profileData.status_effects || [];
+                // Remove debuffs de peso existentes
+                status_effects = status_effects.filter(e => e.id !== 'debuff_imc_alto' && e.id !== 'debuff_imc_baixo');
+
+                // Adiciona o debuff apropriado
+                if (vitals.imc > 25) {
+                    status_effects.push({ id: "debuff_imc_alto", label: "Sobrepeso", description: "-10% Energia Máxima", effect: "energia_max", value: -10 });
+                } else if (vitals.imc < 18.5) {
+                    status_effects.push({ id: "debuff_imc_baixo", label: "Abaixo do Peso", description: "-10% HP Máximo", effect: "hp_max", value: -10 });
+                }
+
+                profileData.status_effects = status_effects;
+
+                // Recalcula atributos derivados (HP_Max, Energia_Max, etc.)
+                // (Esta lógica pode ser expandida conforme o GDD)
+                // Exemplo simples:
+                profileData.character.hp_max = 100 + (profileData.stats.vitalidade.level * 10) + (status_effects.find(e=>e.id==='debuff_imc_baixo')?.value || 0);
+
+                transaction.update(profileRef, {
+                    'vitals': vitals,
+                    'status_effects': status_effects,
+                    'character.hp_max': profileData.character.hp_max
+                });
+            });
+
+            showMessage('Sucesso!', 'Seu peso e status foram atualizados.');
+            document.getElementById('modal-update-weight').classList.add('hidden');
+            loadCharacterScreen(); // Recarrega os dados na tela
+
+        } catch (error) {
+            console.error("Erro ao atualizar o peso:", error);
+            showMessage('Erro na Transação', `Não foi possível atualizar seu peso. ${error.message}`);
+        }
+    });
+
+    // --- LÓGICA DO MODAL DE DETALHES DO ITEM ---
+    async function openItemDetailsModal(itemId) {
+        if (!currentUserId || !itemId) return;
+
+        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
+        const itemSnap = await getDoc(itemRef);
+
+        if (!itemSnap.exists()) {
+            return showMessage('Erro', 'Item não encontrado no inventário.');
+        }
+
+        const itemData = itemSnap.data();
+
+        document.getElementById('item-details-icon').textContent = itemData.icon || 'help';
+        document.getElementById('item-details-name').textContent = itemData.nome || 'Item Desconhecido';
+        document.getElementById('item-details-effect').textContent = `Efeito: ${itemData.efeito || 'Nenhum'}`;
+
+        const equipBtn = document.getElementById('item-details-equip-btn');
+        equipBtn.onclick = () => equipItem(itemId, itemData.slot);
+
+        document.getElementById('item-details-discard-btn').onclick = () => { /* Lógica de descarte aqui */ };
+        document.getElementById('item-details-close-btn').onclick = () => document.getElementById('modal-item-details').classList.add('hidden');
+
+        document.getElementById('modal-item-details').classList.remove('hidden');
+    }
+
+    async function equipItem(itemId, slot) {
+        if (!currentUserId || !itemId || !slot) return;
+
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const profileSnap = await transaction.get(profileRef);
+                if (!profileSnap.exists()) throw new Error("Perfil não encontrado");
+
+                const profileData = profileSnap.data();
+                const equipment = profileData.character.equipment || {};
+
+                // Desequipa o item que está atualmente no slot, se houver
+                if (equipment[slot]) {
+                    const oldItemId = equipment[slot].id;
+                    const oldItemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', oldItemId);
+                    transaction.update(oldItemRef, { equipado: false });
+                }
+
+                // Equipa o novo item
+                transaction.update(itemRef, { equipado: true });
+                transaction.update(profileRef, { [`character.equipment.${slot}`]: { id: itemId } });
+            });
+
+            showMessage('Sucesso!', 'Item equipado!');
+            document.getElementById('modal-item-details').classList.add('hidden');
+            loadCharacterScreen();
+
+        } catch (error) {
+            console.error("Erro ao equipar o item:", error);
+            showMessage('Erro na Transação', `Não foi possível equipar o item. ${error.message}`);
+        }
+    }
 
   </script>
 
