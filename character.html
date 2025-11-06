@@ -96,11 +96,47 @@
 </div>
 </div>
 </section>
-<section>
-<h2 class="text-xl font-bold mb-4">Histórico de Saúde</h2>
-<div class="bg-surface rounded-lg p-4">
-<canvas id="health-chart"></canvas>
-</div>
+<section class="relative">
+    <h2 class="text-xl font-bold mb-4">Jornada da Saúde</h2>
+    <div id="health-carousel" class="relative overflow-hidden">
+        <div id="health-slides" class="flex transition-transform duration-500 ease-in-out">
+            <!-- Slide 1: Gráfico Principal -->
+            <div class="w-full flex-shrink-0">
+                <div class="bg-surface rounded-lg p-4">
+                    <canvas id="health-chart"></canvas>
+                </div>
+            </div>
+            <!-- Slide 2: Estatísticas -->
+            <div class="w-full flex-shrink-0">
+                <div class="bg-surface rounded-lg p-4 h-full">
+                    <h3 class="text-lg font-bold text-primary text-center mb-4">Análise de Progresso</h3>
+                    <div id="progress-stats-container" class="text-center">
+                        <p class="text-text-secondary">Carregando estatísticas...</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Slide 3: Oscilação de Peso -->
+            <div class="w-full flex-shrink-0">
+                <div class="bg-surface rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-primary">Oscilação de Peso</h3>
+                        <div id="oscillation-period-btns" class="flex items-center bg-surface-secondary rounded-full p-1 text-sm">
+                            <button data-period="day" class="oscillation-btn bg-primary text-background-dark rounded-full px-3 py-1">Dia</button>
+                            <button data-period="month" class="oscillation-btn text-text-secondary rounded-full px-3 py-1">Mês</button>
+                            <button data-period="year" class="oscillation-btn text-text-secondary rounded-full px-3 py-1">Ano</button>
+                        </div>
+                    </div>
+                    <canvas id="weight-oscillation-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Navegação do Carrossel -->
+    <div id="carousel-dots" class="flex justify-center mt-4 space-x-2">
+        <button data-slide-to="0" class="carousel-dot h-3 w-3 rounded-full bg-primary"></button>
+        <button data-slide-to="1" class="carousel-dot h-3 w-3 rounded-full bg-surface-secondary"></button>
+        <button data-slide-to="2" class="carousel-dot h-3 w-3 rounded-full bg-surface-secondary"></button>
+    </div>
 </section>
 <section>
 <h2 class="text-xl font-bold mb-4">Atributos</h2>
@@ -219,6 +255,7 @@
 
         let currentUserId = null;
         let fullProfileData = null;
+        let characterDailyLogs = []; // Armazenar logs para reutilização
 
         onAuthStateChanged(auth, user => {
             if (user) {
@@ -256,9 +293,10 @@
                 const goals = goalsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderAchievements(goals);
 
-                const dailyLogs = dailyLogSnap.docs.map(d => d.data());
-                renderHealthChart(dailyLogs, fullProfileData.vitals);
-
+                characterDailyLogs = dailyLogSnap.docs.map(d => d.data()); // Armazena os logs
+                renderHealthChart(characterDailyLogs, fullProfileData.vitals);
+                renderProgressStats(characterDailyLogs, fullProfileData.vitals);
+                renderWeightOscillationChart(characterDailyLogs, 'day');
 
             } catch (error) {
                 console.error("Error loading character data:", error);
@@ -380,7 +418,7 @@
 
         function renderVitalsPanel(vitals, statusEffects) {
             document.getElementById('current-weight').textContent = `${vitals.peso_atual_kg || '-'} kg`;
-            document.getElementById('current-imc').textContent = vitals.imc_atual || '-';
+            document.getElementById('current-imc').textContent = vitals.imc_atual || vitals.imc || '-';
 
             const effectsContainer = document.getElementById('status-effects-container');
             effectsContainer.innerHTML = '<h3 class="font-bold mb-2">Efeitos Ativos</h3>';
@@ -761,6 +799,206 @@
 
             await batch.commit();
             loadCharacterData(currentUserId);
+        }
+
+        // --- Lógica do Carrossel de Saúde ---
+        const dots = document.querySelectorAll('.carousel-dot');
+        const slidesContainer = document.getElementById('health-slides');
+        let currentSlide = 0;
+
+        const goToSlide = (slideIndex) => {
+            currentSlide = slideIndex;
+            slidesContainer.style.transform = `translateX(-${slideIndex * 100}%)`;
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('bg-primary', index === slideIndex);
+                dot.classList.toggle('bg-surface-secondary', index !== slideIndex);
+            });
+        };
+
+        dots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                goToSlide(parseInt(dot.dataset.slideTo, 10));
+            });
+        });
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const carousel = document.getElementById('health-carousel');
+
+        carousel.addEventListener('touchstart', (event) => {
+            touchStartX = event.changedTouches[0].screenX;
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', (event) => {
+            touchEndX = event.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+
+        const handleSwipe = () => {
+            if (touchEndX < touchStartX) { // Swipe left
+                if (currentSlide < dots.length - 1) {
+                    goToSlide(currentSlide + 1);
+                }
+            }
+            if (touchEndX > touchStartX) { // Swipe right
+                if (currentSlide > 0) {
+                    goToSlide(currentSlide - 1);
+                }
+            }
+        };
+
+        let weightOscillationChart = null;
+        function renderWeightOscillationChart(logs, period = 'day') {
+            const ctx = document.getElementById('weight-oscillation-chart').getContext('2d');
+            if (logs.length < 2) {
+                return;
+            }
+
+            let labels = [];
+            let data = [];
+
+            if (period === 'day') {
+                const last7Logs = logs.slice(-7);
+                labels = last7Logs.map(log => new Date(log.timestamp.seconds * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+                data = last7Logs.map((log, i) => {
+                    if (i === 0) return 0;
+                    const change = log.peso_kg - last7Logs[i-1].peso_kg;
+                    return parseFloat(change.toFixed(2));
+                });
+            } else if (period === 'month') {
+                const monthlyChanges = logs.reduce((acc, log) => {
+                    const date = new Date(log.timestamp.seconds * 1000);
+                    const monthYear = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+                    if (!acc[monthYear]) {
+                        acc[monthYear] = { logs: [] };
+                    }
+                    acc[monthYear].logs.push(log.peso_kg);
+                    return acc;
+                }, {});
+
+                labels = Object.keys(monthlyChanges);
+                data = labels.map(month => {
+                    const monthLogs = monthlyChanges[month].logs;
+                    const change = monthLogs[monthLogs.length - 1] - monthLogs[0];
+                    return parseFloat(change.toFixed(2));
+                });
+            } else if (period === 'year') {
+                 const yearlyChanges = logs.reduce((acc, log) => {
+                    const date = new Date(log.timestamp.seconds * 1000);
+                    const year = date.getFullYear().toString();
+                    if (!acc[year]) {
+                        acc[year] = { logs: [] };
+                    }
+                    acc[year].logs.push(log.peso_kg);
+                    return acc;
+                }, {});
+
+                labels = Object.keys(yearlyChanges);
+                data = labels.map(year => {
+                    const yearLogs = yearlyChanges[year].logs;
+                    const change = yearLogs[yearLogs.length - 1] - yearLogs[0];
+                    return parseFloat(change.toFixed(2));
+                });
+            }
+
+
+            if (weightOscillationChart) {
+                weightOscillationChart.destroy();
+            }
+
+            weightOscillationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Oscilação (kg)',
+                        data: data,
+                        backgroundColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(19, 236, 109, 0.6)'),
+                        borderColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 1)' : 'rgba(19, 236, 109, 1)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: { color: '#a0a0a0' },
+                            grid: { color: '#3b5445' }
+                        },
+                        x: {
+                            ticks: { color: '#a0a0a0' },
+                            grid: { color: '#3b5445' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        document.getElementById('oscillation-period-btns').addEventListener('click', (e) => {
+            const button = e.target.closest('.oscillation-btn');
+            if (button) {
+                document.querySelectorAll('.oscillation-btn').forEach(btn => {
+                    btn.classList.remove('bg-primary', 'text-background-dark');
+                    btn.classList.add('text-text-secondary');
+                });
+                button.classList.add('bg-primary', 'text-background-dark');
+                button.classList.remove('text-text-secondary');
+
+                renderWeightOscillationChart(characterDailyLogs, button.dataset.period);
+            }
+        });
+
+        function renderProgressStats(logs, vitals) {
+            const container = document.getElementById('progress-stats-container');
+            if (logs.length < 2) {
+                container.innerHTML = '<p class="text-text-secondary">Adicione mais pesagens para ver suas estatísticas.</p>';
+                return;
+            }
+
+            const lastLog = logs[logs.length - 1];
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+            const logsLast7Days = logs.filter(log => new Date(log.timestamp.seconds * 1000) >= sevenDaysAgo);
+
+            let weightChange7Days = 0;
+            if (logsLast7Days.length > 1) {
+                const firstWeight = logsLast7Days[0].peso_kg;
+                const lastWeight = logsLast7Days[logsLast7Days.length - 1].peso_kg;
+                weightChange7Days = lastWeight - firstWeight;
+            }
+
+            let timeToGoal = 'N/A';
+            if (vitals.meta_peso_kg && weightChange7Days !== 0) {
+                const weightToLose = lastLog.peso_kg - vitals.meta_peso_kg;
+                if (weightToLose > 0 && weightChange7Days < 0) {
+                    const weeksToGoal = weightToLose / -weightChange7Days;
+                    timeToGoal = `${Math.ceil(weeksToGoal)} semanas`;
+                } else if (weightToLose < 0 && weightChange7Days > 0) {
+                    const weeksToGoal = -weightToLose / weightChange7Days;
+                    timeToGoal = `${Math.ceil(weeksToGoal)} semanas`;
+                }
+            }
+
+            const weeklyChangeText = weightChange7Days > 0
+                ? `Ganhou ${weightChange7Days.toFixed(1)} kg`
+                : `Perdeu ${(-weightChange7Days).toFixed(1)} kg`;
+
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-text-secondary">Variação (7d)</p>
+                        <p class="text-2xl font-bold ${weightChange7Days > 0 ? 'text-debuff' : 'text-primary'}">${weeklyChangeText}</p>
+                    </div>
+                    <div>
+                        <p class="text-text-secondary">Ritmo para Meta</p>
+                        <p class="text-2xl font-bold">${timeToGoal}</p>
+                    </div>
+                </div>
+            `;
         }
     });
 </script>
