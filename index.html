@@ -1474,55 +1474,57 @@
     });
 
 
-    // --- Lógica de Autenticação Firebase ---
-    onAuthStateChanged(auth, (user) => {
-      if (profileListener) profileListener();
-      if (tasksListener) tasksListener();
+    window.addEventListener('DOMContentLoaded', () => {
+        // --- Lógica de Autenticação Firebase ---
+        onAuthStateChanged(auth, (user) => {
+          if (profileListener) profileListener();
+          if (tasksListener) tasksListener();
 
-      if (user && !user.isAnonymous) {
-        console.log('Usuário logado:', user.uid);
-        currentUserId = user.uid;
-        document.getElementById('main-nav').classList.remove('hidden');
+          if (user && !user.isAnonymous) {
+            console.log('Usuário logado:', user.uid);
+            currentUserId = user.uid;
+            document.getElementById('main-nav').classList.remove('hidden');
 
-        const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
-        const tasksRef = collection(db, 'artifacts', appId, 'users', user.uid, 'tasks');
+            const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
+            const tasksRef = collection(db, 'artifacts', appId, 'users', user.uid, 'tasks');
 
-        profileListener = onSnapshot(profileRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            populateDashboard(user, data);
-            showScreen('dashboard');
+            profileListener = onSnapshot(profileRef, (docSnap) => {
+              if (docSnap.exists()) {
+                const data = docSnap.data();
+                populateDashboard(user, data);
+                showScreen('dashboard');
+              } else {
+                console.log('Perfil não encontrado, redirecionando para cadastro...');
+                showMessage('Personagem Incompleto', 'Quase lá! Precisamos de seus dados vitais para forjar seu personagem.');
+                regInputs.nickname.value = user.displayName || '';
+                regInputs.email.value = user.email || '';
+                if (user.providerData.some(p => p.providerId === 'google.com')) {
+                  regInputs.nickname.disabled = true;
+                  regInputs.email.disabled = true;
+                  regInputs.password.closest('label').classList.add('hidden');
+                }
+                currentRegistrationStep = 2;
+                updateRegistrationStepUI();
+                showScreen('register');
+              }
+            });
+
+            tasksListener = onSnapshot(tasksRef, (querySnapshot) => {
+                allUserTasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                checkAndGenerateRecurrentTasks(allUserTasks); // Passa a lista completa
+                filterAndRenderMissions(); // Chama a nova função de filtragem
+            });
+
           } else {
-            console.log('Perfil não encontrado, redirecionando para cadastro...');
-            showMessage('Personagem Incompleto', 'Quase lá! Precisamos de seus dados vitais para forjar seu personagem.');
-            regInputs.nickname.value = user.displayName || '';
-            regInputs.email.value = user.email || '';
-            if (user.providerData.some(p => p.providerId === 'google.com')) {
-              regInputs.nickname.disabled = true;
-              regInputs.email.disabled = true;
-              regInputs.password.closest('label').classList.add('hidden');
-            }
-            currentRegistrationStep = 2;
-            updateRegistrationStepUI();
-            showScreen('register');
+            console.log('Usuário deslogado.');
+            currentUserId = null;
+            profileListener = null;
+            tasksListener = null;
+            document.getElementById('main-nav').classList.add('hidden');
+            resetRegistrationForm();
+            showScreen('splash');
           }
         });
-
-        tasksListener = onSnapshot(tasksRef, (querySnapshot) => {
-            allUserTasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            checkAndGenerateRecurrentTasks(allUserTasks); // Passa a lista completa
-            filterAndRenderMissions(); // Chama a nova função de filtragem
-        });
-
-      } else {
-        console.log('Usuário deslogado.');
-        currentUserId = null;
-        profileListener = null;
-        tasksListener = null;
-        document.getElementById('main-nav').classList.add('hidden');
-        resetRegistrationForm();
-        showScreen('splash');
-      }
     });
 
     function populateDashboard(user, profileData) {
@@ -3137,6 +3139,27 @@ Sub-tarefas: ${subtasksString}`;
     });
 
     window.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('btn-goto-register').addEventListener('click', () => showScreen('register'));
+        document.getElementById('btn-goto-login').addEventListener('click', () => showScreen('login'));
+        document.getElementById('login-back-btn').addEventListener('click', () => showScreen('splash'));
+        document.getElementById('login-forgot-link').addEventListener('click', () => showScreen('forgot'));
+        document.getElementById('forgot-back-btn').addEventListener('click', () => showScreen('login'));
+        document.getElementById('forgot-cancel-btn').addEventListener('click', () => showScreen('login'));
+        document.getElementById('btn-show-add-task').addEventListener('click', () => {
+            editingTaskId = null;
+            resetTaskForm();
+            showScreen('addTask');
+        });
+        taskForm.backBtn.addEventListener('click', () => showScreen('dashboard'));
+        document.getElementById('mission-details-back-btn').addEventListener('click', () => {
+            stopSessionTimer();
+            clearAllSubtaskTimers();
+            showScreen('dashboard');
+        });
+        document.getElementById('btn-goto-calendar').addEventListener('click', () => {
+            renderCalendar();
+            showScreen('calendar');
+        });
         document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
 
         document.getElementById('nav-character').addEventListener('click', (e) => {
@@ -3196,15 +3219,31 @@ Sub-tarefas: ${subtasksString}`;
                 getDocs(goalsRef)
             ]);
 
+            let profileData;
             if (!profileSnap.exists()) {
-                showMessage('Personagem Incompleto', 'Complete a criação do seu personagem para acessar esta tela.');
-                currentRegistrationStep = 2; // Pula para a etapa de dados vitais
-                updateRegistrationStepUI();
-                showScreen('register');
-                return;
+                console.warn("Perfil não encontrado, usando dados padrão.");
+                profileData = {
+                    nickname: auth.currentUser.displayName || 'Aventureiro',
+                    character: {
+                        level: 1,
+                        title: 'Noviço',
+                        avatar_url: auth.currentUser.photoURL || 'https://placehold.co/128x128',
+                        equipment: {}
+                    },
+                    vitals: { peso_atual_kg: 0, imc: 0 },
+                    status_effects: [],
+                    stats: {
+                        forca: { level: 1, xp_atual: 0, xp_para_upar: 100 },
+                        inteligencia: { level: 1, xp_atual: 0, xp_para_upar: 100 },
+                        velocidade: { level: 1, xp_atual: 0, xp_para_upar: 100 },
+                        vitalidade: { level: 1, xp_atual: 0, xp_para_upar: 100 },
+                        carisma: { level: 1, xp_atual: 0, xp_para_upar: 100 }
+                    }
+                };
+            } else {
+                profileData = profileSnap.data();
             }
 
-            const profileData = profileSnap.data();
             const inventoryData = inventorySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const goalsData = goalsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
