@@ -1457,12 +1457,22 @@
                         isValidToday = true;
                     }
                 } else if (template.recorrencia.type === 'days') {
-                    const createdAt = template.createdAt.toDate();
-                    createdAt.setHours(0, 0, 0, 0);
-                    const diffTime = Math.abs(today - createdAt);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    if (diffDays % template.recorrencia.value === 0) {
+                    if (!template.lastGenerated) {
+                        // Primeira vez: gera no dia da criação. A verificação externa `shouldGenerate`
+                        // já impede a re-geração no mesmo dia.
                         isValidToday = true;
+                    } else {
+                        // Para as próximas vezes, usa a lógica de `lastGenerated`.
+                        const baseDate = template.lastGenerated.toDate();
+                        baseDate.setHours(0, 0, 0, 0);
+
+                        const nextDueDate = new Date(baseDate);
+                        nextDueDate.setDate(baseDate.getDate() + template.recorrencia.value);
+
+                        // Gera a tarefa se hoje for igual ou depois da data de vencimento
+                        if (today >= nextDueDate) {
+                            isValidToday = true;
+                        }
                     }
                 }
 
@@ -1966,6 +1976,7 @@
                             // Aumenta HP/MANA Max com base no atributo
                             if(attrKey === 'vitalidade') profileData.character.hp_max += 10;
                             if(attrKey === 'inteligencia') profileData.character.mana_max += 10;
+                            if(attrKey === 'forca' || attrKey === 'velocidade') profileData.character.energia_max += 5;
                         }
                     }
                 }
