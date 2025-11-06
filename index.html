@@ -436,7 +436,9 @@
         <section class="flex flex-col gap-3 px-4 py-2">
           <div class="flex justify-between items-center">
              <h2 class="text-lg font-bold">Registro de Missões</h2>
-             <!-- Futuro botão de filtro aqui -->
+             <button id="btn-goto-calendar" class="p-2 rounded-full hover:bg-surface-dark">
+                <span class="material-symbols-outlined text-text-dark-secondary">calendar_month</span>
+             </button>
           </div>
 
           <!-- Abas de Filtro -->
@@ -709,6 +711,57 @@
         </div>
     </div>
 
+    <!-- Tela 8: Calendário de Missões (Registro Temporal) -->
+    <div id="screen-calendar" class="hidden relative flex min-h-screen w-full flex-col overflow-x-hidden">
+        <!-- Background -->
+        <div class="absolute inset-0 z-0">
+            <div class="h-full w-full bg-center bg-no-repeat bg-cover opacity-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6sSjEhz7hgGMCO9BdTp0pHGvGbE3XMpV6jPLsVzsYPwCqNXpNCbXwpEujggDvZYrE9pQH3Y5d5BVF7gvg7jPZ0AXCp2Nwx2A7FFDzew_5BcOaQSLjVdbARuQ92QAHPYPKFF8zuiCOXoXUsMSviMA_KKbTiUtBIpnFlJBm280neUs4DCq_Bfit7g90h0YuQrldqBiXPliiGMqqxXfOBfNx_NLz-YaO63IyoVmNdwY8nkPEARovFkiWn0qj-T5XhZjUWMi1i1P7O7tL_");'></div>
+        </div>
+        <!-- Conteúdo -->
+        <div class="relative z-10 flex w-full grow flex-col pb-24">
+            <header class="flex items-center p-4 pb-2 justify-between">
+                <div id="calendar-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </div>
+                <div class="text-center">
+                    <h1 class="text-xl font-bold">Registro Temporal</h1>
+                    <p class="text-sm text-text-dark-secondary">Mapa do Tempo das Missões</p>
+                </div>
+                <div class="flex size-12 shrink-0 items-center justify-center"></div>
+            </header>
+
+            <main class="flex-1 px-4 py-4">
+                <div class="flex flex-col gap-4 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+                    <!-- Navegação do Mês -->
+                    <div class="flex items-center justify-between">
+                        <button id="prev-month-btn" class="p-1.5 rounded-full hover:bg-primary/10">
+                            <span class="material-symbols-outlined text-text-dark-secondary">chevron_left</span>
+                        </button>
+                        <h3 id="calendar-month-year" class="font-bold text-primary">Carregando...</h3>
+                        <button id="next-month-btn" class="p-1.5 rounded-full hover:bg-primary/10">
+                            <span class="material-symbols-outlined text-text-dark-secondary">chevron_right</span>
+                        </button>
+                    </div>
+                    <!-- Dias da Semana -->
+                    <div class="grid grid-cols-7 text-center text-xs text-text-dark-secondary">
+                        <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+                    </div>
+                    <!-- Grid do Calendário -->
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-sm">
+                        <!-- Células do calendário serão inseridas aqui via JS -->
+                    </div>
+                </div>
+                <!-- Lista de Missões do Dia -->
+                <div id="calendar-mission-list-container" class="mt-4">
+                    <h4 id="calendar-mission-list-title" class="font-semibold text-text-dark-secondary text-lg mb-3">Selecione um dia</h4>
+                    <div id="calendar-mission-list" class="flex flex-col gap-3">
+                        <p class="text-sm text-text-dark-secondary p-4 text-center">Nenhuma missão para este dia.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
 
   </div>
 
@@ -892,6 +945,9 @@
     };
     let activeSubtaskTimers = {}; // Objeto para rastrear os timers ativos { subtaskId: intervalId }
 
+    // --- Variáveis da Tela do Calendário ---
+    let currentCalendarDate = new Date();
+
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
     const REWARDS_DIFFICULTY = {
@@ -913,7 +969,8 @@
       forgot: document.getElementById('screen-forgot-password'),
       dashboard: document.getElementById('screen-dashboard'),
       addTask: document.getElementById('screen-add-task'),
-      missionDetails: document.getElementById('screen-mission-details')
+      missionDetails: document.getElementById('screen-mission-details'),
+      calendar: document.getElementById('screen-calendar')
     };
 
     const registerSteps = {
@@ -1045,6 +1102,14 @@
     function normalizeString(str) {
         if (!str) return '';
         return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    // Função para parsear a data como local, evitando problemas de fuso horário
+    function parseLocalDate(dateString) {
+        if (!dateString) return null;
+        const [year, month, day] = dateString.split('-').map(Number);
+        // Cria a data na zona horária local do usuário
+        return new Date(year, month - 1, day);
     }
 
     // --- Lógica de Navegação ---
@@ -1397,19 +1462,17 @@
         switch(activeMissionTab) {
             case 'today':
                 filteredTasks = filteredTasks.filter(task => {
-                    if (task.tipo === 'diaria' && task.recorrencia) return true; // Mostra diárias recorrentes
+                    if (task.tipo === 'diaria' && task.recorrencia) return true;
                     if (!task.prazo_final) return false;
-                    const deadline = new Date(task.prazo_final);
-                    return deadline.getFullYear() === today.getFullYear() &&
-                           deadline.getMonth() === today.getMonth() &&
-                           deadline.getDate() === today.getDate();
+                    const deadline = parseLocalDate(task.prazo_final);
+                    return deadline && deadline.getTime() === today.getTime();
                 });
                 break;
             case 'week':
-                filteredTasks = filteredTasks.filter(task => {
+                 filteredTasks = filteredTasks.filter(task => {
                     if (!task.prazo_final) return false;
-                    const deadline = new Date(task.prazo_final);
-                    return deadline >= today && deadline < weekEnd;
+                    const deadline = parseLocalDate(task.prazo_final);
+                    return deadline && deadline >= today && deadline < weekEnd;
                 });
                 break;
             case 'backlog':
@@ -1440,57 +1503,7 @@
         tasksToRender.sort((a, b) => (priorityOrder[a.prioridade] || 2) - (priorityOrder[b.prioridade] || 2));
 
         tasksToRender.forEach(task => {
-            const taskEl = document.createElement('div');
-            const isCompleted = task.status === 'CONCLUIDA';
-
-            const priorityClasses = {
-                principal: 'border-red-500/80',
-                contrato: 'border-border-dark',
-                secundaria: 'border-gray-500/80'
-            };
-            const priorityClass = priorityClasses[task.prioridade] || 'border-border-dark';
-
-            const iconMap = {
-                diaria: 'fitness_center',
-                habito: 'menu_book',
-                projeto: 'work',
-                FORCA: 'swords',
-                INTELIGENCIA: 'school',
-                VELOCIDADE: 'sprint',
-                VITALIDADE: 'shield',
-                CARISMA: 'sentiment_satisfied',
-                default: 'task'
-            };
-
-            const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
-
-            // Classes e atributos para navegação
-            taskEl.className = `mission-card flex flex-col rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border-l-4 ${priorityClass} ${isCompleted ? 'opacity-60' : ''} cursor-pointer hover:bg-surface-dark/80 transition-colors`;
-            taskEl.dataset.taskId = task.id;
-
-            let statusText = (task.status || 'PENDENTE').replace('_', ' ');
-            let statusColor = "text-text-dark-secondary";
-            if (task.status === 'EM_ANDAMENTO') {
-                statusColor = "text-primary animate-pulse";
-            } else if (task.status === 'PAUSADA') {
-                statusColor = "text-yellow-400";
-            }
-
-            taskEl.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20">
-                      <span class="material-symbols-outlined text-primary text-3xl">${icon}</span>
-                    </div>
-                    <div class="flex-1">
-                      <p class="font-bold ${isCompleted ? 'line-through' : ''}">${task.titulo || 'Missão sem título'}</p>
-                      <p class="text-sm ${statusColor} ${isCompleted ? 'line-through' : ''} capitalize">${statusText}</p>
-                    </div>
-                    <div class="text-text-dark-secondary">
-                        <span class="material-symbols-outlined text-3xl">chevron_right</span>
-                    </div>
-                </div>
-            `;
-            missionContainer.appendChild(taskEl);
+            missionContainer.innerHTML += createMissionCardHTML(task);
         });
     }
 
@@ -1511,16 +1524,56 @@
             const newTab = tabButton.dataset.tab;
             if (newTab !== activeMissionTab) {
                 activeMissionTab = newTab;
+                // Delega a estilização para a classe CSS, removendo a manipulação de classes de cor do JS
                 document.querySelectorAll('.mission-tab-btn').forEach(btn => {
                     btn.classList.remove('mission-tab-active');
-                    btn.classList.remove('bg-primary', 'text-background-dark');
                 });
                 tabButton.classList.add('mission-tab-active');
-                tabButton.classList.add('bg-primary', 'text-background-dark');
                 filterAndRenderMissions();
             }
         }
     });
+
+    // Função unificada para criar o card de uma missão
+    function createMissionCardHTML(task) {
+        const isCompleted = task.status === 'CONCLUIDA';
+
+        const priorityClasses = {
+            principal: 'border-red-500/80',
+            contrato: 'border-border-dark',
+            secundaria: 'border-gray-500/80'
+        };
+        const priorityClass = priorityClasses[task.prioridade] || 'border-border-dark';
+
+        const iconMap = {
+            diaria: 'fitness_center', habito: 'menu_book', projeto: 'work',
+            FORCA: 'swords', INTELIGENCIA: 'school', VELOCIDADE: 'sprint',
+            VITALIDADE: 'shield', CARISMA: 'sentiment_satisfied', default: 'task'
+        };
+        const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
+
+        let statusText = (task.status || 'PENDENTE').replace('_', ' ');
+        let statusColor = "text-text-dark-secondary";
+        if (task.status === 'EM_ANDAMENTO') statusColor = "text-primary animate-pulse";
+        else if (task.status === 'PAUSADA') statusColor = "text-yellow-400";
+
+        return `
+            <div class="mission-card flex flex-col rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border-l-4 ${priorityClass} ${isCompleted ? 'opacity-60' : ''} cursor-pointer hover:bg-surface-dark/80 transition-colors" data-task-id="${task.id}">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20">
+                      <span class="material-symbols-outlined text-primary text-3xl">${icon}</span>
+                    </div>
+                    <div class="flex-1">
+                      <p class="font-bold ${isCompleted ? 'line-through' : ''}">${task.titulo || 'Missão sem título'}</p>
+                      <p class="text-sm ${statusColor} ${isCompleted ? 'line-through' : ''} capitalize">${statusText}</p>
+                    </div>
+                    <div class="text-text-dark-secondary">
+                        <span class="material-symbols-outlined text-3xl">chevron_right</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
 
     // --- LÓGICA DA TELA DE DETALHES DA MISSÃO ---
@@ -2686,6 +2739,151 @@ Sub-tarefas: ${subtasksString}`;
             showMessage('Erro', `Não foi possível salvar sua missão. Erro: ${error.message}`);
         }
     });
+
+    // --- LÓGICA DO CALENDÁRIO ---
+    function renderCalendar() {
+        const calendarGrid = document.getElementById('calendar-grid');
+        const monthYearEl = document.getElementById('calendar-month-year');
+        const missionListContainer = document.getElementById('calendar-mission-list');
+        const missionListTitle = document.getElementById('calendar-mission-list-title');
+
+        if (!calendarGrid || !monthYearEl) return;
+
+        calendarGrid.innerHTML = '';
+        const month = currentCalendarDate.getMonth();
+        const year = currentCalendarDate.getFullYear();
+
+        // Limpa a lista de missões ao renderizar um novo mês
+        missionListTitle.textContent = 'Selecione um dia';
+        missionListContainer.innerHTML = '<p class="text-sm text-text-dark-secondary p-4 text-center">Nenhuma missão para este dia.</p>';
+
+
+        monthYearEl.textContent = `${currentCalendarDate.toLocaleString('pt-BR', { month: 'long' })} ${year}`;
+
+        const firstDayOfMonth = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        // Preenche os dias vazios no início do mês
+        for (let i = 0; i < firstDayOfMonth; i++) {
+            calendarGrid.innerHTML += `<div class="p-2"></div>`;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayEl = document.createElement('div');
+            const currentDate = new Date(year, month, day);
+            currentDate.setHours(0,0,0,0);
+            const isToday = currentDate.getTime() === today.getTime();
+
+            // Marca as datas que têm missões
+            const hasMission = allUserTasks.some(task => {
+                if (!task.prazo_final) return false;
+                const deadline = parseLocalDate(task.prazo_final);
+                return deadline && deadline.getTime() === currentDate.getTime();
+            });
+
+            dayEl.className = `relative flex items-center justify-center h-10 w-10 rounded-full cursor-pointer hover:bg-primary/20 transition-colors`;
+            if (isToday) {
+                dayEl.classList.add('bg-primary', 'text-background-dark', 'font-bold');
+            }
+            if (hasMission) {
+                dayEl.innerHTML = `<span>${day}</span><div class="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-yellow-400"></div>`;
+            } else {
+                dayEl.innerHTML = `<span>${day}</span>`;
+            }
+
+            dayEl.dataset.date = currentDate.toISOString().split('T')[0];
+            calendarGrid.appendChild(dayEl);
+        }
+    }
+
+    function renderMissionsForDate(dateString) {
+        const missionListContainer = document.getElementById('calendar-mission-list');
+        const missionListTitle = document.getElementById('calendar-mission-list-title');
+        const selectedDate = parseLocalDate(dateString);
+
+        if (!selectedDate) return;
+
+        missionListTitle.textContent = `Missões para ${selectedDate.toLocaleDateString('pt-BR')}`;
+
+        const tasksForDay = allUserTasks.filter(task => {
+            if (!task.prazo_final) return false;
+            const deadline = parseLocalDate(task.prazo_final);
+            return deadline && deadline.getTime() === selectedDate.getTime();
+        });
+
+        missionListContainer.innerHTML = ''; // Limpa a lista
+        if (tasksForDay.length === 0) {
+            missionListContainer.innerHTML = '<p class="text-sm text-text-dark-secondary p-4 text-center">Nenhuma missão agendada para este dia.</p>';
+            return;
+        }
+
+        tasksForDay.forEach(task => {
+             const taskEl = document.createElement('div');
+             taskEl.className = 'mission-card flex items-center gap-3 rounded-lg bg-surface-dark/50 p-3 cursor-pointer hover:bg-surface-dark/80 transition-colors';
+             taskEl.dataset.taskId = task.id;
+
+             const iconMap = {
+                diaria: 'fitness_center', habito: 'menu_book', projeto: 'work',
+                FORCA: 'swords', INTELIGENCIA: 'school', VELOCIDADE: 'sprint',
+                VITALIDADE: 'shield', CARISMA: 'sentiment_satisfied', default: 'task'
+             };
+             const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
+             const isCompleted = task.status === 'CONCLUIDA';
+
+             taskEl.innerHTML = `
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                  <span class="material-symbols-outlined text-primary text-2xl">${icon}</span>
+                </div>
+                <div class="flex-1">
+                  <p class="font-bold text-sm ${isCompleted ? 'line-through opacity-60' : ''}">${task.titulo}</p>
+                  <p class="text-xs capitalize ${isCompleted ? 'text-gray-500' : 'text-primary'}">${(task.status || 'PENDENTE').replace('_', ' ')}</p>
+                </div>
+             `;
+             missionListContainer.appendChild(taskEl);
+        });
+    }
+
+
+    document.getElementById('prev-month-btn').addEventListener('click', () => {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+        renderCalendar();
+    });
+
+    document.getElementById('next-month-btn').addEventListener('click', () => {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+        renderCalendar();
+    });
+
+    document.getElementById('calendar-grid').addEventListener('click', (e) => {
+        const dayEl = e.target.closest('[data-date]');
+        if (dayEl) {
+            // Remove a seleção anterior
+            document.querySelectorAll('#calendar-grid [data-date]').forEach(el => {
+                el.classList.remove('ring-2', 'ring-primary');
+            });
+            // Adiciona a seleção ao dia clicado
+            dayEl.classList.add('ring-2', 'ring-primary');
+            renderMissionsForDate(dayEl.dataset.date);
+        }
+    });
+
+    // Event listener para abrir detalhes da missão a partir do calendário
+    document.getElementById('calendar-mission-list').addEventListener('click', (e) => {
+        const missionCard = e.target.closest('.mission-card');
+        if (missionCard && missionCard.dataset.taskId) {
+            showScreen('missionDetails', missionCard.dataset.taskId);
+        }
+    });
+
+    document.getElementById('btn-goto-calendar').addEventListener('click', () => {
+        renderCalendar();
+        showScreen('calendar');
+    });
+
+    document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
 
   </script>
 
