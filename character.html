@@ -193,7 +193,7 @@
     // Importações do Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, getDocs, runTransaction, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, runTransaction, writeBatch, deleteField, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     document.addEventListener('DOMContentLoaded', () => {
         // --- Configuração do Firebase ---
@@ -549,12 +549,19 @@
         }
 
         async function handleAddDailyLog() {
-            const newWeight = parseFloat(document.getElementById('log-weight-input').value);
-            const newFatPerc = parseFloat(document.getElementById('log-fat-perc-input').value) || null;
-            const newSleepHours = parseFloat(document.getElementById('log-sleep-hours-input').value) || null;
-            const newStressLevel = parseFloat(document.getElementById('log-stress-level-input').value) || null;
+            const getNumericValue = (id) => {
+                const value = document.getElementById(id).value;
+                if (value === '' || value === null) return null;
+                const parsed = parseFloat(value);
+                return isNaN(parsed) ? null : parsed;
+            };
 
-            if (isNaN(newWeight) || newWeight <= 0) {
+            const newWeight = getNumericValue('log-weight-input');
+            const newFatPerc = getNumericValue('log-fat-perc-input');
+            const newSleepHours = getNumericValue('log-sleep-hours-input');
+            const newStressLevel = getNumericValue('log-stress-level-input');
+
+            if (newWeight === null || newWeight <= 0) {
                 alert("Por favor, insira um peso válido.");
                 return;
             }
