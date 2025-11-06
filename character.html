@@ -19,13 +19,15 @@
           colors: {
             "primary": "#13ec6d",
             "background-light": "#f6f8f7",
-            "background-dark": "#111814",
-            "surface": "#1a241e",
-            "surface-secondary": "#28392f",
-            "text-primary": "#ffffff",
-            "text-secondary": "#a0a0a0",
-            "border-color": "#3b5445",
-            "debuff": "#ef4444",
+            "background-dark": "#102218",
+            // Cores do novo Hub
+            "surface-dark": "#1a3828",
+            "text-dark-primary": "#ffffff",
+            "text-dark-secondary": "#9db9a8",
+            "border-dark": "#335c47",
+            "health": "#ef4444",
+            "mana": "#3b82f6",
+            "xp": "#f59e0b"
           },
           fontFamily: {
             "display": ["Spline Sans", "Noto Sans", "sans-serif"]
@@ -66,47 +68,47 @@
     }
   </style>
 </head>
-<body class="bg-background-dark font-display text-text-primary">
+<body class="bg-background-dark font-display text-text-dark-primary">
 <div id="app-container" class="flex h-auto min-h-screen w-full flex-col">
 <header class="flex flex-col items-center p-4 pt-8">
 <div class="relative w-full max-w-sm mx-auto h-72">
 <div class="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-<img alt="Avatar do Aventureiro" id="avatar-img" class="w-32 h-32 rounded-full border-4 border-primary object-cover shadow-lg" src="https://placehold.co/128x128/1a241e/13ec6d?text=?"/>
+<img alt="Avatar do Aventureiro" id="avatar-img" class="w-32 h-32 rounded-full border-4 border-primary object-cover shadow-lg" src="https://placehold.co/128x128/1a3828/13ec6d?text=?"/>
 </div>
-<div id="slot-cabeca" data-slot="cabeca" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 0; left: 50%; transform: translateX(-50%);"><span class="material-symbols-outlined">skull</span></div>
-<div id="slot-peitoral" data-slot="peitoral" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 50%; left: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">shield</span></div>
-<div id="slot-mao_direita" data-slot="mao_direita" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 50%; right: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">swords</span></div>
-<div id="slot-amuleto" data-slot="amuleto" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="bottom: 0; left: 25%; transform: translateX(-50%);"><span class="material-symbols-outlined">diamond</span></div>
-<div id="slot-botas" data-slot="botas" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="bottom: 0; right: 25%; transform: translateX(50%);"><span class="material-symbols-outlined">foot_bones</span></div>
+<div id="slot-cabeca" data-slot="cabeca" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 0; left: 50%; transform: translateX(-50%);"><span class="material-symbols-outlined">skull</span></div>
+<div id="slot-peitoral" data-slot="peitoral" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 50%; left: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">shield</span></div>
+<div id="slot-mao_direita" data-slot="mao_direita" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 50%; right: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">swords</span></div>
+<div id="slot-amuleto" data-slot="amuleto" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="bottom: 0; left: 25%; transform: translateX(-50%);"><span class="material-symbols-outlined">diamond</span></div>
+<div id="slot-botas" data-slot="botas" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="bottom: 0; right: 25%; transform: translateX(50%);"><span class="material-symbols-outlined">foot_bones</span></div>
 </div>
 <h1 id="character-level-title" class="text-2xl font-bold mt-4">Carregando...</h1>
-<p id="character-name" class="text-text-secondary">...</p>
+<p id="character-name" class="text-text-dark-secondary">...</p>
 </header>
 <main class="flex-1 pb-24 px-4 space-y-8">
 <section>
-<div class="bg-surface rounded-lg p-4">
+<div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
 <div class="flex justify-between items-center mb-4">
 <div>
-<p class="text-text-secondary text-sm">Peso Atual</p>
+<p class="text-text-dark-secondary text-sm">Peso Atual</p>
 <p id="current-weight" class="text-xl font-bold">- kg</p>
 </div>
 <div>
-<p class="text-text-secondary text-sm text-right">IMC</p>
+<p class="text-text-dark-secondary text-sm text-right">IMC</p>
 <p id="current-imc" class="text-xl font-bold text-right">-</p>
 </div>
-<button id="add-daily-log-btn" class="flex items-center justify-center gap-2 rounded-full h-10 px-4 bg-surface-secondary text-primary text-sm font-bold">
+<button id="add-daily-log-btn" class="flex items-center justify-center gap-2 rounded-full h-10 px-4 bg-surface-dark text-primary text-sm font-bold">
 <span class="material-symbols-outlined !text-base">add_circle</span>
 <span>Adicionar Log Diário</span>
 </button>
 </div>
-<div id="status-effects-container" class="border-t border-border-color pt-4">
+<div id="status-effects-container" class="border-t border-border-dark pt-4">
 <h3 class="font-bold mb-2">Efeitos Ativos</h3>
 </div>
 </div>
 </section>
 <section>
 <h2 class="text-xl font-bold mb-4">Histórico de Saúde</h2>
-<div class="swiper health-swiper bg-surface rounded-lg">
+<div class="swiper health-swiper bg-surface-dark/50 rounded-lg backdrop-blur-sm border border-border-dark">
 <div class="swiper-wrapper">
 <!-- Slide 1: Gráfico de Linha Principal -->
 <div class="swiper-slide p-4">
@@ -116,7 +118,7 @@
 <div class="swiper-slide p-4">
 <div id="health-analytics-container" class="flex flex-col justify-center items-center h-full">
 <!-- Conteúdo será preenchido via JS -->
-<p class="text-text-secondary">Carregando análise...</p>
+<p class="text-text-dark-secondary">Carregando análise...</p>
 </div>
 </div>
 <!-- Slide 3: Gráfico de Oscilação -->
@@ -125,12 +127,12 @@
 </div>
 </div>
 <!-- Paginação -->
-<div class="swiper-pagination"></div>
+<div class="swiper-pagination !relative !bottom-0 pt-2"></div>
 </div>
 </section>
 <section>
 <h2 class="text-xl font-bold mb-4">Atributos</h2>
-<div id="attributes-list" class="bg-surface rounded-lg p-4 space-y-4">
+<div id="attributes-list" class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark space-y-4">
 </div>
 </section>
 <section>
@@ -250,14 +252,22 @@
         let currentUserId = null;
         let fullProfileData = null;
 
+        // "Authentication Guard"
         onAuthStateChanged(auth, user => {
-            if (user) {
-                currentUserId = user.uid;
-                loadCharacterData(currentUserId);
-            } else {
+            if (!user) {
+                // Se em algum momento o estado de autenticação mudar para deslogado, redireciona
                 window.location.href = 'index.html';
             }
         });
+
+        if (auth.currentUser) {
+            currentUserId = auth.currentUser.uid;
+            loadCharacterData(currentUserId);
+        } else {
+            // Se o usuário não estiver logado no momento em que a página carrega, redireciona
+            window.location.href = 'index.html';
+        }
+
 
         async function loadCharacterData(uid) {
             const profileRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'details');
@@ -874,6 +884,12 @@
                 el: '.swiper-pagination',
                 clickable: true,
             },
+        });
+
+        // Previne o comportamento padrão dos links de navegação
+        document.querySelector('nav a[href="./index.html"]').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = './index.html';
         });
     });
 </script>
