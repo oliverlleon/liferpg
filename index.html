@@ -1126,7 +1126,7 @@
     });
 
     // Função para popular o formulário com dados da missão para edição
-    function populateTaskFormForEdit(missionData) {
+    function populateTaskFormForEdit(missionData, subTasks = []) {
         resetTaskForm();
         editingTaskId = missionData.id;
 
@@ -1148,12 +1148,52 @@
             }
         });
 
-        subtasksList = [...(missionData.subtarefas || [])];
+        subtasksList = [...(subTasks || [])];
         renderSubtasks();
 
         taskForm.notes.value = missionData.notas || '';
 
-        // TODO: Popular outros campos como duração, prazo, etc.
+        // Popula a duração
+        if (missionData.duracao_estimada_minutos) {
+            const hours = Math.floor(missionData.duracao_estimada_minutos / 60);
+            const minutes = missionData.duracao_estimada_minutos % 60;
+            taskForm.durationHours.value = hours > 0 ? hours : '';
+            taskForm.durationMinutes.value = minutes > 0 ? minutes : '';
+        }
+
+        // Popula o prazo final
+        if (missionData.prazo_final) {
+            taskForm.deadline.value = missionData.prazo_final;
+        }
+
+        // Popula a recorrência
+        if (missionData.recorrencia) {
+            recurrenceRule = missionData.recorrencia;
+             if (recurrenceRule.type === 'days') {
+                taskForm.recurrenceSummary.textContent = `Repete a cada ${recurrenceRule.value} dia(s).`;
+            } else if (recurrenceRule.type === 'weekdays') {
+                const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                const summary = recurrenceRule.value.map(d => dayNames[d]).join(', ');
+                taskForm.recurrenceSummary.textContent = `Repete em: ${summary}.`;
+            }
+        }
+
+        // Popula o anexo (se houver)
+        if (missionData.anexo_url) {
+            // Extrai o nome do arquivo da URL para exibição
+            try {
+                const url = new URL(missionData.anexo_url);
+                const pathParts = url.pathname.split('/');
+                const encodedFilename = pathParts[pathParts.length - 1];
+                // Decodifica o nome do arquivo, removendo o timestamp e o UID
+                const decodedFilename = decodeURIComponent(encodedFilename.split('?')[0].split('%2F').pop());
+                const finalFilename = decodedFilename.substring(decodedFilename.indexOf('-') + 1); // Remove o timestamp inicial
+                taskForm.attachmentName.textContent = `Anexo: ${finalFilename}`;
+            } catch (e) {
+                taskForm.attachmentName.textContent = "Anexo existente.";
+            }
+        }
+
 
         taskForm.saveBtn.textContent = 'Atualizar Missão';
         triggerAIAnalysis(); // Re-analisa para mostrar os dados da IA
@@ -1417,12 +1457,22 @@
                         isValidToday = true;
                     }
                 } else if (template.recorrencia.type === 'days') {
-                    const createdAt = template.createdAt.toDate();
-                    createdAt.setHours(0, 0, 0, 0);
-                    const diffTime = Math.abs(today - createdAt);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    if (diffDays % template.recorrencia.value === 0) {
+                    if (!template.lastGenerated) {
+                        // Primeira vez: gera no dia da criação. A verificação externa `shouldGenerate`
+                        // já impede a re-geração no mesmo dia.
                         isValidToday = true;
+                    } else {
+                        // Para as próximas vezes, usa a lógica de `lastGenerated`.
+                        const baseDate = template.lastGenerated.toDate();
+                        baseDate.setHours(0, 0, 0, 0);
+
+                        const nextDueDate = new Date(baseDate);
+                        nextDueDate.setDate(baseDate.getDate() + template.recorrencia.value);
+
+                        // Gera a tarefa se hoje for igual ou depois da data de vencimento
+                        if (today >= nextDueDate) {
+                            isValidToday = true;
+                        }
                     }
                 }
 
@@ -1462,10 +1512,23 @@
         switch(activeMissionTab) {
             case 'today':
                 filteredTasks = filteredTasks.filter(task => {
-                    if (task.tipo === 'diaria' && task.recorrencia) return true;
-                    if (!task.prazo_final) return false;
-                    const deadline = parseLocalDate(task.prazo_final);
-                    return deadline && deadline.getTime() === today.getTime();
+                    const deadline = task.prazo_final ? parseLocalDate(task.prazo_final) : null;
+                    // Condição 1: A tarefa tem um prazo final definido para hoje.
+                    if (deadline && deadline.getTime() === today.getTime()) {
+                        return true;
+                    }
+
+                    // Condição 2: A tarefa é uma Diária ou Hábito sem prazo final,
+                    // e foi criada hoje (seja manualmente ou pelo gerador de recorrência).
+                    if (!deadline && (task.tipo === 'diaria' || task.tipo === 'habito')) {
+                        if (task.createdAt) {
+                            const createdAtDate = task.createdAt.toDate();
+                            createdAtDate.setHours(0, 0, 0, 0);
+                            return createdAtDate.getTime() === today.getTime();
+                        }
+                    }
+
+                    return false; // Se nenhuma condição for atendida, não é para hoje.
                 });
                 break;
             case 'week':
@@ -1643,7 +1706,7 @@
 
         // Adiciona o listener para o botão de editar AQUI, onde temos acesso a missionData
         const editBtn = document.getElementById('mission-details-edit-btn');
-        editBtn.onclick = () => populateTaskFormForEdit(missionData);
+        editBtn.onclick = () => populateTaskFormForEdit(missionData, subTasks);
 
         const controlsContainer = document.getElementById('mission-controls-container');
         controlsContainer.innerHTML = ''; // Limpa o container
@@ -1913,6 +1976,7 @@
                             // Aumenta HP/MANA Max com base no atributo
                             if(attrKey === 'vitalidade') profileData.character.hp_max += 10;
                             if(attrKey === 'inteligencia') profileData.character.mana_max += 10;
+                            if(attrKey === 'forca' || attrKey === 'velocidade') profileData.character.energia_max += 5;
                         }
                     }
                 }
