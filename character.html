@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ficha de Personagem &amp; Inventário</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#13ec6d",
+            "background-light": "#f6f8f7",
+            "background-dark": "#111814",
+            "surface": "#1a241e",
+            "surface-secondary": "#28392f",
+            "text-primary": "#ffffff",
+            "text-secondary": "#a0a0a0",
+            "border-color": "#3b5445",
+            "debuff": "#ef4444",
+          },
+          fontFamily: {
+            "display": ["Spline Sans", "Noto Sans", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "1rem",
+            "lg": "1.5rem",
+            "xl": "2rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    }
+    body {
+      min-height: 100dvh;
+    }
+    .equipment-slot {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .equipment-slot:hover {
+        background-color: #28392f;
+    }
+  </style>
+</head>
+<body class="bg-background-dark font-display text-text-primary">
+<div id="app-container" class="flex h-auto min-h-screen w-full flex-col">
+<header class="flex flex-col items-center p-4 pt-8">
+<div class="relative w-full max-w-sm mx-auto h-72">
+<div class="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+<img alt="Avatar do Aventureiro" id="avatar-img" class="w-32 h-32 rounded-full border-4 border-primary object-cover shadow-lg" src="https://placehold.co/128x128/1a241e/13ec6d?text=?"/>
+</div>
+<div id="slot-cabeca" data-slot="cabeca" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 0; left: 50%; transform: translateX(-50%);"><span class="material-symbols-outlined">block</span></div>
+<div id="slot-peitoral" data-slot="peitoral" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 50%; left: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">block</span></div>
+<div id="slot-mao_direita" data-slot="mao_direita" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="top: 50%; right: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">block</span></div>
+<div id="slot-amuleto" data-slot="amuleto" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="bottom: 0; left: 25%; transform: translateX(-50%);"><span class="material-symbols-outlined">block</span></div>
+<div id="slot-botas" data-slot="botas" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-color flex items-center justify-center text-text-secondary" style="bottom: 0; right: 25%; transform: translateX(50%);"><span class="material-symbols-outlined">block</span></div>
+</div>
+<h1 id="character-level-title" class="text-2xl font-bold mt-4">Carregando...</h1>
+<p id="character-name" class="text-text-secondary">...</p>
+</header>
+<main class="flex-1 pb-24 px-4 space-y-8">
+<section>
+<div class="bg-surface rounded-lg p-4">
+<div class="flex justify-between items-center mb-4">
+<div>
+<p class="text-text-secondary text-sm">Peso Atual</p>
+<p id="current-weight" class="text-xl font-bold">- kg</p>
+</div>
+<div>
+<p class="text-text-secondary text-sm text-right">IMC</p>
+<p id="current-imc" class="text-xl font-bold text-right">-</p>
+</div>
+<button id="update-weight-btn" class="flex items-center justify-center gap-2 rounded-full h-10 px-4 bg-surface-secondary text-primary text-sm font-bold">
+<span class="material-symbols-outlined !text-base">weight</span>
+<span>Atualizar</span>
+</button>
+</div>
+<div id="status-effects-container" class="border-t border-border-color pt-4">
+<h3 class="font-bold mb-2">Efeitos Ativos</h3>
+</div>
+</div>
+</section>
+<section>
+<h2 class="text-xl font-bold mb-4">Atributos</h2>
+<div id="attributes-list" class="bg-surface rounded-lg p-4 space-y-4">
+</div>
+</section>
+<section>
+<h2 class="text-xl font-bold mb-4">Inventário</h2>
+<div id="inventory-grid" class="grid grid-cols-4 sm:grid-cols-5 gap-4">
+</div>
+</section>
+<section>
+<h2 class="text-xl font-bold mb-4">Conquistas</h2>
+<div id="achievements-list" class="space-y-3">
+</div>
+</section>
+</main>
+<nav class="fixed bottom-0 left-0 right-0 bg-surface-secondary/80 backdrop-blur-sm border-t border-border-color">
+<div class="flex justify-around h-20">
+<a class="flex flex-col items-center justify-center w-full text-text-secondary hover:text-primary" href="./index.html">
+<span class="material-symbols-outlined">home</span>
+<span class="text-xs">Início</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full text-primary" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-xs">Personagem</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full text-text-secondary hover:text-primary" href="./index.html">
+<span class="material-symbols-outlined">shield_moon</span>
+<span class="text-xs">Missões</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full text-text-secondary hover:text-primary" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="text-xs">Progresso</span>
+</a>
+</div>
+</nav>
+</div>
+
+<!-- Modal de Atualizar Peso -->
+<div id="modal-update-weight" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+<div class="bg-surface border border-border-color rounded-lg p-6 w-full max-w-sm text-center">
+<h3 class="text-primary text-xl font-bold mb-4">Atualizar Peso</h3>
+<p class="text-text-secondary mb-4">Insira seu novo peso em quilogramas (kg).</p>
+<input id="new-weight-input" type="number" class="form-input w-full bg-background-dark border-border-color rounded-md text-center text-lg" placeholder="Ex: 75.5">
+<div class="flex gap-4 mt-6">
+<button id="cancel-weight-update" class="flex-1 rounded-full h-12 bg-surface-secondary text-text-primary font-bold">Cancelar</button>
+<button id="confirm-weight-update" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
+</div>
+</div>
+</div>
+
+<!-- Modal de Ação de Item -->
+<div id="modal-item-action" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+<div class="bg-surface border border-border-color rounded-lg p-6 w-full max-w-sm text-center">
+<h3 id="item-modal-title" class="text-primary text-xl font-bold mb-2">Nome do Item</h3>
+<p id="item-modal-effect" class="text-text-secondary mb-6">Efeito do item</p>
+<div class="flex gap-4">
+<button id="item-action-secondary-btn" class="flex-1 rounded-full h-12 bg-surface-secondary text-text-primary font-bold">Descartar</button>
+<button id="item-action-primary-btn" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Ação</button>
+</div>
+<button id="item-action-cancel-btn" class="w-full mt-3 rounded-full h-10 bg-transparent text-text-secondary">Cancelar</button>
+</div>
+</div>
+
+<script type="module">
+    // Importações do Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, collection, getDocs, runTransaction, writeBatch, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- Configuração do Firebase ---
+    const firebaseConfigUser = {
+      apiKey: "AIzaSyBeLq53I4Zu8TIcttgYwcyhFUBu4uneCxQ",
+      authDomain: "rpglife-8f33d.firebaseapp.com",
+      projectId: "rpglife-8f33d",
+      storageBucket: "rpglife-8f33d.firebasestorage.app",
+      messagingSenderId: "428052124083",
+      appId: "1:428052124083:web:1190108bd19638ad2bfbc6",
+      measurementId: "G-5LCK5W2JNH"
+    };
+
+    const firebaseConfig = typeof __firebase_config !== 'undefined'
+      ? JSON.parse(__firebase_config)
+      : firebaseConfigUser;
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rpglife-app';
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUserId = null;
+    let fullProfileData = null;
+
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            currentUserId = user.uid;
+            loadCharacterData(currentUserId);
+        } else {
+            window.location.href = 'index.html';
+        }
+    });
+
+    async function loadCharacterData(uid) {
+        const profileRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'details');
+        const inventoryRef = collection(db, 'artifacts', appId, 'users', uid, 'inventory');
+        const goalsRef = collection(db, 'artifacts', appId, 'users', uid, 'goals');
+
+        try {
+            const [profileSnap, inventorySnap, goalsSnap] = await Promise.all([
+                getDoc(profileRef),
+                getDocs(inventoryRef),
+                getDocs(goalsRef)
+            ]);
+
+            if (profileSnap.exists()) {
+                fullProfileData = profileSnap.data();
+                renderAdventurerPanel(fullProfileData.character, fullProfileData.nickname);
+                renderVitalsPanel(fullProfileData.vitals, fullProfileData.status_effects);
+                renderAttributesPanel(fullProfileData.stats);
+            }
+
+            const inventoryItems = inventorySnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderInventory(inventoryItems);
+
+            const goals = goalsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderAchievements(goals);
+
+        } catch (error) {
+            console.error("Error loading character data:", error);
+        }
+    }
+
+    function renderAdventurerPanel(character, nickname) {
+        document.getElementById('avatar-img').src = character.avatar_url || 'https://placehold.co/128x128/1a241e/13ec6d?text=?';
+        document.getElementById('character-level-title').textContent = `Nível ${character.level || 1}`;
+        document.getElementById('character-name').textContent = nickname || 'Aventureiro';
+
+        const equipment = character.equipment || {};
+        const slots = ['cabeca', 'peitoral', 'mao_direita', 'amuleto', 'botas'];
+
+        slots.forEach(slot => {
+            const slotEl = document.getElementById(`slot-${slot}`);
+            const item = equipment[slot];
+            if (item && item.icon) {
+                slotEl.innerHTML = `<span class="material-symbols-outlined !text-4xl text-primary">${item.icon}</span>`;
+                slotEl.dataset.equippedItem = JSON.stringify(item);
+            } else {
+                slotEl.innerHTML = `<span class="material-symbols-outlined">block</span>`;
+                delete slotEl.dataset.equippedItem;
+            }
+        });
+    }
+
+    function renderVitalsPanel(vitals, statusEffects) {
+        document.getElementById('current-weight').textContent = `${vitals.peso_atual_kg || '-'} kg`;
+        document.getElementById('current-imc').textContent = vitals.imc || '-';
+
+        const effectsContainer = document.getElementById('status-effects-container');
+        effectsContainer.innerHTML = '<h3 class="font-bold mb-2">Efeitos Ativos</h3>';
+        if (statusEffects && statusEffects.length > 0) {
+            statusEffects.forEach(effect => {
+                effectsContainer.innerHTML += `
+                    <div class="flex items-center gap-3 text-debuff">
+                        <span class="material-symbols-outlined">sentiment_dissatisfied</span>
+                        <p class="text-sm">"${effect.label}": ${effect.value}% ${effect.effect}</p>
+                    </div>
+                `;
+            });
+        } else {
+            effectsContainer.innerHTML += `<p class="text-sm text-text-secondary">Nenhum efeito ativo.</p>`;
+        }
+    }
+
+    function renderAttributesPanel(stats) {
+        const attributesList = document.getElementById('attributes-list');
+        attributesList.innerHTML = '';
+        const attributeConfig = {
+            forca: { icon: 'fitness_center', name: 'FORÇA' },
+            inteligencia: { icon: 'school', name: 'INTELIGÊNCIA' },
+            velocidade: { icon: 'sprint', name: 'VELOCIDADE' },
+            vitalidade: { icon: 'favorite', name: 'VITALIDADE' },
+            carisma: { icon: 'star', name: 'CARISMA' }
+        };
+
+        for (const key in attributeConfig) {
+            const stat = stats[key] || { level: 1, xp_atual: 0, xp_para_upar: 100 };
+            const config = attributeConfig[key];
+            const xpPercent = (stat.xp_atual / stat.xp_para_upar) * 100;
+
+            attributesList.innerHTML += `
+                <div class="flex items-center gap-4">
+                    <div class="flex size-10 items-center justify-center rounded-full bg-surface-secondary text-primary"><span class="material-symbols-outlined">${config.icon}</span></div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-baseline">
+                            <p class="font-bold">${config.name}</p>
+                            <p class="text-text-secondary text-xs">Nível: ${stat.level}</p>
+                        </div>
+                        <div class="w-full bg-surface-secondary rounded-full h-2 mt-1">
+                            <div class="bg-primary h-2 rounded-full" style="width: ${xpPercent}%"></div>
+                        </div>
+                        <p class="text-text-secondary text-xs text-right mt-1">${stat.xp_atual} / ${stat.xp_para_upar} XP</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function renderInventory(items) {
+        const inventoryGrid = document.getElementById('inventory-grid');
+        inventoryGrid.innerHTML = '';
+        const unequippedItems = items.filter(item => !item.equipado);
+
+        unequippedItems.forEach(item => {
+            inventoryGrid.innerHTML += `
+                <div class="inventory-item aspect-square bg-surface border-2 border-border-color rounded-lg flex items-center justify-center cursor-pointer" data-item='${JSON.stringify(item)}'>
+                    <span class="material-symbols-outlined !text-4xl text-primary">${item.icon || 'help'}</span>
+                </div>
+            `;
+        });
+    }
+
+    function renderAchievements(goals) {
+        const achievementsList = document.getElementById('achievements-list');
+        achievementsList.innerHTML = '';
+        if (!goals || goals.length === 0) {
+            achievementsList.innerHTML = `<p class="text-text-secondary text-center">Nenhuma conquista ainda.</p>`;
+            return;
+        }
+
+        goals.forEach(goal => {
+            const progressPercent = (goal.progresso_atual / goal.progresso_total) * 100;
+            achievementsList.innerHTML += `
+                <div class="bg-surface rounded-lg p-4 flex items-center gap-4 ${goal.concluido ? 'opacity-70' : ''}">
+                    <span class="material-symbols-outlined !text-4xl text-yellow-400">emoji_events</span>
+                    <div class="flex-1">
+                        <p class="font-bold">${goal.titulo}</p>
+                        <p class="text-text-secondary text-sm">${goal.descricao}</p>
+                        ${!goal.concluido ? `
+                        <div class="w-full bg-surface-secondary rounded-full h-2 my-1">
+                            <div class="bg-yellow-400 h-2 rounded-full" style="width: ${progressPercent}%;"></div>
+                        </div>
+                        <p class="text-text-secondary text-xs">${goal.progresso_atual} / ${goal.progresso_total}</p>
+                        ` : `<p class="text-primary text-sm font-semibold mt-1">Recompensa: ${goal.recompensa || '[Item Raro]'}</p>`}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // --- Modals Logic ---
+    const weightModal = document.getElementById('modal-update-weight');
+    const itemActionModal = document.getElementById('modal-item-action');
+
+    document.getElementById('update-weight-btn').addEventListener('click', () => weightModal.classList.remove('hidden'));
+    document.getElementById('cancel-weight-update').addEventListener('click', () => weightModal.classList.add('hidden'));
+    document.getElementById('confirm-weight-update').addEventListener('click', handleWeightUpdate);
+    document.getElementById('item-action-cancel-btn').addEventListener('click', () => itemActionModal.classList.add('hidden'));
+
+    async function handleWeightUpdate() {
+        const newWeightInput = document.getElementById('new-weight-input');
+        const newWeight = parseFloat(newWeightInput.value);
+
+        if (isNaN(newWeight) || newWeight <= 0) {
+            alert("Por favor, insira um número válido.");
+            return;
+        }
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+                const profileSnap = await transaction.get(profileRef);
+                if (!profileSnap.exists()) throw "Document does not exist!";
+
+                const profileData = profileSnap.data();
+                const vitals = profileData.vitals;
+                const character = profileData.character;
+
+                vitals.peso_atual_kg = newWeight;
+                const altura_m = vitals.altura_cm / 100;
+                vitals.imc = parseFloat((newWeight / (altura_m * altura_m)).toFixed(1));
+
+                // Recalculate status effects and derived stats
+                profileData.status_effects = [];
+                character.energia_max = 100; // Reset to base
+                if (vitals.imc > 25) {
+                    profileData.status_effects.push({ id: "debuff_imc_alto", label: "Sobrepeso", effect: "energia_max", value: -10 });
+                    character.energia_max *= 0.90; // Apply debuff
+                } else if (vitals.imc < 18.5) {
+                     profileData.status_effects.push({ id: "debuff_imc_baixo", label: "Abaixo do Peso", effect: "hp_max", value: -10 });
+                     // This part of GDD was not specified, so we just add the effect
+                }
+
+                transaction.update(profileRef, { vitals: vitals, status_effects: profileData.status_effects, character: character });
+            });
+            weightModal.classList.add('hidden');
+            newWeightInput.value = '';
+            loadCharacterData(currentUserId);
+        } catch (e) {
+            console.log("Transaction failed: ", e);
+            alert("Falha ao atualizar o peso.");
+        }
+    }
+
+    document.getElementById('inventory-grid').addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.inventory-item');
+        if (itemEl) {
+            const item = JSON.parse(itemEl.dataset.item);
+            showItemActionModal(item, 'equip');
+        }
+    });
+
+    document.querySelectorAll('.equipment-slot').forEach(slot => {
+        slot.addEventListener('click', (e) => {
+            const itemJson = e.currentTarget.dataset.equippedItem;
+            if (itemJson) {
+                const item = JSON.parse(itemJson);
+                showItemActionModal(item, 'unequip');
+            }
+        });
+    });
+
+    function showItemActionModal(item, actionType) {
+        document.getElementById('item-modal-title').textContent = item.nome;
+        document.getElementById('item-modal-effect').textContent = `Efeito: ${item.efeito}`;
+
+        const primaryBtn = document.getElementById('item-action-primary-btn');
+        const secondaryBtn = document.getElementById('item-action-secondary-btn');
+
+        if (actionType === 'equip') {
+            primaryBtn.textContent = 'Equipar';
+            primaryBtn.onclick = () => {
+                equipItem(item.id, item.slot);
+                itemActionModal.classList.add('hidden');
+            };
+        } else { // unequip
+            primaryBtn.textContent = 'Desequipar';
+            primaryBtn.onclick = () => {
+                unequipItem(item.id, item.slot);
+                itemActionModal.classList.add('hidden');
+            };
+        }
+        itemActionModal.classList.remove('hidden');
+    }
+
+    async function equipItem(itemId, slot) {
+        if (!slot) {
+            alert("Este item não pode ser equipado.");
+            return;
+        }
+        if (fullProfileData.character.equipment[slot]) {
+            alert("Slot já ocupado. Desequipe o item atual primeiro.");
+            return;
+        }
+
+        const batch = writeBatch(db);
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
+
+        const itemSnap = await getDoc(itemRef);
+        const itemData = itemSnap.data();
+
+        batch.update(itemRef, { equipado: true });
+        batch.update(profileRef, { [`character.equipment.${slot}`]: itemData });
+
+        await batch.commit();
+        loadCharacterData(currentUserId);
+    }
+
+    async function unequipItem(itemId, slot) {
+        const batch = writeBatch(db);
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
+
+        batch.update(itemRef, { equipado: false });
+        batch.update(profileRef, { [`character.equipment.${slot}`]: deleteField() });
+
+        await batch.commit();
+        loadCharacterData(currentUserId);
+    }
+
+</script>
+</body></html>
