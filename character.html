@@ -835,14 +835,16 @@
         }, { passive: true });
 
         const handleSwipe = () => {
-            if (touchEndX < touchStartX) { // Swipe left
-                if (currentSlide < dots.length - 1) {
-                    goToSlide(currentSlide + 1);
-                }
-            }
-            if (touchEndX > touchStartX) { // Swipe right
+            const swipeThreshold = 50; // Mínimo de 50px de deslize para mudar o slide
+            const swipeDistance = touchEndX - touchStartX;
+
+            if (swipeDistance > swipeThreshold) { // Swipe right
                 if (currentSlide > 0) {
                     goToSlide(currentSlide - 1);
+                }
+            } else if (swipeDistance < -swipeThreshold) { // Swipe left
+                if (currentSlide < dots.length - 1) {
+                    goToSlide(currentSlide + 1);
                 }
             }
         };
