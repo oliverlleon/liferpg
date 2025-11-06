@@ -90,6 +90,11 @@
         border-color: #3b82f6 !important;
     }
 
+    .mission-tab-active {
+        background-color: #13ec6d !important;
+        color: #102218 !important;
+    }
+
     /* Animação de Missão em Andamento Aprimorada */
     @keyframes sword-glow {
         0%, 100% { filter: drop-shadow(0 0 2px #13ec6d); }
@@ -429,7 +434,27 @@
 
         <!-- Registro de Missões -->
         <section class="flex flex-col gap-3 px-4 py-2">
-          <h2 class="text-lg font-bold">Registro de Missões</h2>
+          <div class="flex justify-between items-center">
+             <h2 class="text-lg font-bold">Registro de Missões</h2>
+             <!-- Futuro botão de filtro aqui -->
+          </div>
+
+          <!-- Abas de Filtro -->
+          <div id="mission-tabs" class="grid grid-cols-4 gap-2 p-1 rounded-lg bg-surface-dark/50 border border-border-dark">
+            <button data-tab="today" class="mission-tab-btn mission-tab-active flex-1 text-center p-2 rounded-md text-sm font-bold transition-colors bg-primary text-background-dark">
+              Hoje
+            </button>
+            <button data-tab="week" class="mission-tab-btn flex-1 text-center p-2 rounded-md text-sm font-bold text-text-dark-secondary transition-colors">
+              Semana
+            </button>
+            <button data-tab="backlog" class="mission-tab-btn flex-1 text-center p-2 rounded-md text-sm font-bold text-text-dark-secondary transition-colors">
+              Backlog
+            </button>
+            <button data-tab="all" class="mission-tab-btn flex-1 text-center p-2 rounded-md text-sm font-bold text-text-dark-secondary transition-colors">
+              Todas
+            </button>
+          </div>
+
           <div id="hub-mission-list" class="flex flex-col gap-3">
             <!-- Missões são inseridas dinamicamente aqui -->
             <p class="text-sm text-text-dark-secondary p-4">Nenhuma missão encontrada. Adicione uma nova!</p>
@@ -839,6 +864,8 @@
     let currentUserId = null;
     let profileListener = null; // Para o listener do onSnapshot do perfil
     let tasksListener = null; // Para o listener do onSnapshot das tarefas
+    let allUserTasks = []; // Para armazenar a lista completa de tarefas
+    let activeMissionTab = 'today'; // 'today', 'week', 'backlog', 'all'
     let currentRegistrationStep = 1;
     let selectedAvatarUrl = null;
 
@@ -1189,9 +1216,9 @@
         });
 
         tasksListener = onSnapshot(tasksRef, (querySnapshot) => {
-          const tasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          checkAndGenerateRecurrentTasks(tasks);
-          populateMissions(tasks);
+            allUserTasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            checkAndGenerateRecurrentTasks(allUserTasks); // Passa a lista completa
+            filterAndRenderMissions(); // Chama a nova função de filtragem
         });
 
       } else {
@@ -1359,7 +1386,44 @@
         }
     }
 
-    function populateMissions(tasks) {
+    function filterAndRenderMissions() {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekEnd = new Date(today);
+        weekEnd.setDate(today.getDate() + 7);
+
+        let filteredTasks = allUserTasks.filter(t => !t.isTemplate);
+
+        switch(activeMissionTab) {
+            case 'today':
+                filteredTasks = filteredTasks.filter(task => {
+                    if (task.tipo === 'diaria' && task.recorrencia) return true; // Mostra diárias recorrentes
+                    if (!task.prazo_final) return false;
+                    const deadline = new Date(task.prazo_final);
+                    return deadline.getFullYear() === today.getFullYear() &&
+                           deadline.getMonth() === today.getMonth() &&
+                           deadline.getDate() === today.getDate();
+                });
+                break;
+            case 'week':
+                filteredTasks = filteredTasks.filter(task => {
+                    if (!task.prazo_final) return false;
+                    const deadline = new Date(task.prazo_final);
+                    return deadline >= today && deadline < weekEnd;
+                });
+                break;
+            case 'backlog':
+                filteredTasks = filteredTasks.filter(task => !task.prazo_final && !task.recorrencia);
+                break;
+            case 'all':
+                // Nenhuma filtragem adicional necessária
+                break;
+        }
+
+        renderMissions(filteredTasks);
+    }
+
+    function renderMissions(tasksToRender) {
         const missionContainer = document.getElementById('hub-mission-list');
         if (!missionContainer) {
             console.log("Container de missões não encontrado, adiando a população.");
@@ -1367,17 +1431,15 @@
         }
         missionContainer.innerHTML = '';
 
-        const visibleTasks = tasks.filter(t => !t.isTemplate);
-
-        if (!visibleTasks || visibleTasks.length === 0) {
-            missionContainer.innerHTML = '<p class="text-sm text-text-dark-secondary p-4">Nenhuma missão encontrada. Adicione uma nova!</p>';
+        if (!tasksToRender || tasksToRender.length === 0) {
+            missionContainer.innerHTML = '<p class="text-sm text-text-dark-secondary p-4">Nenhuma missão encontrada para este filtro.</p>';
             return;
         }
 
         const priorityOrder = { 'principal': 1, 'contrato': 2, 'secundaria': 3 };
-        visibleTasks.sort((a, b) => (priorityOrder[a.prioridade] || 2) - (priorityOrder[b.prioridade] || 2));
+        tasksToRender.sort((a, b) => (priorityOrder[a.prioridade] || 2) - (priorityOrder[b.prioridade] || 2));
 
-        visibleTasks.forEach(task => {
+        tasksToRender.forEach(task => {
             const taskEl = document.createElement('div');
             const isCompleted = task.status === 'CONCLUIDA';
 
@@ -1439,6 +1501,23 @@
             const taskId = missionCard.dataset.taskId;
             if (taskId) {
                 showScreen('missionDetails', taskId);
+            }
+        }
+    });
+
+    document.getElementById('mission-tabs').addEventListener('click', (e) => {
+        const tabButton = e.target.closest('.mission-tab-btn');
+        if (tabButton) {
+            const newTab = tabButton.dataset.tab;
+            if (newTab !== activeMissionTab) {
+                activeMissionTab = newTab;
+                document.querySelectorAll('.mission-tab-btn').forEach(btn => {
+                    btn.classList.remove('mission-tab-active');
+                    btn.classList.remove('bg-primary', 'text-background-dark');
+                });
+                tabButton.classList.add('mission-tab-active');
+                tabButton.classList.add('bg-primary', 'text-background-dark');
+                filterAndRenderMissions();
             }
         }
     });
