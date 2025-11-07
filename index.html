@@ -810,8 +810,35 @@
             </div>
           </div>
         </section>
-        <section id="health-chart-container" class="bg-surface-dark/50 rounded-lg p-4 border border-border-dark">
-            <canvas id="healthChart"></canvas>
+        <section id="health-carousel" class="relative w-full max-w-lg mx-auto overflow-hidden bg-surface-dark/50 rounded-lg p-4 border border-border-dark">
+          <div id="health-slides" class="flex transition-transform duration-300 ease-in-out">
+            <!-- Slide 1: Gráfico Principal -->
+            <div class="w-full flex-shrink-0">
+              <canvas id="healthChart"></canvas>
+            </div>
+            <!-- Slide 2: Oscilação de Peso -->
+            <div class="w-full flex-shrink-0">
+              <h3 class="text-center font-bold text-primary mb-2">Oscilação de Peso</h3>
+              <div id="oscillation-period-btns" class="flex justify-center gap-2 mb-3">
+                <button data-period="day" class="oscillation-btn px-3 py-1 text-xs rounded-full bg-primary text-background-dark">7 Dias</button>
+                <button data-period="month" class="oscillation-btn px-3 py-1 text-xs rounded-full text-text-dark-secondary">Mês</button>
+                <button data-period="year" class="oscillation-btn px-3 py-1 text-xs rounded-full text-text-dark-secondary">Ano</button>
+              </div>
+              <canvas id="weight-oscillation-chart" height="250"></canvas>
+            </div>
+            <!-- Slide 3: Estatísticas de Progresso -->
+            <div class="w-full flex-shrink-0 flex items-center justify-center h-full min-h-[300px]">
+              <div id="progress-stats-container" class="text-center">
+                <p class="text-text-dark-secondary">Carregando estatísticas...</p>
+              </div>
+            </div>
+          </div>
+          <!-- Bolinhas de Navegação -->
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            <button data-slide-to="0" class="carousel-dot h-2 w-2 rounded-full bg-primary"></button>
+            <button data-slide-to="1" class="carousel-dot h-2 w-2 rounded-full bg-surface-dark"></button>
+            <button data-slide-to="2" class="carousel-dot h-2 w-2 rounded-full bg-surface-dark"></button>
+          </div>
         </section>
         <section>
           <h2 class="text-xl font-bold mb-4">Atributos</h2>
@@ -1074,6 +1101,10 @@
     let fullProfileData = null;
     let characterDailyLogs = [];
     let healthChart = null;
+
+    // --- Lógica do Carrossel de Saúde ---
+    let weightOscillationChart = null;
+    let currentSlide = 0;
 
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
@@ -3109,6 +3140,146 @@ Sub-tarefas: ${subtasksString}`;
         }
     }
 
+    const goToSlide = (slideIndex) => {
+        const slidesContainer = document.getElementById('health-slides');
+        const dots = document.querySelectorAll('.carousel-dot');
+        if (!slidesContainer) return;
+        currentSlide = slideIndex;
+        slidesContainer.style.transform = `translateX(-${slideIndex * 100}%)`;
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('bg-primary', index === slideIndex);
+            dot.classList.toggle('bg-surface-dark', index !== slideIndex);
+        });
+    };
+
+    document.querySelectorAll('.carousel-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            goToSlide(parseInt(dot.dataset.slideTo, 10));
+        });
+    });
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const carousel = document.getElementById('health-carousel');
+
+    if (carousel) {
+        carousel.addEventListener('touchstart', (event) => {
+            touchStartX = event.changedTouches[0].screenX;
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', (event) => {
+            touchEndX = event.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+    }
+
+    const handleSwipe = () => {
+        const swipeThreshold = 50;
+        const swipeDistance = touchEndX - touchStartX;
+        if (swipeDistance > swipeThreshold) {
+            if (currentSlide > 0) goToSlide(currentSlide - 1);
+        } else if (swipeDistance < -swipeThreshold) {
+            if (currentSlide < 2) goToSlide(currentSlide + 1); // Assumes 3 slides
+        }
+    };
+
+    function renderWeightOscillationChart(logs, period = 'day') {
+        const ctx = document.getElementById('weight-oscillation-chart')?.getContext('2d');
+        if (!ctx || logs.length < 2) return;
+
+        let labels = [];
+        let data = [];
+
+        if (period === 'day') {
+            const last7Logs = logs.slice(-7);
+            labels = last7Logs.map(log => new Date(log.timestamp.seconds * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+            data = last7Logs.map((log, i) => {
+                if (i === 0) return 0;
+                const change = log.peso_kg - last7Logs[i-1].peso_kg;
+                return parseFloat(change.toFixed(2));
+            });
+        } else if (period === 'month') {
+            const monthlyChanges = logs.reduce((acc, log) => {
+                const date = new Date(log.timestamp.seconds * 1000);
+                const monthYear = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+                if (!acc[monthYear]) acc[monthYear] = { logs: [] };
+                acc[monthYear].logs.push(log.peso_kg);
+                return acc;
+            }, {});
+            labels = Object.keys(monthlyChanges);
+            data = labels.map(month => {
+                const monthLogs = monthlyChanges[month].logs;
+                const change = monthLogs[monthLogs.length - 1] - monthLogs[0];
+                return parseFloat(change.toFixed(2));
+            });
+        } else if (period === 'year') {
+                const yearlyChanges = logs.reduce((acc, log) => {
+                const date = new Date(log.timestamp.seconds * 1000);
+                const year = date.getFullYear().toString();
+                if (!acc[year]) acc[year] = { logs: [] };
+                acc[year].logs.push(log.peso_kg);
+                return acc;
+            }, {});
+            labels = Object.keys(yearlyChanges);
+            data = labels.map(year => {
+                const yearLogs = yearlyChanges[year].logs;
+                const change = yearLogs[yearLogs.length - 1] - yearLogs[0];
+                return parseFloat(change.toFixed(2));
+            });
+        }
+
+        if (weightOscillationChart) weightOscillationChart.destroy();
+
+        weightOscillationChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Oscilação (kg)', data, backgroundColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(19, 236, 109, 0.6)'), borderColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 1)' : 'rgba(19, 236, 109, 1)'), borderWidth: 1 }] },
+            options: { scales: { y: { beginAtZero: false, ticks: { color: '#a0a0a0' }, grid: { color: '#3b5445' } }, x: { ticks: { color: '#a0a0a0' }, grid: { color: '#3b5445' } } }, plugins: { legend: { display: false } } }
+        });
+    }
+
+    const oscillationPeriodBtns = document.getElementById('oscillation-period-btns');
+    if(oscillationPeriodBtns) {
+        oscillationPeriodBtns.addEventListener('click', (e) => {
+            const button = e.target.closest('.oscillation-btn');
+            if (button) {
+                document.querySelectorAll('.oscillation-btn').forEach(btn => {
+                    btn.classList.remove('bg-primary', 'text-background-dark');
+                    btn.classList.add('text-text-dark-secondary');
+                });
+                button.classList.add('bg-primary', 'text-background-dark');
+                renderWeightOscillationChart(characterDailyLogs, button.dataset.period);
+            }
+        });
+    }
+
+    function renderProgressStats(logs, vitals) {
+        const container = document.getElementById('progress-stats-container');
+        if(!container || logs.length < 2) {
+            if(container) container.innerHTML = '<p class="text-text-dark-secondary">Adicione mais pesagens para ver suas estatísticas.</p>';
+            return;
+        }
+
+        const lastLog = logs[logs.length - 1];
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const logsLast7Days = logs.filter(log => new Date(log.timestamp.seconds * 1000) >= sevenDaysAgo);
+
+        let weightChange7Days = 0;
+        if (logsLast7Days.length > 1) {
+            weightChange7Days = logsLast7Days[logsLast7Days.length - 1].peso_kg - logsLast7Days[0].peso_kg;
+        }
+
+        let timeToGoal = 'N/A';
+        if (vitals.meta_peso_kg && weightChange7Days !== 0) {
+            const weightToLose = lastLog.peso_kg - vitals.meta_peso_kg;
+            if (weightToLose > 0 && weightChange7Days < 0) timeToGoal = `${Math.ceil(weightToLose / -weightChange7Days)} semanas`;
+            else if (weightToLose < 0 && weightChange7Days > 0) timeToGoal = `${Math.ceil(-weightToLose / weightChange7Days)} semanas`;
+        }
+
+        const weeklyChangeText = weightChange7Days > 0 ? `Ganhou ${weightChange7Days.toFixed(1)} kg` : `Perdeu ${(-weightChange7Days).toFixed(1)} kg`;
+        container.innerHTML = `<div class="space-y-4"><div><p class="text-text-dark-secondary">Variação (7d)</p><p class="text-2xl font-bold ${weightChange7Days > 0 ? 'text-red-500' : 'text-primary'}">${weeklyChangeText}</p></div><div><p class="text-text-dark-secondary">Ritmo para Meta</p><p class="text-2xl font-bold">${timeToGoal}</p></div></div>`;
+    }
+
 
     // --- LÓGICA DA TELA DE PERSONAGEM ---
     async function loadCharacterData(uid) {
@@ -3141,6 +3312,8 @@ Sub-tarefas: ${subtasksString}`;
 
             characterDailyLogs = logSnap.docs.map(d => d.data()).sort((a,b) => a.timestamp.seconds - b.timestamp.seconds);
             renderHealthChart();
+            renderWeightOscillationChart(characterDailyLogs);
+            renderProgressStats(characterDailyLogs, fullProfileData.vitals);
 
         } catch (error) {
             console.error("Error loading character data:", error);
