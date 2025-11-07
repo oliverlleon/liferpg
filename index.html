@@ -2892,12 +2892,38 @@
                 // Write 1: Salva a nova atividade
                 transaction.set(newActivityRef, activityData);
 
-                // Write 2: Atualiza o perfil do usuário (stats e moedas)
-                // Usando a sintaxe de colchetes para chaves dinâmicas
+                // Write 2: Atualiza o perfil do usuário (stats e moedas) com lógica de level-up
+                const profileData = profileSnap.data();
+
+                // Garante que a estrutura de stats exista
+                if (!profileData.stats) profileData.stats = {};
+                const defaultStat = { level: 1, xp_atual: 0, xp_para_upar: 100 };
+                if (!profileData.stats.velocidade) profileData.stats.velocidade = { ...defaultStat };
+                if (!profileData.stats.vitalidade) profileData.stats.vitalidade = { ...defaultStat };
+
+                // Lógica de Level Up para Velocidade
+                profileData.stats.velocidade.xp_atual += XP_VEL;
+                while (profileData.stats.velocidade.xp_atual >= profileData.stats.velocidade.xp_para_upar) {
+                    profileData.stats.velocidade.level += 1;
+                    profileData.stats.velocidade.xp_atual -= profileData.stats.velocidade.xp_para_upar;
+                    profileData.stats.velocidade.xp_para_upar = Math.floor(profileData.stats.velocidade.xp_para_upar * 1.15);
+                }
+
+                // Lógica de Level Up para Vitalidade
+                profileData.stats.vitalidade.xp_atual += XP_VIT;
+                while (profileData.stats.vitalidade.xp_atual >= profileData.stats.vitalidade.xp_para_upar) {
+                    profileData.stats.vitalidade.level += 1;
+                    profileData.stats.vitalidade.xp_atual -= profileData.stats.vitalidade.xp_para_upar;
+                    profileData.stats.vitalidade.xp_para_upar = Math.floor(profileData.stats.vitalidade.xp_para_upar * 1.15);
+                }
+
+                // Atualiza moedas
+                profileData.character.moedas = (profileData.character.moedas || 0) + MOEDAS;
+
+                // Salva o objeto de perfil atualizado
                 transaction.update(profileRef, {
-                    'stats.velocidade.xp_atual': (profileSnap.data().stats.velocidade.xp_atual || 0) + XP_VEL,
-                    'stats.vitalidade.xp_atual': (profileSnap.data().stats.vitalidade.xp_atual || 0) + XP_VIT,
-                    'character.moedas': (profileSnap.data().character.moedas || 0) + MOEDAS
+                    stats: profileData.stats,
+                    character: profileData.character
                 });
 
                 // Write 3 (Opcional): Se veio de uma tarefa planejada, marca ela como concluída
@@ -2907,6 +2933,19 @@
                         status: 'CONCLUIDA', // Usando 'status' em vez de 'concluida'
                         recompensa_real: activityData.recompensa_ganha,
                         activity_id_associada: newActivityRef.id
+                    });
+                } else {
+                    // Write 3 (Alternativo): Se for uma "Corrida Rápida", cria uma nova tarefa concluída para o histórico
+                    const newTaskRef = doc(collection(userRef, 'tasks'));
+                    transaction.set(newTaskRef, {
+                        titulo: `Corrida Rápida de ${distanciaKm.toFixed(2)} km`,
+                        tipo: 'diaria', // Classifica como 'diaria' para fins de histórico
+                        prioridade: 'secundaria',
+                        status: 'CONCLUIDA',
+                        recompensa_real: activityData.recompensa_ganha,
+                        activity_id_associada: newActivityRef.id,
+                        createdAt: Timestamp.fromMillis(activityStartTime),
+                        isGenerated: true // Flag para indicar que foi gerada pelo sistema
                     });
                 }
             });
