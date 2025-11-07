@@ -1,0 +1,3741 @@
+<!DOCTYPE html>
+<html class="dark" lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPG da Vida Real - Aventura</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+  <!-- Google Fonts e Ícones -->
+  <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+  <!-- Chart.js for Character Screen -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Configuração do Tailwind -->
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#13ec6d",
+            "background-light": "#f6f8f7",
+            "background-dark": "#102218", // Unificado, mantendo o mais escuro
+            // Cores do Hub e Ficha
+            "surface-dark": "#1a3828", // Unificado
+            "surface-secondary": "#28392f", // Novo da Ficha
+            "text-dark-primary": "#ffffff",
+            "text-dark-secondary": "#9db9a8", // Unificado
+            "border-dark": "#335c47", // Unificado
+            "health": "#ef4444",
+            "mana": "#3b82f6",
+            "xp": "#f59e0b",
+            "debuff": "#ef4444", // Novo da Ficha (igual a health)
+          },
+          fontFamily: {
+            "display": ["Spline Sans", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "1rem",
+            "lg": "1.5rem",
+            "xl": "2rem",
+            "full": "9999px"
+          },
+          boxShadow: {
+            'glow-primary': '0 0 15px 0px rgba(19, 236, 109, 0.3)',
+          },
+        },
+      },
+    }
+  </script>
+
+  <!-- Estilos Globais -->
+  <style>
+    body {
+      min-height: max(884px, 100dvh);
+      background-color: #102218;
+      font-family: 'Spline Sans', sans-serif;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24;
+    }
+
+    /* Classe helper para a seleção de avatar */
+    .avatar-selected {
+      border-color: #13ec6d !important;
+      box-shadow: 0 0 15px 2px rgba(19, 236, 109, 0.5);
+    }
+
+    /* Classe helper para o tipo de tarefa selecionado */
+    .task-type-selected {
+        background-color: #13ec6d !important;
+        color: #102218 !important;
+        border-color: #13ec6d !important;
+    }
+    /* Classe helper para a prioridade de tarefa selecionada */
+    .task-priority-selected {
+        background-color: #f59e0b !important; /* Cor de XP para destaque */
+        color: #102218 !important;
+        border-color: #f59e0b !important;
+    }
+    /* Classe helper para o dia da semana de recorrência selecionado */
+    .weekday-btn-selected {
+        background-color: #3b82f6 !important; /* Cor de Mana para destaque */
+        color: #ffffff !important;
+        border-color: #3b82f6 !important;
+    }
+
+    .mission-tab-active {
+        background-color: #13ec6d !important;
+        color: #102218 !important;
+    }
+
+    /* Animação de Missão em Andamento Aprimorada */
+    @keyframes sword-glow {
+        0%, 100% { filter: drop-shadow(0 0 2px #13ec6d); }
+        50% { filter: drop-shadow(0 0 10px #13ec6d); }
+    }
+    .animated-sword {
+        animation: sword-glow 2s ease-in-out infinite;
+        font-size: 6rem; /* Tamanho do ícone principal */
+        color: #13ec6d;
+    }
+    @keyframes particle-rise {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(-80px); opacity: 0; }
+    }
+    .particle {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: #13ec6d;
+        border-radius: 50%;
+        animation: particle-rise 3s infinite ease-out;
+    }
+    /* Estilos da Ficha de Personagem */
+    .equipment-slot {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .equipment-slot:hover {
+        background-color: #28392f;
+    }
+  </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-white">
+
+  <!-- Container Principal da Aplicação -->
+  <div id="app-container">
+
+    <!-- Tela 1: Abertura (Splash) -->
+    <div id="screen-splash" class="relative flex min-h-screen w-full flex-col dark group/design-root overflow-x-hidden">
+      <!-- Background Image -->
+      <div class="absolute inset-0 z-0">
+        <div class="h-full w-full bg-center bg-no-repeat bg-cover opacity-10" data-alt="A subtle, stylized texture resembling an old, weathered fantasy map." style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6sSjEhz7hgGMCO9BdTp0pHGvGbE3XMpV6jPLsVzsYPwCqNXpNCbXwpEujggDvZYrE9pQH3Y5d5BVF7gvg7jPZ0AXCp2Nwx2A7FFDzew_5BcOaQSLjVdbARuQ92QAHPYPKFF8zuiCOXoXUsMSviMA_KKbTiUtBIpnFlJBm280neUs4DCq_Bfit7g90h0YuQrldqBiXPliiGMqqxXfOBfNx_NLz-YaO63IyoVmNdwY8nkPEARovFkiWn0qj-T5XhZjUWMi1i1P7O7tL_");'></div>
+      </div>
+      <!-- Main Content -->
+      <div class="relative z-10 flex w-full grow flex-col justify-between p-4 @container min-h-screen">
+        <div class="flex flex-1 flex-col items-center justify-center">
+          <!-- Logo -->
+          <div class="flex flex-col items-center justify-center text-center mb-8">
+            <div class="text-primary" data-icon="ShieldCheck" data-size="64px" data-weight="bold">
+              <svg class="fill-current" height="64" viewbox="0 0 256 256" width="64" xmlns="http://www.w3.org/2000/svg">
+                <path d="M229.06,75.12,139,17.26a16,16,0,0,0-22,0L26.94,75.12A16,16,0,0,0,20,87.82V168a16,16,0,0,0,16,16H220a16,16,0,0,0,16-16V87.82A16,16,0,0,0,229.06,75.12Z" opacity="0.2"></path>
+                <path d="M220,48H36A20,20,0,0,0,16,68V188a20,20,0,0,0,20,20H220a20,20,0,0,0,20-20V68A20,20,0,0,0,220,48Zm4,140a4,4,0,0,1-4,4H36a4,4,0,0,1-4-4V68a4,4,0,0,1,4-4H220a4,4,0,0,1,4,4Zm-54.34-82.34-48,48a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,124.69l42.34-42.35a8,8,0,0,1,11.32,11.32Z"></path>
+              </svg>
+            </div>
+            <h1 class="text-white text-3xl font-bold mt-2">RPG da Vida</h1>
+          </div>
+          <!-- Slogan/Tagline -->
+          <h3 class="text-white tracking-light text-2xl font-bold leading-tight px-4 text-center pb-8 pt-5">Sua vida, suas regras, seu próximo nível.</h3>
+        </div>
+        <!-- Action Buttons and Social Login -->
+        <div class="flex w-full flex-col items-center">
+          <div class="flex w-full flex-1 flex-col items-stretch gap-3 max-w-[480px] py-3">
+            <button id="btn-goto-register" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-primary text-background-dark text-base font-bold leading-normal tracking-[0.015em] w-full">
+              <span class="truncate">Iniciar Jornada</span>
+            </button>
+            <button id="btn-goto-login" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-primary/20 text-white text-base font-bold leading-normal tracking-[0.015em] w-full">
+              <span class="truncate">Continuar Aventura</span>
+            </button>
+          </div>
+          <p class="text-[#9db9a8]/80 text-sm font-normal leading-normal pb-3 pt-4 px-4 text-center">Ou entre com</p>
+          <div class="w-full max-w-[480px]">
+            <div class="gap-4 px-4 grid-cols-[repeat(auto-fit,_minmax(80px,_1fr))] grid">
+              <div id="btn-google-login" class="flex flex-col items-center gap-2 py-2.5 text-center cursor-pointer">
+                <div class="rounded-full bg-primary/20 p-3.5">
+                  <span class="material-symbols-outlined text-white text-[24px]">
+                    sports_esports
+                  </span>
+                </div>
+                <p class="text-white text-sm font-medium leading-normal">Google</p>
+              </div>
+              <div class="flex flex-col items-center gap-2 py-2.5 text-center opacity-50 cursor-not-allowed" title="Login com Apple em breve">
+                <div class="rounded-full bg-primary/20 p-3.5">
+                  <span class="material-symbols-outlined text-white text-[24px]">ios</span>
+                </div>
+                <p class="text-white text-sm font-medium leading-normal">Apple</p>
+              </div>
+              <div class="flex flex-col items-center gap-2 py-2.5 text-center opacity-50 cursor-not-allowed" title="Login com Facebook em breve">
+                <div class="rounded-full bg-primary/20 p-3.5">
+                  <span class="material-symbols-outlined text-white text-[24px]">social_leaderboard</span>
+                </div>
+                <p class="text-white text-sm font-medium leading-normal">Facebook</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tela 2: Cadastro (Criação de Personagem) -->
+    <div id="screen-register" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden pb-24">
+      <!-- Top App Bar -->
+      <div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10">
+        <button id="reg-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
+          <span class="material-symbols-outlined text-3xl">arrow_back</span>
+        </button>
+        <h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Criação de Personagem</h2>
+      </div>
+      <!-- Page Indicators -->
+      <div class="flex w-full flex-row items-center justify-center gap-3 py-5 px-4">
+        <div id="progress-1" class="h-1 flex-1 rounded-full bg-primary"></div>
+        <div id="progress-2" class="h-1 flex-1 rounded-full bg-primary/20"></div>
+        <div id="progress-3" class="h-1 flex-1 rounded-full bg-primary/20"></div>
+      </div>
+      <main class="flex-grow px-4">
+        <!-- Step 1: Identidade -->
+        <section class="flex flex-col gap-4" id="step-1">
+          <h1 class="text-white tracking-light text-[32px] font-bold leading-tight text-left pb-3 pt-6">Identidade</h1>
+          <div class="flex flex-col gap-4">
+            <label class="flex flex-col w-full">
+              <p class="text-white text-base font-medium leading-normal pb-2">Nome de Aventureiro</p>
+              <input id="reg-nickname" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: Aragorn" value="" />
+            </label>
+            <label class="flex flex-col w-full">
+              <p class="text-white text-base font-medium leading-normal pb-2">Email</p>
+              <input id="reg-email" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="seu.email@dominio.com" type="email" value="" />
+            </label>
+            <label class="flex flex-col w-full">
+              <p class="text-white text-base font-medium leading-normal pb-2">Senha</p>
+              <input id="reg-password" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Crie uma senha forte" type="password" value="" />
+            </label>
+          </div>
+        </section>
+        <!-- Step 2: Vitals -->
+        <section class="hidden flex-col gap-4" id="step-2">
+          <h1 class="text-white tracking-light text-[32px] font-bold leading-tight text-left pb-1 pt-6">Atributos Físicos</h1>
+          <p class="text-white/70 text-base font-normal leading-normal px-0 pb-4">Esses são seus "atributos base" iniciais. Você poderá evoluí-los durante sua jornada.</p>
+          <div class="flex flex-col gap-4">
+            <label class="flex flex-col w-full">
+              <p class="text-white text-base font-medium leading-normal pb-2">Altura (cm)</p>
+              <input id="reg-height" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: 180" type="number" value="" />
+            </label>
+            <div class="grid grid-cols-2 gap-4">
+              <label class="flex flex-col w-full">
+                <p class="text-white text-base font-medium leading-normal pb-2">Peso Atual (kg)</p>
+                <input id="reg-weight" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: 85" type="number" value="" />
+              </label>
+              <label class="flex flex-col w-full">
+                <p class="text-white text-base font-medium leading-normal pb-2">Meta de Peso (kg)</p>
+                <input id="reg-weight-target" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: 80" type="number" value="" />
+              </label>
+            </div>
+          </div>
+        </section>
+        <!-- Step 3: Aparência -->
+        <section class="hidden flex-col gap-4" id="step-3">
+          <h1 class="text-white tracking-light text-[32px] font-bold leading-tight text-left pb-1 pt-6">Aparência</h1>
+          <p class="text-white/70 text-base font-normal leading-normal px-0 pb-4">Escolha sua representação no jogo. Esta será sua identidade visual.</p>
+          <div class="grid grid-cols-2 gap-4" id="avatar-selection">
+            <div class="avatar-option aspect-square bg-primary/20 rounded-lg flex items-center justify-center border-2 border-transparent cursor-pointer transition-all" data-avatar-url="https://lh3.googleusercontent.com/aida-public/AB6AXuDTxayBmUlfJy71v5imptwwCT0UyzBNOkbhEA-t6F2WaM8NWdT5j0bfCglTU4pllPR2e_1y6jYkKhzENWZrh1VKExhriwROlAjFE7YD3FxTA6CFpG80I7MBWdHw2RFQ6MPMK9AP6tB8eoFjjtVXcpwxntGiq995k5WVtg_7PNsrhToO7kcyGsjqtQ8yYsD4kKHSFVTG_6fC86DCZOGTRR6MVocBqIfg0hoU_0pBKWQ-GBcl10KH3aQAJV5ku9BFDaHxpGqfEgXb85eG">
+              <img class="w-full h-full object-cover rounded-lg" alt="Avatar de uma mulher com cabelos escuros e olhar sério." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTxayBmUlfJy71v5imptwwCT0UyzBNOkbhEA-t6F2WaM8NWdT5j0bfCglTU4pllPR2e_1y6jYkKhzENWZrh1VKExhriwROlAjFE7YD3FxTA6CFpG80I7MBWdHw2RFQ6MPMK9AP6tB8eoFjjtVXcpwxntGiq995k5WVtg_7PNsrhToO7kcyGsjqtQ8yYsD4kKHSFVTG_6fC86DCZOGTRR6MVocBqIfg0hoU_0pBKWQ-GBcl10KH3aQAJV5ku9BFDaHxpGqfEgXb85eG" />
+            </div>
+            <div class="avatar-option aspect-square bg-primary/20 rounded-lg flex items-center justify-center border-2 border-transparent cursor-pointer transition-all" data-avatar-url="https://lh3.googleusercontent.com/aida-public/AB6AXuD1-IRdijy5eIYxAJ8uLTiddsEQK3MJwU5C_RvIxbDB9hNknG2wwTYDShf_fTx_J4zhN90tO-xtflTqR4QukN-Vw09rmrUe_2RUryc74DsE84MJcvzOVP7mu52BaYchp6OI0cYIZO0-kIwmZfI85sAot-g-CrAR9eLRT-2anb-SRe86Cj1sCqJSbiRWOpOJDLWbrm4MCVXxMP31_p3E3B3vIzqAuquxMz-f3s_XKhmHY7ekL2tWx0qoM3JDAe__2XXs0iCCaRrAJ0yE">
+              <img class="w-full h-full object-cover rounded-lg" alt="Avatar de um homem com barba e cabelo claro." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1-IRdijy5eIYxAJ8uLTiddsEQK3MJwU5C_RvIxbDB9hNknG2wwTYDShf_fTx_J4zhN90tO-xtflTqR4QukN-Vw09rmrUe_2RUryc74DsE84MJcvzOVP7mu52BaYchp6OI0cYIZO0-kIwmZfI85sAot-g-CrAR9eLRT-2anb-SRe86Cj1sCqJSbiRWOpOJDLWbrm4MCVXxMP31_p3E3B3vIzqAuquxMz-f3s_XKhmHY7ekL2tWx0qoM3JDAe__2XXs0iCCaRrAJ0yE" />
+            </div>
+            <div class="avatar-option aspect-square bg-primary/20 rounded-lg flex items-center justify-center border-2 border-transparent cursor-pointer transition-all" data-avatar-url="https://lh3.googleusercontent.com/aida-public/AB6AXuCwJvAfIhox0DQ7co5wKoPWq0KzXMm51LJPD_1nNcjur8TKp2PPRLlgHNdSdPSdSaq6X6P0n8syWafh4hKCORvoUMXl1dBJHiV0mSjoL7xSGkhY2gRcWPX2y-AIh0pWYCfQPYWl0CqjgTNtl88r-pfB12qjAECTYmw3rnbUwQC4WjY8qnOqWd80zLeT-2I66Y5nRV9yCZNjaCpzE4zvqgDL3gHyjcCVPAyo2qIfLwD-NY6aajvPCgnr_G8w03U2yDgYPlSvZVMcsKgY">
+              <img class="w-full h-full object-cover rounded-lg" alt="Avatar de uma mulher com sardas e cabelo castanho." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwJvAfIhox0DQ7co5wKoPWq0KzXMm51LJPD_1nNcjur8TKp2PPRLlgHNdSdPSdSaq6X6P0n8syWafh4hKCORvoUMXl1dBJHiV0mSjoL7xSGkhY2gRcWPX2y-AIh0pWYCfQPYWl0CqjgTNtl88r-pfB12qjAECTYmw3rnbUwQC4WjY8qnOqWd80zLeT-2I66Y5nRV9yCZNjaCpzE4zvqgDL3gHyjcCVPAyo2qIfLwD-NY6aajvPCgnr_G8w03U2yDgYPlSvZVMcsKgY" />
+            </div>
+            <div class="avatar-option aspect-square bg-primary/20 rounded-lg flex items-center justify-center border-2 border-transparent cursor-pointer transition-all" data-avatar-url="https://lh3.googleusercontent.com/aida-public/AB6AXuCaowuyHYeVV7QLQqkErji5qLb-CvJFR_rMYtZL7M6YLr1_O81-xKH-NNRhUm420Z8-FlXfIjQJmh8Xsq7ZKS2zyPFvLqGKvJSn_qgtwm71_5hCGdwD8ZRu9nvr2r93N39r1md_0C_ux1921h8wuWOD-OqZYoIL1nP4laPvRN0A-fQBRFxRr-Mz1J_7qnacmNgqF2h_srHsnmNr6kqETAh9l9wSS0FzA8na_BvHMxHN8E7E6wj-4ZIiXEsZ5ulR7MCUFhJcjDMfdJT5">
+              <img class="w-full h-full object-cover rounded-lg" alt="Avatar de um homem sorrindo com cabelo escuro." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaowuyHYeVV7QLQqkErji5qLb-CvJFR_rMYtZL7M6YLr1_O81-xKH-NNRhUm420Z8-FlXfIjQJmh8Xsq7ZKS2zyPFvLqGKvJSn_qgtwm71_5hCGdwD8ZRu9nvr2r93N39r1md_0C_ux1921h8wuWOD-OqZYoIL1nP4laPvRN0A-fQBRFxRr-Mz1J_7qnacmNgqF2h_srHsnmNr6kqETAh9l9wSS0FzA8na_BvHMxHN8E7E6wj-4ZIiXEsZ5ulR7MCUFhJcjDMfdJT5" />
+            </div>
+          </div>
+        </section>
+      </main>
+      <!-- Footer with Action Button -->
+      <footer class="sticky bottom-0 bg-background-light dark:bg-background-dark p-4 pt-6">
+        <button id="reg-next-btn" class="flex w-full items-center justify-center rounded-xl bg-primary h-14 text-background-dark text-lg font-bold">
+          Próximo
+        </button>
+      </footer>
+    </div>
+
+    <!-- Tela 3: Login (Acessar Personagem) -->
+    <div id="screen-login" class="hidden relative flex h-auto min-h-screen w-full flex-col items-center bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden p-4">
+      <button id="login-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer absolute top-4 left-4 z-10">
+        <span class="material-symbols-outlined text-3xl">arrow_back</span>
+      </button>
+      <div class="flex w-full max-w-md flex-col items-center justify-center pt-20 pb-8">
+        <svg class="h-20 w-20 text-primary" fill="none" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"></path>
+        </svg>
+        <h1 class="text-white text-2xl font-bold leading-tight text-center tracking-wider mt-4">RPG DA VIDA REAL</h1>
+      </div>
+      <div class="w-full max-w-md">
+        <h1 class="text-white tracking-light text-[32px] font-bold leading-tight px-4 text-center pb-8 pt-6">Acessar seu Personagem</h1>
+        <div class="flex w-full flex-col gap-4 px-4 py-3">
+          <label class="flex flex-col w-full flex-1">
+            <p class="text-white text-base font-medium leading-normal pb-2">Email</p>
+            <div class="flex w-full flex-1 items-stretch rounded-xl border border-[#3b5445] bg-[#1c2720] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary">
+              <div class="text-[#9db9a8] flex items-center justify-center pl-[15px]">
+                <span class="material-symbols-outlined">person</span>
+              </div>
+              <input id="login-email" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-white focus:outline-0 focus:ring-0 border-0 bg-transparent h-14 placeholder:text-[#9db9a8] p-[15px] text-base font-normal leading-normal" placeholder="Digite seu email" value="" />
+            </div>
+          </label>
+        </div>
+        <div class="flex w-full flex-col gap-4 px-4 py-3">
+          <label class="flex flex-col w-full flex-1">
+            <p class="text-white text-base font-medium leading-normal pb-2">Senha</p>
+            <div class="flex w-full flex-1 items-stretch rounded-xl border border-[#3b5445] bg-[#1c2720] focus-within:ring-2 focus-within:ring-primary focus-within:border-primary">
+              <div class="text-[#9db9a8] flex items-center justify-center pl-[15px]">
+                <span class="material-symbols-outlined">lock</span>
+              </div>
+              <input id="login-password" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-white focus:outline-0 focus:ring-0 border-0 bg-transparent h-14 placeholder:text-[#9db9a8] p-[15px] text-base font-normal leading-normal" placeholder="Digite sua senha" type="password" value="" />
+              <button class="text-[#9db9a8] flex items-center justify-center pr-[15px] bg-transparent border-0" onclick="togglePasswordVisibility('login-password', this)">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+            </div>
+          </label>
+        </div>
+        <div class="flex px-4 py-6">
+          <button id="login-btn" class="flex min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 flex-1 bg-primary text-[#111814] text-base font-bold leading-normal tracking-[0.015em] hover:bg-opacity-90 transition-opacity">
+            <span class="truncate">[ Entrar ]</span>
+          </button>
+        </div>
+        <p id="login-forgot-link" class="text-[#9db9a8] text-sm font-normal leading-normal pb-3 pt-1 px-4 text-center underline cursor-pointer hover:text-primary transition-colors">Perdeu o mapa? (Esqueci a senha)</p>
+      </div>
+    </div>
+
+    <!-- Tela 4: Recuperação de Senha -->
+    <div id="screen-forgot-password" class="hidden relative flex min-h-screen w-full flex-col antialiased">
+      <main class="flex flex-1 flex-col">
+        <div class="flex items-center p-4">
+          <button id="forgot-back-btn" class="text-white flex size-12 shrink-0 items-center justify-start cursor-pointer">
+            <span class="material-symbols-outlined text-3xl text-slate-300 dark:text-slate-400">arrow_back</span>
+          </button>
+          <h1 class="flex-1 text-center text-lg font-bold leading-tight tracking-[-0.015em] text-slate-800 dark:text-white -ml-12">Recuperação de Aventura</h1>
+        </div>
+        <div class="flex flex-1 flex-col justify-center px-4">
+          <div class="flex flex-col items-center">
+            <p class="text-center text-base font-normal leading-normal text-slate-600 dark:text-slate-300">Enviaremos um 'Pergaminho de Recuperação' para seu email.</p>
+          </div>
+          <div class="mt-8 mb-4 flex w-full max-w-[480px] flex-col self-center">
+            <label class="flex w-full flex-col">
+              <p class="pb-2 text-base font-medium leading-normal text-slate-800 dark:text-white">Seu Email</p>
+              <div class="relative flex w-full flex-1 items-stretch">
+                <input id="forgot-email" class="form-input flex h-14 w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg border border-slate-300/70 bg-background-light p-4 pr-12 text-base font-normal leading-normal text-slate-900 placeholder:text-slate-400 focus:border-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 dark:border-slate-700 dark:bg-background-dark dark:text-white dark:placeholder:text-slate-500 dark:focus:border-primary" placeholder="seu-heroi@email.com" value="" />
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-center pr-4 text-slate-400 dark:text-slate-500">
+                  <span class="material-symbols-outlined">mail</span>
+                </div>
+              </div>
+            </label>
+          </div>
+          <div class="mt-4 flex w-full max-w-[480px] self-center">
+            <button id="forgot-btn" class="flex h-12 min-w-[84px] flex-1 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary px-5 text-base font-bold leading-normal tracking-[0.015em] text-slate-900 transition-colors hover:bg-primary/90">
+              <span class="truncate">Enviar Pergaminho de Recuperação</span>
+            </button>
+          </div>
+          <div class="mt-2 flex w-full max-w-[480px] justify-center self-center">
+            <button id="forgot-cancel-btn" class="flex h-10 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-transparent px-4 text-sm font-bold leading-normal tracking-[0.015em] text-slate-500 transition-colors hover:bg-slate-500/10 dark:text-slate-400 dark:hover:bg-slate-400/10">
+              <span class="truncate">Cancelar</span>
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Tela 5: Dashboard (Logado) - NOVO DESIGN -->
+    <div id="screen-dashboard" class="hidden relative flex min-h-screen w-full flex-col overflow-x-hidden">
+      <!-- Background -->
+      <div class="absolute inset-0 z-0">
+        <div class="h-full w-full bg-center bg-no-repeat bg-cover opacity-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6sSjEhz7hgGMCO9BdTp0pHGvGbE3XMpV6jPLsVzsYPwCqNXpNCbXwpEujggDvZYrE9pQH3Y5d5BVF7gvg7jPZ0AXCp2Nwx2A7FFDzew_5BcOaQSLjVdbARuQ92QAHPYPKFF8zuiCOXoXUsMSviMA_KKbTiUtBIpnFlJBm280neUs4DCq_Bfit7g90h0YuQrldqBiXPliiGMqqxXfOBfNx_NLz-YaO63IyoVmNdwY8nkPEARovFkiWn0qj-T5XhZjUWMi1i1P7O7tL_");'></div>
+      </div>
+      <!-- Conteúdo do Hub -->
+      <div class="relative z-10 flex w-full grow flex-col pb-24">
+        <!-- Header -->
+        <header class="flex items-center justify-between p-4">
+          <div class="flex items-center gap-3">
+            <img id="hub-avatar" alt="Avatar do Aventureiro" class="h-12 w-12 rounded-full border-2 border-primary" src="https://placehold.co/100x100/1a3828/13ec6d?text=?" />
+            <div>
+              <h1 id="hub-nickname" class="text-xl font-bold">Carregando...</h1>
+              <p id="hub-level-title" class="text-sm text-text-dark-secondary">
+                <span id="hub-level">Nv. 1</span>
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-dark/80 backdrop-blur-sm">
+              <span class="material-symbols-outlined text-text-dark-secondary">leaderboard</span>
+            </button>
+            <button class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-dark/80 backdrop-blur-sm">
+              <span class="material-symbols-outlined text-text-dark-secondary">notifications</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Barras de Status -->
+        <section class="px-4 py-2">
+          <div class="flex flex-col gap-2.5 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+            <!-- HP -->
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-health text-lg">favorite</span>
+              <div class="h-2.5 w-full flex-1 rounded-full bg-background-dark">
+                <div id="hub-hp-bar" class="h-2.5 rounded-full bg-health" style="width: 100%"></div>
+              </div>
+              <span id="hub-hp-text" class="text-sm font-semibold text-text-dark-secondary">100/100</span>
+            </div>
+            <!-- Mana -->
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-mana text-lg">bolt</span>
+              <div class="h-2.5 w-full flex-1 rounded-full bg-background-dark">
+                <div id="hub-mana-bar" class="h-2.5 rounded-full bg-mana" style="width: 100%"></div>
+              </div>
+              <span id="hub-mana-text" class="text-sm font-semibold text-text-dark-secondary">100/100</span>
+            </div>
+            <!-- XP -->
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-xp text-lg">star</span>
+              <div class="h-2.5 w-full flex-1 rounded-full bg-background-dark">
+                <div id="hub-xp-bar" class="h-2.5 rounded-full bg-xp" style="width: 0%"></div>
+              </div>
+              <span id="hub-xp-text" class="text-sm font-semibold text-text-dark-secondary">0/1000</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Atributos e Status -->
+        <section class="grid grid-cols-2 gap-4 px-4 py-2">
+          <!-- Atributos -->
+          <div class="flex flex-col gap-2 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+            <h2 class="text-base font-bold text-primary">Atributos</h2>
+            <div id="hub-attributes-list" class="flex flex-col gap-4 mt-2">
+              <!-- Atributos serão inseridos dinamicamente aqui -->
+            </div>
+          </div>
+          <!-- Status Atuais -->
+          <div class="flex flex-col gap-2 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+            <h2 class="text-base font-bold text-primary">Status Atuais</h2>
+            <div id="hub-status-effects" class="flex flex-col gap-2">
+              <!-- Status são inseridos dinamicamente aqui -->
+              <p class="text-sm text-text-dark-secondary">Nenhum efeito ativo.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Registro de Missões -->
+        <section class="flex flex-col gap-3 px-4 py-2">
+          <div class="flex justify-between items-center">
+             <h2 class="text-lg font-bold">Registro de Missões</h2>
+             <button id="btn-goto-calendar" class="p-2 rounded-full hover:bg-surface-dark">
+                <span class="material-symbols-outlined text-text-dark-secondary">calendar_month</span>
+             </button>
+          </div>
+
+          <!-- Abas de Filtro -->
+          <div id="mission-tabs" class="grid grid-cols-4 gap-2 p-1 rounded-lg bg-surface-dark/50 border border-border-dark">
+            <button data-tab="today" class="mission-tab-btn mission-tab-active flex-1 text-center p-2 rounded-md text-sm font-bold transition-colors bg-primary text-background-dark">
+              Hoje
+            </button>
+            <button data-tab="week" class="mission-tab-btn flex-1 text-center p-2 rounded-md text-sm font-bold text-text-dark-secondary transition-colors">
+              Semana
+            </button>
+            <button data-tab="backlog" class="mission-tab-btn flex-1 text-center p-2 rounded-md text-sm font-bold text-text-dark-secondary transition-colors">
+              Backlog
+            </button>
+            <button data-tab="all" class="mission-tab-btn flex-1 text-center p-2 rounded-md text-sm font-bold text-text-dark-secondary transition-colors">
+              Todas
+            </button>
+          </div>
+
+          <div id="hub-mission-list" class="flex flex-col gap-3">
+            <!-- Missões são inseridas dinamicamente aqui -->
+            <p class="text-sm text-text-dark-secondary p-4">Nenhuma missão encontrada. Adicione uma nova!</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- Botão Adicionar Missão -->
+      <div class="fixed bottom-24 right-4 z-20">
+        <button id="btn-show-add-task" class="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-background-dark shadow-lg shadow-primary/30">
+          <span class="material-symbols-outlined text-4xl">add</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tela 6: Criar Nova Tarefa (IA) -->
+    <div id="screen-add-task" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark pb-24">
+      <!-- Header -->
+      <div class="flex items-center bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10">
+        <button id="task-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
+          <span class="material-symbols-outlined text-3xl">arrow_back</span>
+        </button>
+        <h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Criar Nova Missão</h2>
+      </div>
+
+      <!-- Formulário -->
+      <main class="flex-grow p-4 space-y-6">
+        <!-- Título -->
+        <label class="flex flex-col w-full">
+          <p class="text-white text-base font-medium leading-normal pb-2">Título da Missão</p>
+          <input id="task-title" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: Correr 30 min na esteira" value="" />
+        </label>
+        
+        <!-- Tipo de Missão -->
+        <div>
+           <p class="text-white text-base font-medium leading-normal pb-2">Tipo de Missão (Sua escolha)</p>
+           <div id="task-type-group" class="grid grid-cols-3 gap-3">
+               <button data-type="habito" class="task-type-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 <span class="material-symbols-outlined mr-2">menu_book</span> Hábito
+               </button>
+               <button data-type="diaria" class="task-type-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 <span class="material-symbols-outlined mr-2">fitness_center</span> Diária
+               </button>
+               <button data-type="projeto" class="task-type-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 <span class="material-symbols-outlined mr-2">work</span> Projeto
+               </button>
+           </div>
+        </div>
+
+        <!-- Prioridade da Missão -->
+        <div>
+           <p class="text-white text-base font-medium leading-normal pb-2">Tipo de Missão (Sua Prioridade)</p>
+           <div id="task-priority-group" class="grid grid-cols-3 gap-3">
+               <button data-priority="secundaria" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 Secundária
+               </button>
+               <button data-priority="contrato" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 Contrato
+               </button>
+               <button data-priority="principal" class="task-priority-btn flex items-center justify-center rounded-lg border-2 border-border-dark bg-surface-dark/50 p-4 font-bold text-text-dark-secondary transition-all">
+                 Principal
+               </button>
+           </div>
+        </div>
+
+        <!-- Duração (Opcional) -->
+        <div>
+            <p class="text-white/70 text-base font-medium leading-normal pb-2">Duração Estimada (Opcional)</p>
+            <div class="grid grid-cols-2 gap-4">
+                <label class="flex flex-col w-full">
+                    <p class="text-white/70 text-sm pb-1">Horas</p>
+                    <input id="task-duration-hours" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" type="number" min="0" placeholder="0" />
+                </label>
+                <label class="flex flex-col w-full">
+                    <p class="text-white/70 text-sm pb-1">Minutos</p>
+                    <input id="task-duration-minutes" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" type="number" min="0" max="59" placeholder="30" />
+                </label>
+            </div>
+        </div>
+
+        <!-- Prazos e Recorrência (Opcional) -->
+        <div class="grid grid-cols-2 gap-4">
+            <label class="flex flex-col w-full">
+              <p class="text-white/70 text-base font-medium leading-normal pb-2">Prazo Final (Opcional)</p>
+              <input id="task-deadline" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" type="date" />
+            </label>
+            <button id="btn-open-recurrence" class="flex items-center justify-center rounded-xl border-2 border-dashed border-border-dark bg-surface-dark/30 h-14 text-text-dark-secondary hover:border-primary transition-colors">
+              <span class="material-symbols-outlined mr-2">event_repeat</span>
+              Definir Recorrência
+            </button>
+        </div>
+        <p id="recurrence-summary" class="text-center text-sm text-primary -mt-2 mb-2"></p>
+
+        <!-- Notas / Anexos -->
+        <div>
+            <p class="text-white/70 text-base font-medium leading-normal pb-2">Notas / Anexos (Opcional)</p>
+            <textarea id="task-notes" class="form-textarea flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary placeholder:text-white/40 p-[15px] text-base font-normal leading-normal mb-2" placeholder="Adicione links, lembretes ou qualquer contexto adicional aqui..." rows="3"></textarea>
+            <input type="file" id="task-attachment-input" class="hidden" />
+            <button id="btn-add-attachment" class="flex w-full items-center justify-center rounded-lg border-2 border-dashed border-border-dark bg-surface-dark/30 h-12 text-text-dark-secondary hover:border-primary transition-colors">
+              <span class="material-symbols-outlined mr-2">attach_file</span>
+              Adicionar Anexo
+            </button>
+            <p id="attachment-name" class="text-sm text-primary text-center mt-2"></p>
+        </div>
+
+        <!-- Sub-tarefas (Checklist) -->
+        <div>
+            <p class="text-white text-base font-medium leading-normal pb-2">Sub-tarefas (Checklist)</p>
+            <div class="flex gap-2">
+                <input id="task-subtask-input" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-14 placeholder:text-white/40 p-[15px] text-base font-normal leading-normal" placeholder="Ex: Pesquisar referências" value="" />
+                <button id="task-add-subtask-btn" class="flex items-center justify-center rounded-xl bg-primary/20 h-14 w-14 text-primary text-2xl font-bold">
+                    +
+                </button>
+            </div>
+            <div id="task-subtask-list" class="mt-3 space-y-2">
+                <!-- Sub-tarefas adicionadas aparecerão aqui -->
+            </div>
+        </div>
+
+        <!-- Estimativa de Recompensa (IA) -->
+        <div>
+          <p class="text-white text-base font-medium leading-normal pb-2">Análise da Missão (IA)</p>
+          <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark min-h-[160px] flex items-center justify-center">
+
+            <!-- Estado Inicial/Carregando -->
+            <div id="reward-loading" class="text-center text-text-dark-secondary">
+              <div id="reward-spinner" class="hidden animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+              <p id="reward-loading-text">Digite sua missão para calcularmos a recompensa...</p>
+            </div>
+
+            <!-- Resultados da IA -->
+            <div id="reward-results" class="hidden w-full space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-primary">Atributo:</span>
+                    <span id="reward-attribute" class="font-bold uppercase"></span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-primary">Dificuldade:</span>
+                    <span id="reward-difficulty" class="font-bold uppercase"></span>
+                </div>
+                <hr class="border-border-dark my-2" />
+                <div class="flex justify-between items-center text-xp">
+                    <span class="font-bold">XP Global:</span>
+                    <span id="reward-xp-global" class="font-bold"></span>
+                </div>
+                <div class="flex justify-between items-center text-xp">
+                    <span id="reward-xp-attribute-label" class="font-bold">XP de Atributo:</span>
+                    <span id="reward-xp-attribute" class="font-bold"></span>
+                </div>
+                <div class="flex justify-between items-center text-yellow-400">
+                    <span class="font-bold">Moedas:</span>
+                    <span id="reward-coins" class="font-bold"></span>
+                </div>
+            </div>
+
+          </div>
+        </div>
+      </main>
+
+      <!-- Footer com Botão Salvar -->
+      <footer class="sticky bottom-0 bg-background-dark p-4 pt-6">
+        <button id="task-save-btn" class="flex w-full items-center justify-center rounded-xl bg-primary h-14 text-background-dark text-lg font-bold">
+          Salvar Missão
+        </button>
+      </footer>
+    </div>
+
+    <!-- Tela 7: Detalhes da Missão (Layout Baseado na Inspiração) -->
+    <div id="screen-mission-details" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-dark pb-24">
+        <header class="flex items-center p-4 pb-2 justify-between">
+            <div id="mission-details-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </div>
+            <h1 id="mission-details-title" class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center truncate px-2">Carregando Missão...</h1>
+            <div class="text-white flex size-12 shrink-0 items-center justify-center">
+                <button id="mission-details-edit-btn" class="flex shrink-0 items-center justify-center rounded-full size-12 text-white">
+                    <span class="material-symbols-outlined">edit_note</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-4">
+            <div id="mission-animation-container" class="relative flex items-center justify-center bg-cover bg-center aspect-video rounded-lg p-4 bg-surface-dark/50 border border-border-dark">
+                <!-- Animação CSS Padrão -->
+                <div class="text-center text-text-dark-secondary">
+                   <span class="material-symbols-outlined text-6xl text-primary animate-pulse">swords</span>
+                   <p>Missão em Andamento</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-4 pb-3 text-center">
+           <p class="text-white text-4xl font-bold tracking-tighter" id="session-timer">00:00:00</p>
+           <p class="text-text-dark-secondary text-sm" id="total-timer">Tempo Total Acumulado: 00:00:00</p>
+        </div>
+
+        <div id="mission-controls-container" class="flex flex-1 gap-3 flex-wrap px-4 py-3 justify-between">
+            <!-- Botões de controle inseridos via JS -->
+            <p class="text-center w-full text-text-dark-secondary">Carregando...</p>
+        </div>
+
+        <div class="flex justify-between items-center px-4 pb-3 pt-5">
+            <h2 class="text-white text-[22px] font-bold leading-tight tracking-[-0.015em]">Diário de Bordo da Missão</h2>
+            <button id="mission-history-btn" class="inline-flex items-center gap-2 text-primary text-sm">
+                <span class="material-symbols-outlined !text-xl">history</span>
+                <span>Histórico</span>
+            </button>
+        </div>
+
+        <div class="px-4 pb-24">
+            <div id="sub-task-list" class="flex flex-col divide-y divide-[#28392f]">
+                <!-- Sub-tarefas inseridas via JS -->
+            </div>
+        </div>
+
+        <!-- Container para Recompensas da Missão -->
+        <div id="mission-rewards-container" class="px-4 pb-4">
+            <!-- As recompensas serão inseridas aqui via JS -->
+        </div>
+
+        <div class="fixed bottom-6 right-6 z-30">
+            <button id="btn-add-subtask-modal" class="flex items-center justify-center gap-2 h-14 pl-5 pr-6 rounded-full bg-primary text-background-dark shadow-lg">
+                <span class="material-symbols-outlined !text-2xl">post_add</span>
+                <span class="font-bold text-base">Nova Subtarefa</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tela 8: Calendário de Missões (Registro Temporal) -->
+    <div id="screen-calendar" class="hidden relative flex min-h-screen w-full flex-col overflow-x-hidden">
+        <!-- Background -->
+        <div class="absolute inset-0 z-0">
+            <div class="h-full w-full bg-center bg-no-repeat bg-cover opacity-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6sSjEhz7hgGMCO9BdTp0pHGvGbE3XMpV6jPLsVzsYPwCqNXpNCbXwpEujggDvZYrE9pQH3Y5d5BVF7gvg7jPZ0AXCp2Nwx2A7FFDzew_5BcOaQSLjVdbARuQ92QAHPYPKFF8zuiCOXoXUsMSviMA_KKbTiUtBIpnFlJBm280neUs4DCq_Bfit7g90h0YuQrldqBiXPliiGMqqxXfOBfNx_NLz-YaO63IyoVmNdwY8nkPEARovFkiWn0qj-T5XhZjUWMi1i1P7O7tL_");'></div>
+        </div>
+        <!-- Conteúdo -->
+        <div class="relative z-10 flex w-full grow flex-col pb-24">
+            <header class="flex items-center p-4 pb-2 justify-between">
+                <div id="calendar-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </div>
+                <div class="text-center">
+                    <h1 class="text-xl font-bold">Registro Temporal</h1>
+                    <p class="text-sm text-text-dark-secondary">Mapa do Tempo das Missões</p>
+                </div>
+                <div class="flex size-12 shrink-0 items-center justify-center"></div>
+            </header>
+
+            <main class="flex-1 px-4 py-4">
+                <div class="flex flex-col gap-4 rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+                    <!-- Navegação do Mês -->
+                    <div class="flex items-center justify-between">
+                        <button id="prev-month-btn" class="p-1.5 rounded-full hover:bg-primary/10">
+                            <span class="material-symbols-outlined text-text-dark-secondary">chevron_left</span>
+                        </button>
+                        <h3 id="calendar-month-year" class="font-bold text-primary">Carregando...</h3>
+                        <button id="next-month-btn" class="p-1.5 rounded-full hover:bg-primary/10">
+                            <span class="material-symbols-outlined text-text-dark-secondary">chevron_right</span>
+                        </button>
+                    </div>
+                    <!-- Dias da Semana -->
+                    <div class="grid grid-cols-7 text-center text-xs text-text-dark-secondary">
+                        <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+                    </div>
+                    <!-- Grid do Calendário -->
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-sm">
+                        <!-- Células do calendário serão inseridas aqui via JS -->
+                    </div>
+                </div>
+                <!-- Lista de Missões do Dia -->
+                <div id="calendar-mission-list-container" class="mt-4">
+                    <h4 id="calendar-mission-list-title" class="font-semibold text-text-dark-secondary text-lg mb-3">Selecione um dia</h4>
+                    <div id="calendar-mission-list" class="flex flex-col gap-3">
+                        <p class="text-sm text-text-dark-secondary p-4 text-center">Nenhuma missão para este dia.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Tela 9: Ficha de Personagem -->
+    <div id="screen-character" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-dark pb-20">
+      <header class="flex flex-col items-center p-4 pt-8">
+        <div class="relative w-full max-w-sm mx-auto h-72">
+        <div class="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <img alt="Avatar do Aventureiro" id="avatar-img" class="w-32 h-32 rounded-full border-4 border-primary object-cover shadow-lg" src="https://placehold.co/128x128/1a241e/13ec6d?text=?"/>
+        </div>
+        <div id="slot-cabeca" data-slot="cabeca" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 0; left: 50%; transform: translateX(-50%);"><span class="material-symbols-outlined">skull</span></div>
+        <div id="slot-peitoral" data-slot="peitoral" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 50%; left: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">shield</span></div>
+        <div id="slot-mao_direita" data-slot="mao_direita" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 50%; right: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">swords</span></div>
+        <div id="slot-amuleto" data-slot="amuleto" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="bottom: 0; left: 25%; transform: translateX(-50%);"><span class="material-symbols-outlined">diamond</span></div>
+        <div id="slot-botas" data-slot="botas" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="bottom: 0; right: 25%; transform: translateX(50%);"><span class="material-symbols-outlined">foot_bones</span></div>
+        </div>
+        <h1 id="character-level-title" class="text-2xl font-bold mt-4">Carregando...</h1>
+        <p id="character-name" class="text-text-dark-secondary">...</p>
+      </header>
+      <main class="flex-1 pb-24 px-4 space-y-8">
+        <section>
+          <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <p class="text-text-dark-secondary text-sm">Peso Atual</p>
+                <p id="current-weight" class="text-xl font-bold">- kg</p>
+              </div>
+              <div>
+                <p class="text-text-dark-secondary text-sm text-right">IMC</p>
+                <p id="current-imc" class="text-xl font-bold text-right">-</p>
+              </div>
+              <button id="add-daily-log-btn" class="flex items-center justify-center gap-2 rounded-full h-10 px-4 bg-surface-dark text-primary text-sm font-bold">
+                <span class="material-symbols-outlined !text-base">add_circle</span>
+                <span>Adicionar Log Diário</span>
+              </button>
+            </div>
+            <div id="status-effects-container" class="border-t border-border-dark pt-4">
+              <h3 class="font-bold mb-2">Efeitos Ativos</h3>
+            </div>
+          </div>
+        </section>
+        <section class="relative">
+            <h2 class="text-xl font-bold mb-4">Jornada da Saúde</h2>
+            <div id="health-carousel" class="relative overflow-hidden">
+                <div id="health-slides" class="flex transition-transform duration-500 ease-in-out">
+                    <!-- Slide 1: Gráfico Principal -->
+                    <div class="w-full flex-shrink-0">
+                        <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4">
+                            <canvas id="health-chart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Slide 2: Estatísticas -->
+                    <div class="w-full flex-shrink-0">
+                        <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4 h-full">
+                            <h3 class="text-lg font-bold text-primary text-center mb-4">Análise de Progresso</h3>
+                            <div id="progress-stats-container" class="text-center">
+                                <p class="text-text-dark-secondary">Carregando estatísticas...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 3: Oscilação de Peso -->
+                    <div class="w-full flex-shrink-0">
+                        <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-primary">Oscilação de Peso</h3>
+                                <div id="oscillation-period-btns" class="flex items-center bg-surface-dark rounded-full p-1 text-sm">
+                                    <button data-period="day" class="oscillation-btn bg-primary text-background-dark rounded-full px-3 py-1">Dia</button>
+                                    <button data-period="month" class="oscillation-btn text-text-dark-secondary rounded-full px-3 py-1">Mês</button>
+                                    <button data-period="year" class="oscillation-btn text-text-dark-secondary rounded-full px-3 py-1">Ano</button>
+                                </div>
+                            </div>
+                            <canvas id="weight-oscillation-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Navegação do Carrossel -->
+            <div id="carousel-dots" class="flex justify-center mt-4 space-x-2">
+                <button data-slide-to="0" class="carousel-dot h-3 w-3 rounded-full bg-primary"></button>
+                <button data-slide-to="1" class="carousel-dot h-3 w-3 rounded-full bg-surface-dark"></button>
+                <button data-slide-to="2" class="carousel-dot h-3 w-3 rounded-full bg-surface-dark"></button>
+            </div>
+        </section>
+        <section>
+          <h2 class="text-xl font-bold mb-4">Atributos</h2>
+          <div id="attributes-list" class="bg-surface-dark/50 border border-border-dark rounded-lg p-4 space-y-4">
+          </div>
+        </section>
+        <section>
+          <h2 class="text-xl font-bold mb-4">Inventário</h2>
+          <div id="inventory-grid" class="grid grid-cols-4 sm:grid-cols-5 gap-4">
+          </div>
+        </section>
+        <section>
+          <h2 class="text-xl font-bold mb-4">Conquistas</h2>
+          <div id="achievements-list" class="space-y-3">
+          </div>
+        </section>
+      </main>
+    </div>
+
+  </div>
+
+  <!-- Navegação Principal Persistente -->
+  <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
+    <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
+      <a id="btn-goto-hub" class="nav-btn flex flex-col items-center gap-1 text-primary" href="#">
+        <span class="material-symbols-outlined">home</span>
+        <span class="text-xs font-bold">Início</span>
+      </a>
+      <a id="btn-goto-character" class="nav-btn flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+        <span class="material-symbols-outlined">shield_person</span>
+        <span class="text-xs">Personagem</span>
+      </a>
+      <a class="nav-btn flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+        <span class="material-symbols-outlined">swords</span>
+        <span class="text-xs">Guilda</span>
+      </a>
+      <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+        <span class="material-symbols-outlined">store</span>
+        <span class="text-xs">Mercado</span>
+      </a>
+      <a id="hub-logout-btn" class="flex flex-col items-center gap-1 text-text-dark-secondary cursor-pointer" href="#">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="text-xs">Opções</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Modal de Mensagem/Erro -->
+  <div id="modal-message" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm text-center">
+      <h3 id="modal-title" class="text-primary text-xl font-bold mb-3"></h3>
+      <p id="modal-body" class="text-white/90 mb-6"></p>
+      <button id="modal-close-btn" class="flex min-w-[84px] w-full cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-primary text-[#111814] text-base font-bold">
+        Entendido
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de Recorrência -->
+  <div id="modal-recurrence" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm">
+      <h3 class="text-primary text-xl font-bold mb-4">Definir Recorrência</h3>
+
+      <!-- Opção 1: A cada X dias -->
+      <div class="space-y-2">
+          <label class="text-white/90">Repetir a cada:</label>
+          <div class="flex items-center gap-2">
+              <input id="recurrence-days-input" type="number" min="1" class="form-input w-20 bg-[#102218] border-border-dark rounded" placeholder="1">
+              <span class="text-white/90">dias</span>
+          </div>
+      </div>
+
+      <div class="my-4 text-center text-text-dark-secondary">ou</div>
+
+      <!-- Opção 2: Dias da Semana -->
+      <div class="space-y-2">
+          <label class="text-white/90">Repetir nos dias:</label>
+          <div id="recurrence-weekdays" class="grid grid-cols-4 gap-2 text-center">
+              <button data-day="1" class="weekday-btn p-2 rounded border border-border-dark">Seg</button>
+              <button data-day="2" class="weekday-btn p-2 rounded border border-border-dark">Ter</button>
+              <button data-day="3" class="weekday-btn p-2 rounded border border-border-dark">Qua</button>
+              <button data-day="4" class="weekday-btn p-2 rounded border border-border-dark">Qui</button>
+              <button data-day="5" class="weekday-btn p-2 rounded border border-border-dark">Sex</button>
+              <button data-day="6" class="weekday-btn p-2 rounded border border-border-dark">Sáb</button>
+              <button data-day="0" class="weekday-btn p-2 rounded border border-border-dark">Dom</button>
+          </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button id="recurrence-cancel-btn" class="px-4 py-2 rounded bg-surface-dark/50 text-white/80">Cancelar</button>
+        <button id="recurrence-save-btn" class="px-4 py-2 rounded bg-primary text-background-dark font-bold">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Histórico de Atividade -->
+  <div id="modal-activity-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-md max-h-[80vh] flex flex-col">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-primary text-xl font-bold">Registro de Atividade</h3>
+        <button id="log-close-btn" class="text-white/80 hover:text-white">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div id="log-content" class="overflow-y-auto space-y-3 pr-2">
+        <!-- Conteúdo do log será inserido aqui -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Adicionar/Editar Sub-tarefa -->
+    <div id="modal-subtask" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm">
+            <h3 id="subtask-modal-title" class="text-primary text-xl font-bold mb-4">Nova Sub-tarefa</h3>
+            <input id="subtask-modal-input" type="text" class="form-input w-full bg-[#102218] border-border-dark rounded mb-4" placeholder="Título da sub-tarefa">
+            <div class="flex justify-end gap-3">
+                <button id="subtask-modal-cancel-btn" class="px-4 py-2 rounded bg-surface-dark/50 text-white/80">Cancelar</button>
+                <button id="subtask-modal-save-btn" class="px-4 py-2 rounded bg-primary text-background-dark font-bold">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+  <!-- Modal de Adicionar Log Diário -->
+  <div id="modal-add-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm">
+      <h3 class="text-primary text-xl font-bold mb-2 text-center">Adicionar Log Diário</h3>
+      <p class="text-text-dark-secondary mb-6 text-center text-sm">Registre suas métricas de hoje.</p>
+
+      <div class="space-y-4">
+        <div>
+          <label for="log-weight-input" class="text-text-dark-secondary text-sm font-bold mb-1 block">Novo Peso (kg) <span class="text-red-500">*</span></label>
+          <input id="log-weight-input" type="number" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg" placeholder="Ex: 75.5">
+        </div>
+
+        <div>
+          <label for="log-fat-perc-input" class="text-text-dark-secondary text-sm font-bold mb-1 block">Gordura Corporal (%) <span class="text-xs">(Opcional)</span></label>
+          <input id="log-fat-perc-input" type="number" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg" placeholder="Ex: 18.5">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="log-sleep-hours-input" class="text-text-dark-secondary text-sm font-bold mb-1 block">Horas de Sono <span class="text-xs">(Opcional)</span></label>
+            <input id="log-sleep-hours-input" type="number" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg" placeholder="Ex: 8">
+          </div>
+          <div>
+            <label for="log-stress-level-input" class="text-text-dark-secondary text-sm font-bold mb-1 block">Nível Estresse (1-5) <span class="text-xs">(Opcional)</span></label>
+            <input id="log-stress-level-input" type="number" min="1" max="5" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg" placeholder="Ex: 2">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-4 mt-8">
+        <button id="cancel-log-update" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Cancelar</button>
+        <button id="confirm-log-update" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Ação de Item -->
+  <div id="modal-item-action" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm text-center">
+      <h3 id="item-modal-title" class="text-primary text-xl font-bold mb-2">Nome do Item</h3>
+      <p id="item-modal-effect" class="text-text-dark-secondary mb-6">Efeito do item</p>
+      <div class="flex gap-4">
+        <button id="item-action-secondary-btn" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Descartar</button>
+        <button id="item-action-primary-btn" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Ação</button>
+      </div>
+      <button id="item-action-cancel-btn" class="w-full mt-3 rounded-full h-10 bg-transparent text-text-dark-secondary">Cancelar</button>
+    </div>
+  </div>
+
+
+  <!-- Modal de Adicionar Log Diário -->
+  <div id="modal-daily-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm space-y-4">
+          <h3 class="text-primary text-xl font-bold text-center">Adicionar Log Diário</h3>
+
+          <div>
+              <label for="log-peso" class="block text-sm font-medium text-text-dark-secondary mb-1">Novo Peso (kg) <span class="text-red-500">*</span></label>
+              <input id="log-peso" type="number" placeholder="Obrigatório" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div class="border-t border-border-dark my-4"></div>
+
+          <p class="text-center text-sm text-text-dark-secondary">Opcional - Para cálculos mais precisos:</p>
+
+          <div>
+              <label for="log-gordura" class="block text-sm font-medium text-text-dark-secondary mb-1">Gordura Corporal (%)</label>
+              <input id="log-gordura" type="number" placeholder="Ex: 15.2" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div>
+              <label for="log-sono" class="block text-sm font-medium text-text-dark-secondary mb-1">Horas de Sono</label>
+              <input id="log-sono" type="number" placeholder="Ex: 8" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div>
+              <label for="log-estresse" class="block text-sm font-medium text-text-dark-secondary mb-1">Nível de Estresse (1-5)</label>
+              <input id="log-estresse" type="number" min="1" max="5" placeholder="1 (baixo) - 5 (alto)" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div class="flex gap-4 pt-4">
+              <button id="cancel-daily-log" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Cancelar</button>
+              <button id="confirm-daily-log" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- Modal de Ação de Item -->
+  <div id="modal-item-action" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm text-center">
+      <h3 id="item-modal-title" class="text-primary text-xl font-bold mb-2">Nome do Item</h3>
+      <p id="item-modal-effect" class="text-text-dark-secondary mb-6">Efeito do item</p>
+      <div class="flex gap-4">
+        <button id="item-action-secondary-btn" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Descartar</button>
+        <button id="item-action-primary-btn" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Ação</button>
+      </div>
+      <button id="item-action-cancel-btn" class="w-full mt-3 rounded-full h-10 bg-transparent text-text-dark-secondary">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    // Importações do Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getAuth,
+      signInAnonymously,
+      signInWithCustomToken,
+      onAuthStateChanged,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      sendPasswordResetEmail,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      updateProfile
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      getDocs,
+      updateDoc,
+      onSnapshot,
+      collection,
+      addDoc,
+      writeBatch,
+      deleteField,
+      setLogLevel,
+      Timestamp,
+      runTransaction,
+      deleteField,
+      query,
+      orderBy,
+      limit
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import {
+        getStorage,
+        ref,
+        uploadBytes,
+        getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+    // --- Exibe o Domínio para Autorização no Firebase ---
+    const currentHostname = window.location.hostname;
+    console.warn('--- DOMÍNIO PARA AUTORIZAR NO FIREBASE ---');
+    console.warn('Para o Login com Google funcionar, adicione este domínio à sua lista de "Domínios autorizados" no Firebase Auth -> Configurações:');
+    console.warn(currentHostname);
+    console.warn('----------------------------------------------');
+
+    // --- Configuração do Firebase ---
+    // Configuração fornecida pelo usuário
+    const firebaseConfigUser = {
+      apiKey: "AIzaSyBeLq53I4Zu8TIcttgYwcyhFUBu4uneCxQ",
+      authDomain: "rpglife-8f33d.firebaseapp.com",
+      projectId: "rpglife-8f33d",
+      storageBucket: "rpglife-8f33d.firebasestorage.app",
+      messagingSenderId: "428052124083",
+      appId: "1:428052124083:web:1190108bd19638ad2bfbc6",
+      measurementId: "G-5LCK5W2JNH"
+    };
+
+    // Configuração do Canvas (obrigatória)
+    const firebaseConfig = typeof __firebase_config !== 'undefined'
+      ? JSON.parse(__firebase_config)
+      : firebaseConfigUser;
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rpglife-app';
+
+    // Inicialização do Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app); // <-- ADICIONADO
+    setLogLevel('Debug'); // Para logs detalhados no console
+
+    // --- Variáveis de Estado Global ---
+    let currentUserId = null;
+    let profileListener = null; // Para o listener do onSnapshot do perfil
+    let tasksListener = null; // Para o listener do onSnapshot das tarefas
+    let allUserTasks = []; // Para armazenar a lista completa de tarefas
+    let activeMissionTab = 'today'; // 'today', 'week', 'backlog', 'all'
+    let currentRegistrationStep = 1;
+    let selectedAvatarUrl = null;
+
+    // --- Variáveis da Tela de Tarefas ---
+    let editingTaskId = null; // Armazena o ID da tarefa em edição
+    let selectedTaskType = null;
+    let selectedTaskPriority = 'contrato';
+    let recurrenceRule = null;
+    let attachmentFile = null; // Para armazenar o arquivo do anexo
+    let subtasksList = [];
+    let aiResults = null;
+    let calculatedRewards = null;
+    let debounceTimer = null;
+
+    // --- Variáveis da Tela de Detalhes da Missão ---
+    let sessionTimerInterval = null;
+    let accumulatedTime = 0; // Armazena o tempo já trabalhado em segundos
+    let currentMissionEventLogs = [];
+    let currentMissionId = null; // Armazena o ID da missão sendo visualizada
+    let activeSubtaskModal = {
+        isOpen: false,
+        missionId: null,
+        subtaskIndex: null // null para nova, index para editar
+    };
+    let activeSubtaskTimers = {}; // Objeto para rastrear os timers ativos { subtaskId: intervalId }
+
+    // --- Variáveis da Tela do Calendário ---
+    let currentCalendarDate = new Date();
+
+    // --- Variáveis da Tela de Personagem ---
+    let fullProfileData = null;
+    let characterDailyLogs = []; // Armazenar logs para reutilização
+    let healthChart = null; // Variável para manter a instância do gráfico
+    let weightOscillationChart = null; // Variável para o gráfico de oscilação
+
+
+    // --- Tabelas Base de Recompensa (Conforme GDD) ---
+    const REWARDS_DIFFICULTY = {
+        FACIL: { xp_attr: 10 },
+        MEDIA: { xp_attr: 25 },
+        DIFICIL: { xp_attr: 50 }
+    };
+    const REWARDS_TYPE = {
+        habito:  { xp_global: 5,  moedas: 5 },
+        diaria:  { xp_global: 15, moedas: 10 },
+        projeto: { xp_global: 75, moedas: 50 }
+    };
+
+    // --- Seletores de Elementos ---
+    const screens = {
+      splash: document.getElementById('screen-splash'),
+      register: document.getElementById('screen-register'),
+      login: document.getElementById('screen-login'),
+      forgot: document.getElementById('screen-forgot-password'),
+      dashboard: document.getElementById('screen-dashboard'),
+      addTask: document.getElementById('screen-add-task'),
+      missionDetails: document.getElementById('screen-mission-details'),
+      calendar: document.getElementById('screen-calendar'),
+      character: document.getElementById('screen-character')
+    };
+
+    const registerSteps = {
+      step1: document.getElementById('step-1'),
+      step2: document.getElementById('step-2'),
+      step3: document.getElementById('step-3')
+    };
+
+    const taskForm = {
+        title: document.getElementById('task-title'),
+        typeGroup: document.getElementById('task-type-group'),
+        typeButtons: document.querySelectorAll('.task-type-btn'),
+        priorityGroup: document.getElementById('task-priority-group'),
+        priorityButtons: document.querySelectorAll('.task-priority-btn'),
+        durationHours: document.getElementById('task-duration-hours'),
+        durationMinutes: document.getElementById('task-duration-minutes'),
+        deadline: document.getElementById('task-deadline'),
+        openRecurrenceBtn: document.getElementById('btn-open-recurrence'),
+        recurrenceSummary: document.getElementById('recurrence-summary'),
+        notes: document.getElementById('task-notes'),
+        addAttachmentBtn: document.getElementById('btn-add-attachment'),
+        attachmentInput: document.getElementById('task-attachment-input'),
+        attachmentName: document.getElementById('attachment-name'),
+        subtaskInput: document.getElementById('task-subtask-input'),
+        addSubtaskBtn: document.getElementById('task-add-subtask-btn'),
+        subtaskList: document.getElementById('task-subtask-list'),
+        saveBtn: document.getElementById('task-save-btn'),
+        backBtn: document.getElementById('task-back-btn')
+    };
+
+    const rewardBox = {
+        loading: document.getElementById('reward-loading'),
+        loadingText: document.getElementById('reward-loading-text'),
+        spinner: document.getElementById('reward-spinner'),
+        results: document.getElementById('reward-results'),
+        attribute: document.getElementById('reward-attribute'),
+        difficulty: document.getElementById('reward-difficulty'),
+        xpGlobal: document.getElementById('reward-xp-global'),
+        xpAttribute: document.getElementById('reward-xp-attribute'),
+        xpAttributeLabel: document.getElementById('reward-xp-attribute-label'),
+        coins: document.getElementById('reward-coins')
+    };
+
+    const progressBars = {
+      p1: document.getElementById('progress-1'),
+      p2: document.getElementById('progress-2'),
+      p3: document.getElementById('progress-3')
+    };
+
+    const modal = {
+      container: document.getElementById('modal-message'),
+      title: document.getElementById('modal-title'),
+      body: document.getElementById('modal-body'),
+      closeBtn: document.getElementById('modal-close-btn')
+    };
+
+    const recurrenceModal = {
+        container: document.getElementById('modal-recurrence'),
+        daysInput: document.getElementById('recurrence-days-input'),
+        weekdaysGroup: document.getElementById('recurrence-weekdays'),
+        weekdayButtons: document.querySelectorAll('.weekday-btn'),
+        saveBtn: document.getElementById('recurrence-save-btn'),
+        cancelBtn: document.getElementById('recurrence-cancel-btn')
+    };
+
+    const activityLogModal = {
+        container: document.getElementById('modal-activity-log'),
+        closeBtn: document.getElementById('log-close-btn'),
+        content: document.getElementById('log-content')
+    };
+
+
+    // Inputs de Cadastro
+    const regInputs = {
+      nickname: document.getElementById('reg-nickname'),
+      email: document.getElementById('reg-email'),
+      password: document.getElementById('reg-password'),
+      height: document.getElementById('reg-height'),
+      weight: document.getElementById('reg-weight'),
+      weightTarget: document.getElementById('reg-weight-target')
+    };
+
+    // Inputs de Login
+    const loginInputs = {
+      email: document.getElementById('login-email'),
+      password: document.getElementById('login-password')
+    };
+
+    // --- Funções Auxiliares ---
+    function showScreen(screenId, data = null) {
+      console.log(`Navegando para: ${screenId}`, data ? `com dados: ${JSON.stringify(data)}` : '');
+      Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+
+      if (screens[screenId]) {
+        screens[screenId].classList.remove('hidden');
+      }
+
+      // Pré-processamento para a tela de detalhes da missão
+      if (screenId === 'missionDetails' && data) {
+        loadMissionDetails(data); // O 'data' aqui é o taskId
+      }
+      updateNavUI(screenId);
+    }
+
+    function updateNavUI(activeScreen) {
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('text-primary');
+            btn.classList.add('text-text-dark-secondary');
+            const span = btn.querySelector('span:last-child');
+            if (span) span.classList.remove('font-bold');
+        });
+
+        let activeBtn;
+        if (activeScreen === 'dashboard') activeBtn = document.getElementById('btn-goto-hub');
+        if (activeScreen === 'character') activeBtn = document.getElementById('btn-goto-character');
+
+        if (activeBtn) {
+            activeBtn.classList.add('text-primary');
+            activeBtn.classList.remove('text-text-dark-secondary');
+            const span = activeBtn.querySelector('span:last-child');
+            if (span) span.classList.add('font-bold');
+        }
+    }
+
+    function showMessage(title, message) {
+      modal.title.textContent = title;
+      modal.body.textContent = message;
+      modal.container.classList.remove('hidden');
+    }
+
+    modal.closeBtn.addEventListener('click', () => modal.container.classList.add('hidden'));
+
+    window.togglePasswordVisibility = (inputId, button) => {
+      const input = document.getElementById(inputId);
+      const icon = button.querySelector('span');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility_off';
+      } else {
+        input.type = 'password';
+        icon.textContent = 'visibility';
+      }
+    }
+
+    function debounce(func, delay) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(func, delay);
+    }
+
+    function normalizeString(str) {
+        if (!str) return '';
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    // Função para parsear a data como local, evitando problemas de fuso horário
+    function parseLocalDate(dateString) {
+        if (!dateString) return null;
+        const [year, month, day] = dateString.split('-').map(Number);
+        // Cria a data na zona horária local do usuário
+        return new Date(year, month - 1, day);
+    }
+
+    // --- Lógica de Navegação ---
+    document.getElementById('btn-goto-register').addEventListener('click', () => showScreen('register'));
+    document.getElementById('btn-goto-register').addEventListener('click', () => showScreen('register'));
+    document.getElementById('btn-goto-login').addEventListener('click', () => showScreen('login'));
+    document.getElementById('btn-goto-hub').addEventListener('click', (e) => { e.preventDefault(); showScreen('dashboard'); });
+    document.getElementById('btn-goto-character').addEventListener('click', (e) => { e.preventDefault(); showScreen('character'); });
+    document.getElementById('login-back-btn').addEventListener('click', () => showScreen('splash'));
+    document.getElementById('login-forgot-link').addEventListener('click', () => showScreen('forgot'));
+    document.getElementById('forgot-back-btn').addEventListener('click', () => showScreen('login'));
+    document.getElementById('forgot-cancel-btn').addEventListener('click', () => showScreen('login'));
+    document.getElementById('btn-show-add-task').addEventListener('click', () => {
+        editingTaskId = null; // Garante que não estamos em modo de edição
+        resetTaskForm();
+        showScreen('addTask');
+    });
+
+    // Função para popular o formulário com dados da missão para edição
+    function populateTaskFormForEdit(missionData, subTasks = []) {
+        resetTaskForm();
+        editingTaskId = missionData.id;
+
+        taskForm.title.value = missionData.titulo || '';
+
+        // Seleciona o tipo
+        selectedTaskType = missionData.tipo || null;
+        taskForm.typeButtons.forEach(btn => {
+            if (btn.dataset.type === selectedTaskType) {
+                btn.classList.add('task-type-selected');
+            }
+        });
+
+        // Seleciona a prioridade
+        selectedTaskPriority = missionData.prioridade || 'contrato';
+        taskForm.priorityButtons.forEach(btn => {
+             if (btn.dataset.priority === selectedTaskPriority) {
+                btn.classList.add('task-priority-selected');
+            }
+        });
+
+        subtasksList = [...(subTasks || [])];
+        renderSubtasks();
+
+        taskForm.notes.value = missionData.notas || '';
+
+        // Popula a duração
+        if (missionData.duracao_estimada_minutos) {
+            const hours = Math.floor(missionData.duracao_estimada_minutos / 60);
+            const minutes = missionData.duracao_estimada_minutos % 60;
+            taskForm.durationHours.value = hours > 0 ? hours : '';
+            taskForm.durationMinutes.value = minutes > 0 ? minutes : '';
+        }
+
+        // Popula o prazo final
+        if (missionData.prazo_final) {
+            taskForm.deadline.value = missionData.prazo_final;
+        }
+
+        // Popula a recorrência
+        if (missionData.recorrencia) {
+            recurrenceRule = missionData.recorrencia;
+             if (recurrenceRule.type === 'days') {
+                taskForm.recurrenceSummary.textContent = `Repete a cada ${recurrenceRule.value} dia(s).`;
+            } else if (recurrenceRule.type === 'weekdays') {
+                const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+                const summary = recurrenceRule.value.map(d => dayNames[d]).join(', ');
+                taskForm.recurrenceSummary.textContent = `Repete em: ${summary}.`;
+            }
+        }
+
+        // Popula o anexo (se houver)
+        if (missionData.anexo_url) {
+            // Extrai o nome do arquivo da URL para exibição
+            try {
+                const url = new URL(missionData.anexo_url);
+                const pathParts = url.pathname.split('/');
+                const encodedFilename = pathParts[pathParts.length - 1];
+                // Decodifica o nome do arquivo, removendo o timestamp e o UID
+                const decodedFilename = decodeURIComponent(encodedFilename.split('?')[0].split('%2F').pop());
+                const finalFilename = decodedFilename.substring(decodedFilename.indexOf('-') + 1); // Remove o timestamp inicial
+                taskForm.attachmentName.textContent = `Anexo: ${finalFilename}`;
+            } catch (e) {
+                taskForm.attachmentName.textContent = "Anexo existente.";
+            }
+        }
+
+
+        taskForm.saveBtn.textContent = 'Atualizar Missão';
+        triggerAIAnalysis(); // Re-analisa para mostrar os dados da IA
+        showScreen('addTask');
+    }
+
+
+    taskForm.backBtn.addEventListener('click', () => showScreen('dashboard'));
+    document.getElementById('mission-details-back-btn').addEventListener('click', () => {
+        stopSessionTimer();
+        clearAllSubtaskTimers();
+        showScreen('dashboard');
+    });
+
+    function clearAllSubtaskTimers() {
+        for (const subtaskId in activeSubtaskTimers) {
+            clearInterval(activeSubtaskTimers[subtaskId]);
+        }
+        activeSubtaskTimers = {};
+    }
+
+
+    // --- Lógica de Cadastro (Etapas) ---
+    function updateRegistrationStepUI() {
+      const nextBtn = document.getElementById('reg-next-btn');
+      Object.values(registerSteps).forEach(step => step.classList.add('hidden'));
+      progressBars.p1.className = 'h-1 flex-1 rounded-full bg-primary/20';
+      progressBars.p2.className = 'h-1 flex-1 rounded-full bg-primary/20';
+      progressBars.p3.className = 'h-1 flex-1 rounded-full bg-primary/20';
+      if (currentRegistrationStep === 1) {
+        registerSteps.step1.classList.remove('hidden');
+        progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
+        nextBtn.textContent = 'Próximo';
+      } else if (currentRegistrationStep === 2) {
+        registerSteps.step2.classList.remove('hidden');
+        progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
+        progressBars.p2.classList.replace('bg-primary/20', 'bg-primary');
+        nextBtn.textContent = 'Próximo';
+      } else if (currentRegistrationStep === 3) {
+        registerSteps.step3.classList.remove('hidden');
+        progressBars.p1.classList.replace('bg-primary/20', 'bg-primary');
+        progressBars.p2.classList.replace('bg-primary/20', 'bg-primary');
+        progressBars.p3.classList.replace('bg-primary/20', 'bg-primary');
+        nextBtn.textContent = 'Confirmar e Iniciar Jornada!';
+      }
+    }
+    document.getElementById('reg-back-btn').addEventListener('click', () => {
+      if (currentRegistrationStep > 1) {
+        currentRegistrationStep--;
+        updateRegistrationStepUI();
+      } else {
+        showScreen('splash');
+      }
+    });
+    document.getElementById('reg-next-btn').addEventListener('click', () => {
+      if (currentRegistrationStep === 1) {
+        if (!regInputs.nickname.value || !regInputs.email.value || !regInputs.password.value) {
+          showMessage('Campo Obrigatório', 'Por favor, preencha seu nome, email e senha.');
+          return;
+        }
+        if (regInputs.password.value.length < 6) {
+          showMessage('Senha Fraca', 'Sua senha deve ter pelo menos 6 caracteres.');
+          return;
+        }
+        currentRegistrationStep = 2;
+      } else if (currentRegistrationStep === 2) {
+        if (!regInputs.height.value || !regInputs.weight.value) {
+          showMessage('Campo Obrigatório', 'Por favor, preencha sua altura e peso atual.');
+          return;
+        }
+        currentRegistrationStep = 3;
+      } else if (currentRegistrationStep === 3) {
+        if (!selectedAvatarUrl) {
+          showMessage('Campo Obrigatório', 'Escolha sua aparência (avatar) para continuar.');
+          return;
+        }
+        handleRegister();
+      }
+      updateRegistrationStepUI();
+    });
+    document.getElementById('avatar-selection').addEventListener('click', (e) => {
+      const clickedAvatar = e.target.closest('.avatar-option');
+      if (!clickedAvatar) return;
+      document.querySelectorAll('.avatar-option').forEach(el => {
+        el.classList.remove('avatar-selected', 'border-primary');
+        el.classList.add('border-transparent');
+      });
+      clickedAvatar.classList.add('avatar-selected', 'border-primary');
+      clickedAvatar.classList.remove('border-transparent');
+      selectedAvatarUrl = clickedAvatar.dataset.avatarUrl;
+    });
+
+
+    // --- Lógica de Autenticação Firebase ---
+    onAuthStateChanged(auth, (user) => {
+      if (profileListener) profileListener();
+      if (tasksListener) tasksListener();
+
+      if (user && !user.isAnonymous) {
+        console.log('Usuário logado:', user.uid);
+        currentUserId = user.uid;
+
+        const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
+        const tasksRef = collection(db, 'artifacts', appId, 'users', user.uid, 'tasks');
+
+        profileListener = onSnapshot(profileRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            populateDashboard(user, data);
+            loadCharacterData(user.uid); // Carrega os dados detalhados da ficha
+            showScreen('dashboard');
+          } else {
+            console.log('Perfil não encontrado, redirecionando para cadastro...');
+            showMessage('Personagem Incompleto', 'Quase lá! Precisamos de seus dados vitais para forjar seu personagem.');
+            regInputs.nickname.value = user.displayName || '';
+            regInputs.email.value = user.email || '';
+            if (user.providerData.some(p => p.providerId === 'google.com')) {
+              regInputs.nickname.disabled = true;
+              regInputs.email.disabled = true;
+              regInputs.password.closest('label').classList.add('hidden');
+            }
+            currentRegistrationStep = 2;
+            updateRegistrationStepUI();
+            showScreen('register');
+          }
+        });
+
+        tasksListener = onSnapshot(tasksRef, (querySnapshot) => {
+            allUserTasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            checkAndGenerateRecurrentTasks(allUserTasks); // Passa a lista completa
+            filterAndRenderMissions(); // Chama a nova função de filtragem
+        });
+
+      } else {
+        console.log('Usuário deslogado.');
+        currentUserId = null;
+        profileListener = null;
+        tasksListener = null;
+        resetRegistrationForm();
+        showScreen('splash');
+      }
+    });
+
+    function populateDashboard(user, profileData) {
+        const character = profileData.character || {};
+        const vitals = profileData.vitals || {};
+        const stats = profileData.stats || {};
+
+        const hubAvatar = document.getElementById('hub-avatar');
+        if (hubAvatar) {
+            hubAvatar.src = character.avatar_url || 'https://placehold.co/100x100/1a3828/13ec6d?text=?';
+        }
+
+        const elements = {
+            'hub-nickname': profileData.nickname || 'Aventureiro',
+            'hub-level': `Nv. ${character.level || 1}`,
+            'hub-hp-text': `${character.hp_atual}/${character.hp_max}`,
+            'hub-mana-text': `${character.mana_atual}/${character.mana_max}`,
+            'hub-xp-text': `${character.xp_atual}/${character.xp_para_upar}`
+        };
+
+        for (const id in elements) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = elements[id];
+            }
+        }
+
+        // --- ATUALIZAÇÃO DINÂMICA DOS ATRIBUTOS ---
+        const attributesContainer = document.getElementById('hub-attributes-list');
+        if (!attributesContainer) {
+            console.warn("O contêiner de atributos 'hub-attributes-list' não foi encontrado no DOM. A renderização será adiada.");
+            return;
+        }
+        attributesContainer.innerHTML = ''; // Limpa a lista antes de popular
+
+        const attributeConfig = {
+            forca: { icon: 'swords', color: 'text-red-400', name: 'Força' },
+            inteligencia: { icon: 'school', color: 'text-blue-400', name: 'Inteligência' },
+            vitalidade: { icon: 'shield', color: 'text-green-400', name: 'Vitalidade' },
+            velocidade: { icon: 'sprint', color: 'text-yellow-400', name: 'Velocidade' },
+            carisma: { icon: 'sentiment_satisfied', color: 'text-pink-400', name: 'Carisma' }
+        };
+
+        for (const key in attributeConfig) {
+            const config = attributeConfig[key];
+            const stat = stats[key] || { level: 1, xp_atual: 0, xp_para_upar: 100 };
+            const xpPercent = (stat.xp_atual / stat.xp_para_upar) * 100;
+
+            const attributeEl = document.createElement('div');
+            attributeEl.innerHTML = `
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined ${config.color} text-base">${config.icon}</span>
+                        <span>${config.name}: ${stat.level}</span>
+                    </div>
+                </div>
+                <div class="h-1 w-full rounded-full bg-background-dark mt-1">
+                    <div class="h-1 rounded-full bg-primary" style="width: ${xpPercent}%"></div>
+                </div>
+            `;
+            attributesContainer.appendChild(attributeEl);
+        }
+
+        const hpPercent = (character.hp_atual / character.hp_max) * 100 || 100;
+        const manaPercent = (character.mana_atual / character.mana_max) * 100 || 100;
+        const xpPercent = (character.xp_atual / character.xp_para_upar) * 100 || 0;
+
+        const bars = {
+            'hub-hp-bar': `${hpPercent}%`,
+            'hub-mana-bar': `${manaPercent}%`,
+            'hub-xp-bar': `${xpPercent}%`
+        };
+
+        for (const id in bars) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.width = bars[id];
+            }
+        }
+
+        const statusContainer = document.getElementById('hub-status-effects');
+        if (statusContainer) {
+            statusContainer.innerHTML = '';
+            if (profileData.status_effects && profileData.status_effects.length > 0) {
+                profileData.status_effects.forEach(effect => {
+                    const effectEl = document.createElement('div');
+                    effectEl.className = 'flex items-center gap-2 text-sm';
+                    effectEl.innerHTML = `<span class="material-symbols-outlined text-yellow-500 text-base">spark</span> <span>${effect.label}</span>`;
+                    statusContainer.appendChild(effectEl);
+                });
+            } else {
+                statusContainer.innerHTML = '<p class="text-sm text-text-dark-secondary">Nenhum efeito ativo.</p>';
+            }
+        }
+    }
+
+    async function checkAndGenerateRecurrentTasks(tasks) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toISOString().split('T')[0];
+
+        const templates = tasks.filter(t => t.isTemplate);
+
+        for (const template of templates) {
+            const lastGenerated = template.lastGenerated ? new Date(template.lastGenerated.toDate()) : null;
+            let shouldGenerate = false;
+
+            if (!lastGenerated) {
+                 shouldGenerate = true;
+            } else {
+                const lastGeneratedStr = lastGenerated.toISOString().split('T')[0];
+                if (lastGeneratedStr !== todayStr) {
+                    shouldGenerate = true;
+                }
+            }
+
+            if (shouldGenerate) {
+                let isValidToday = false;
+                if (template.recorrencia.type === 'weekdays') {
+                    if (template.recorrencia.value.includes(today.getDay())) {
+                        isValidToday = true;
+                    }
+                } else if (template.recorrencia.type === 'days') {
+                    if (!template.lastGenerated) {
+                        // Primeira vez: gera no dia da criação. A verificação externa `shouldGenerate`
+                        // já impede a re-geração no mesmo dia.
+                        isValidToday = true;
+                    } else {
+                        // Para as próximas vezes, usa a lógica de `lastGenerated`.
+                        const baseDate = template.lastGenerated.toDate();
+                        baseDate.setHours(0, 0, 0, 0);
+
+                        const nextDueDate = new Date(baseDate);
+                        nextDueDate.setDate(baseDate.getDate() + template.recorrencia.value);
+
+                        // Gera a tarefa se hoje for igual ou depois da data de vencimento
+                        if (today >= nextDueDate) {
+                            isValidToday = true;
+                        }
+                    }
+                }
+
+                if (isValidToday) {
+                    const newTask = { ...template };
+                    delete newTask.id;
+                    newTask.isTemplate = false;
+                    newTask.recorrencia = null;
+                    newTask.createdAt = Timestamp.now();
+                    newTask.titulo = `${template.titulo} (${today.toLocaleDateString('pt-BR')})`;
+
+                    try {
+                        const tasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks');
+                        await addDoc(tasksRef, newTask);
+
+                        const templateRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', template.id);
+                        await updateDoc(templateRef, { lastGenerated: Timestamp.now() });
+
+                        console.log(`Tarefa recorrente '${newTask.titulo}' gerada.`);
+
+                    } catch (error) {
+                        console.error("Erro ao gerar tarefa recorrente:", error);
+                    }
+                }
+            }
+        }
+    }
+
+    function filterAndRenderMissions() {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekEnd = new Date(today);
+        weekEnd.setDate(today.getDate() + 7);
+
+        let filteredTasks = allUserTasks.filter(t => !t.isTemplate);
+
+        switch(activeMissionTab) {
+            case 'today':
+                filteredTasks = filteredTasks.filter(task => {
+                    const deadline = task.prazo_final ? parseLocalDate(task.prazo_final) : null;
+                    // Condição 1: A tarefa tem um prazo final definido para hoje.
+                    if (deadline && deadline.getTime() === today.getTime()) {
+                        return true;
+                    }
+
+                    // Condição 2: A tarefa é uma Diária ou Hábito sem prazo final,
+                    // e foi criada hoje (seja manualmente ou pelo gerador de recorrência).
+                    if (!deadline && (task.tipo === 'diaria' || task.tipo === 'habito')) {
+                        if (task.createdAt) {
+                            const createdAtDate = task.createdAt.toDate();
+                            createdAtDate.setHours(0, 0, 0, 0);
+                            return createdAtDate.getTime() === today.getTime();
+                        }
+                    }
+
+                    return false; // Se nenhuma condição for atendida, não é para hoje.
+                });
+                break;
+            case 'week':
+                 filteredTasks = filteredTasks.filter(task => {
+                    if (!task.prazo_final) return false;
+                    const deadline = parseLocalDate(task.prazo_final);
+                    return deadline && deadline >= today && deadline < weekEnd;
+                });
+                break;
+            case 'backlog':
+                filteredTasks = filteredTasks.filter(task => !task.prazo_final && !task.recorrencia);
+                break;
+            case 'all':
+                // Nenhuma filtragem adicional necessária
+                break;
+        }
+
+        renderMissions(filteredTasks);
+    }
+
+    function renderMissions(tasksToRender) {
+        const missionContainer = document.getElementById('hub-mission-list');
+        if (!missionContainer) {
+            console.log("Container de missões não encontrado, adiando a população.");
+            return;
+        }
+        missionContainer.innerHTML = '';
+
+        if (!tasksToRender || tasksToRender.length === 0) {
+            missionContainer.innerHTML = '<p class="text-sm text-text-dark-secondary p-4">Nenhuma missão encontrada para este filtro.</p>';
+            return;
+        }
+
+        const priorityOrder = { 'principal': 1, 'contrato': 2, 'secundaria': 3 };
+        tasksToRender.sort((a, b) => (priorityOrder[a.prioridade] || 2) - (priorityOrder[b.prioridade] || 2));
+
+        tasksToRender.forEach(task => {
+            missionContainer.innerHTML += createMissionCardHTML(task);
+        });
+    }
+
+    // Event Listener atualizado para lidar com cliques nos cards de missão
+    document.getElementById('hub-mission-list').addEventListener('click', async (e) => {
+        const missionCard = e.target.closest('.mission-card');
+        if (missionCard) {
+            const taskId = missionCard.dataset.taskId;
+            if (taskId) {
+                showScreen('missionDetails', taskId);
+            }
+        }
+    });
+
+    document.getElementById('mission-tabs').addEventListener('click', (e) => {
+        const tabButton = e.target.closest('.mission-tab-btn');
+        if (tabButton) {
+            const newTab = tabButton.dataset.tab;
+            if (newTab !== activeMissionTab) {
+                activeMissionTab = newTab;
+                // Delega a estilização para a classe CSS, removendo a manipulação de classes de cor do JS
+                document.querySelectorAll('.mission-tab-btn').forEach(btn => {
+                    btn.classList.remove('mission-tab-active');
+                });
+                tabButton.classList.add('mission-tab-active');
+                filterAndRenderMissions();
+            }
+        }
+    });
+
+    // Função unificada para criar o card de uma missão
+    function createMissionCardHTML(task) {
+        const isCompleted = task.status === 'CONCLUIDA';
+
+        const priorityClasses = {
+            principal: 'border-red-500/80',
+            contrato: 'border-border-dark',
+            secundaria: 'border-gray-500/80'
+        };
+        const priorityClass = priorityClasses[task.prioridade] || 'border-border-dark';
+
+        const iconMap = {
+            diaria: 'fitness_center', habito: 'menu_book', projeto: 'work',
+            FORCA: 'swords', INTELIGENCIA: 'school', VELOCIDADE: 'sprint',
+            VITALIDADE: 'shield', CARISMA: 'sentiment_satisfied', default: 'task'
+        };
+        const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
+
+        let statusText = (task.status || 'PENDENTE').replace('_', ' ');
+        let statusColor = "text-text-dark-secondary";
+        if (task.status === 'EM_ANDAMENTO') statusColor = "text-primary animate-pulse";
+        else if (task.status === 'PAUSADA') statusColor = "text-yellow-400";
+
+        return `
+            <div class="mission-card flex flex-col rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border-l-4 ${priorityClass} ${isCompleted ? 'opacity-60' : ''} cursor-pointer hover:bg-surface-dark/80 transition-colors" data-task-id="${task.id}">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20">
+                      <span class="material-symbols-outlined text-primary text-3xl">${icon}</span>
+                    </div>
+                    <div class="flex-1">
+                      <p class="font-bold ${isCompleted ? 'line-through' : ''}">${task.titulo || 'Missão sem título'}</p>
+                      <p class="text-sm ${statusColor} ${isCompleted ? 'line-through' : ''} capitalize">${statusText}</p>
+                    </div>
+                    <div class="text-text-dark-secondary">
+                        <span class="material-symbols-outlined text-3xl">chevron_right</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+
+    // --- LÓGICA DA TELA DE DETALHES DA MISSÃO ---
+
+    async function loadMissionDetails(taskId) {
+        if (!currentUserId) return;
+
+        currentMissionId = taskId; // Armazena o ID da missão atual
+
+        // Resetar e mostrar estado de carregamento
+        document.getElementById('mission-details-title').textContent = 'Carregando...';
+        document.getElementById('mission-controls-container').innerHTML = '<p class="text-center w-full text-text-dark-secondary">Carregando...</p>';
+        document.getElementById('sub-task-list').innerHTML = '';
+
+        try {
+            const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId);
+            const missionSnap = await getDoc(missionRef);
+
+            if (!missionSnap.exists()) {
+                throw new Error("Missão não encontrada.");
+            }
+
+            let missionData = { id: missionSnap.id, ...missionSnap.data() };
+
+            // --- Migração lazy de subtarefas de array para sub-coleção ---
+            if (missionData.subtarefas && missionData.subtarefas.length > 0) {
+                console.log(`Migrando ${missionData.subtarefas.length} subtarefas para a sub-coleção...`);
+                const batch = writeBatch(db);
+                const subtasksCollectionRef = collection(missionRef, 'subtarefas');
+
+                missionData.subtarefas.forEach(subtask => {
+                    const newSubtaskRef = doc(subtasksCollectionRef);
+                    batch.set(newSubtaskRef, subtask);
+                });
+
+                // Limpa o array antigo
+                batch.update(missionRef, { subtarefas: [] });
+                await batch.commit();
+                console.log("Migração concluída.");
+            }
+
+            // --- Carregamento Padrão ---
+            const subtasksCollectionRef = collection(missionRef, 'subtarefas');
+            const eventLogsRef = collection(missionRef, 'event_logs');
+
+            const [subtasksSnap, eventLogsSnap] = await Promise.all([
+                getDocs(subtasksCollectionRef),
+                getDocs(eventLogsRef)
+            ]);
+
+            const subTasks = subtasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const eventLogs = eventLogsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            currentMissionEventLogs = eventLogs;
+
+            populateMissionDetails(missionData, subTasks, eventLogs);
+
+        } catch (error) {
+            console.error("Erro ao carregar detalhes da missão:", error);
+            showMessage('Erro', 'Não foi possível carregar os detalhes da missão. Tente novamente.');
+            showScreen('dashboard');
+        }
+    }
+
+    function populateMissionDetails(missionData, subTasks, eventLogs) {
+        document.getElementById('mission-details-title').textContent = missionData.titulo;
+
+        // Adiciona o listener para o botão de editar AQUI, onde temos acesso a missionData
+        const editBtn = document.getElementById('mission-details-edit-btn');
+        editBtn.onclick = () => populateTaskFormForEdit(missionData, subTasks);
+
+        const controlsContainer = document.getElementById('mission-controls-container');
+        controlsContainer.innerHTML = ''; // Limpa o container
+
+        const status = missionData.status || 'PENDENTE';
+
+        // --- LÓGICA DA ANIMAÇÃO CONDICIONAL ---
+        const animationContainer = document.getElementById('mission-animation-container');
+        if (missionData.videoURL && status === 'EM_ANDAMENTO') {
+            // Se um videoURL existir E a missão estiver em andamento, exibe o vídeo
+            animationContainer.innerHTML = `<video src="${missionData.videoURL}" loop autoplay muted class="w-full h-full object-cover rounded-lg"></video>`;
+        } else if (status === 'EM_ANDAMENTO') {
+            // Animação CSS Aprimorada
+            let particlesHTML = '';
+            for (let i = 0; i < 15; i++) {
+                const style = `left: ${Math.random() * 100}%; bottom: ${Math.random() * 20}%; animation-delay: ${Math.random() * 3}s;`;
+                particlesHTML += `<div class="particle" style="${style}"></div>`;
+            }
+            animationContainer.innerHTML = `
+                <div class="relative w-full h-full flex items-center justify-center">
+                   ${particlesHTML}
+                   <span class="material-symbols-outlined animated-sword">swords</span>
+                </div>
+                <p class="absolute bottom-4 text-center text-text-dark-secondary">Missão em Andamento</p>`;
+        } else if (status === 'PAUSADA') {
+            animationContainer.innerHTML = `
+                <div class="text-center text-text-dark-secondary">
+                   <span class="material-symbols-outlined text-6xl text-yellow-400">pause_circle</span>
+                   <p>Missão Pausada</p>
+                </div>`;
+        } else if (status === 'CONCLUIDA') {
+             animationContainer.innerHTML = `
+                <div class="text-center text-text-dark-secondary">
+                   <span class="material-symbols-outlined text-6xl text-gray-500">check_circle</span>
+                   <p>Missão Concluída</p>
+                </div>`;
+        } else { // PENDENTE
+            animationContainer.innerHTML = `
+                <div class="text-center text-text-dark-secondary">
+                   <span class="material-symbols-outlined text-6xl text-gray-400">hourglass_empty</span>
+                   <p>Missão Pendente</p>
+                </div>`;
+        }
+
+
+        const primaryBtn = document.createElement('button');
+        primaryBtn.className = 'flex flex-1 min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-primary text-background-dark text-base font-bold';
+
+        const secondaryBtn = document.createElement('button');
+        secondaryBtn.className = 'flex flex-1 min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-[#28392f] text-white text-base font-bold';
+
+        switch (status) {
+            case 'EM_ANDAMENTO':
+                primaryBtn.innerHTML = `<span>Pausar Missão</span>`;
+                primaryBtn.onclick = () => pauseMission(missionData.id);
+                controlsContainer.appendChild(primaryBtn);
+
+                secondaryBtn.innerHTML = `<span>Concluir Missão</span>`;
+                secondaryBtn.onclick = () => completeMission(missionData.id);
+                controlsContainer.appendChild(secondaryBtn);
+                break;
+            case 'PAUSADA':
+                primaryBtn.innerHTML = `<span>Retomar Missão</span>`;
+                primaryBtn.onclick = () => resumeMission(missionData.id);
+                controlsContainer.appendChild(primaryBtn);
+
+                secondaryBtn.innerHTML = `<span>Cancelar Missão</span>`;
+                secondaryBtn.onclick = () => cancelMission(missionData.id);
+                controlsContainer.appendChild(secondaryBtn);
+                break;
+            case 'CONCLUIDA':
+                // No buttons for completed missions
+                break;
+            case 'PENDENTE':
+            default:
+                primaryBtn.innerHTML = `<span>Iniciar Missão</span>`;
+                primaryBtn.onclick = () => startMission(missionData.id);
+                controlsContainer.appendChild(primaryBtn);
+                break;
+        }
+
+        // --- LÓGICA PARA RENDERIZAR RECOMPENSAS ---
+        const rewardsContainer = document.getElementById('mission-rewards-container');
+        rewardsContainer.innerHTML = ''; // Limpa o container
+
+        if (missionData.recompensa && (status === 'PENDENTE' || status === 'EM_ANDAMENTO' || status === 'CONCLUIDA')) {
+            const recompensa = missionData.recompensa;
+            const atributo = normalizeString(missionData.atributo_associado || 'ATTR').toUpperCase();
+
+            const iconMap = {
+                FORCA: 'swords',
+                INTELIGENCIA: 'school',
+                VELOCIDADE: 'sprint',
+                VITALIDADE: 'shield',
+                CARISMA: 'sentiment_satisfied',
+                default: 'shield_person'
+            };
+            const attr_icon = iconMap[atributo] || iconMap.default;
+
+            const rewardsHTML = `
+                <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+                    <h3 class="text-lg font-bold text-primary mb-3 text-center">Recompensas da Missão</h3>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <!-- XP Global -->
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-xp text-4xl">star</span>
+                            <span class="text-xl font-bold text-white">${recompensa.xp_global || 0}</span>
+                            <span class="text-sm text-text-dark-secondary">XP Global</span>
+                        </div>
+                        <!-- XP de Atributo -->
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-primary text-4xl">${attr_icon}</span>
+                            <span class="text-xl font-bold text-white">${recompensa.xp_atributo || 0}</span>
+                            <span class="text-sm text-text-dark-secondary">XP de ${atributo}</span>
+                        </div>
+                        <!-- Moedas -->
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-yellow-400 text-4xl">monetization_on</span>
+                            <span class="text-xl font-bold text-white">${recompensa.moedas || 0}</span>
+                            <span class="text-sm text-text-dark-secondary">Moedas</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            rewardsContainer.innerHTML = rewardsHTML;
+        }
+
+
+        // --- LÓGICA PARA RENDERIZAR SUB-TAREFAS ---
+        const subtaskListEl = document.getElementById('sub-task-list');
+        subtaskListEl.innerHTML = '';
+
+        if (!subTasks || subTasks.length === 0) {
+            subtaskListEl.innerHTML = '<p class="text-text-dark-secondary p-4 text-center">Nenhuma sub-tarefa adicionada a esta missão.</p>';
+        } else {
+            subTasks.forEach((subtask, index) => {
+                const subtaskEl = document.createElement('div');
+                subtaskEl.className = 'flex items-center gap-x-3 py-4';
+
+                const isCompleted = subtask.status === 'CONCLUIDA';
+                const isRunning = subtask.status === 'EM_ANDAMENTO';
+
+                const timeFormatted = formatTime(subtask.tempoAcumulado || 0);
+
+                subtaskEl.innerHTML = `
+                    <input type="checkbox" ${isCompleted ? 'checked' : ''} class="h-6 w-6 shrink-0 rounded border-[#3b5445] border-2 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 cursor-pointer"/>
+                    <div class="flex-grow">
+                        <p class="text-white text-base font-normal leading-normal ${isCompleted ? 'line-through opacity-60' : ''}">${subtask.titulo}</p>
+                        <div id="subtask-timer-${subtask.id}" class="flex items-center gap-x-3 text-sm text-gray-400 mt-1">
+                           <span class="inline-flex items-center gap-1">
+                                <span class="material-symbols-outlined !text-base">${isRunning ? 'timer' : 'hourglass_empty'}</span>
+                                <span class="timer-text">${isRunning ? 'Em Andamento' : `Tempo: ${timeFormatted}`}</span>
+                           </span>
+                        </div>
+                    </div>
+                    <button data-index="${index}" data-subtask-id="${subtask.id}" class="edit-subtask-btn ml-auto flex shrink-0 items-center justify-center rounded-full size-10 bg-[#28392f] text-white" title="Editar Sub-tarefa">
+                        <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button data-subtask-id="${subtask.id}" class="toggle-subtask-timer-btn ml-2 flex shrink-0 items-center justify-center rounded-full size-10 ${isRunning ? 'bg-primary text-background-dark' : 'bg-[#28392f] text-white'}" title="${isRunning ? 'Pausar Sub-tarefa' : 'Iniciar Sub-tarefa'}">
+                        <span class="material-symbols-outlined">${isRunning ? 'pause' : 'play_arrow'}</span>
+                    </button>
+                `;
+                subtaskListEl.appendChild(subtaskEl);
+            });
+        }
+
+        // Inicia ou atualiza o cronômetro com base nos logs de eventos
+        startSessionTimer(eventLogs);
+
+        // Inicia os cronômetros para subtarefas que já estão em andamento
+        subTasks.forEach(subtask => {
+            if (subtask.status === 'EM_ANDAMENTO') {
+                startSubtaskTimerInterval(subtask.id, subtask.tempoAcumulado);
+            }
+        });
+    }
+
+    async function updateMissionStatus(taskId, newStatus, eventType) {
+        if (!currentUserId) return showMessage('Erro', 'Você não está logado.');
+
+        const batch = writeBatch(db);
+        const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId);
+        const eventLogRef = doc(collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId, 'event_logs'));
+
+        batch.update(missionRef, { status: newStatus });
+        batch.set(eventLogRef, { tipo: eventType, timestamp: Timestamp.now() });
+
+        try {
+            await batch.commit();
+            loadMissionDetails(taskId); // Recarrega a tela para refletir a mudança
+        } catch (error) {
+            console.error(`Erro ao atualizar missão para ${newStatus}:`, error);
+            showMessage('Erro de Rede', 'Não foi possível atualizar o estado da missão. Tente novamente.');
+        }
+    }
+
+    const startMission = (taskId) => updateMissionStatus(taskId, 'EM_ANDAMENTO', 'INICIO');
+    const pauseMission = (taskId) => updateMissionStatus(taskId, 'PAUSADA', 'PAUSA');
+    const resumeMission = (taskId) => updateMissionStatus(taskId, 'EM_ANDAMENTO', 'RETOMADA');
+    const cancelMission = (taskId) => updateMissionStatus(taskId, 'PENDENTE', 'CANCELAMENTO');
+
+    async function completeMission(taskId) {
+        if (!currentUserId) return showMessage('Erro', 'Você não está logado.');
+
+        const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', taskId);
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const missionSnap = await transaction.get(missionRef);
+                const profileSnap = await transaction.get(profileRef);
+
+                if (!missionSnap.exists() || !profileSnap.exists()) {
+                    throw new Error("Missão ou Perfil não encontrado.");
+                }
+
+                if (missionSnap.data().status === 'CONCLUIDA') {
+                    showMessage('Aviso', 'Esta missão já foi concluída.');
+                    return; // Aborta a transação
+                }
+
+                const missionData = missionSnap.data();
+                const profileData = profileSnap.data();
+                const { recompensa, atributo_associado } = missionData;
+
+                if (!recompensa) {
+                    console.warn("Missão sem recompensa. Apenas marcando como concluída.");
+                } else {
+                    // --- ATUALIZAÇÃO DO PERSONAGEM ---
+                    const character = profileData.character;
+                    character.xp_atual += recompensa.xp_global || 0;
+                    character.moedas += recompensa.moedas || 0;
+
+                    // Lógica de Level Up do Personagem
+                    while (character.xp_atual >= character.xp_para_upar) {
+                        character.level += 1;
+                        character.xp_atual -= character.xp_para_upar;
+                        // Aumenta a necessidade de XP para o próximo nível (ex: 10% a mais)
+                        character.xp_para_upar = Math.floor(character.xp_para_upar * 1.1);
+                        // Bônus de Level Up (ex: recupera HP e Mana)
+                        character.hp_atual = character.hp_max;
+                        character.mana_atual = character.mana_max;
+                        showMessage(`NÍVEL UP!`, `Parabéns, você alcançou o nível ${character.level}!`);
+                    }
+
+                    // --- ATUALIZAÇÃO DO ATRIBUTO ---
+                    const attrKey = normalizeString(atributo_associado).toLowerCase();
+                    if (attrKey) {
+                        // Garante que o objeto stats exista
+                        if (!profileData.stats) {
+                            profileData.stats = {};
+                        }
+                        // Garante que o atributo exista no perfil antes de tentar atualizá-lo
+                        if (!profileData.stats[attrKey]) {
+                            profileData.stats[attrKey] = { level: 1, xp_atual: 0, xp_para_upar: 100 };
+                        }
+
+                        const attr = profileData.stats[attrKey];
+                        attr.xp_atual += recompensa.xp_atributo || 0;
+
+                        // Lógica de Level Up do Atributo
+                        while (attr.xp_atual >= attr.xp_para_upar) {
+                            attr.level += 1;
+                            attr.xp_atual -= attr.xp_para_upar;
+                            attr.xp_para_upar = Math.floor(attr.xp_para_upar * 1.15); // Atributos evoluem um pouco mais devagar
+
+                            // Aumenta HP/MANA Max com base no atributo
+                            if(attrKey === 'vitalidade') profileData.character.hp_max += 10;
+                            if(attrKey === 'inteligencia') profileData.character.mana_max += 10;
+                            if(attrKey === 'forca' || attrKey === 'velocidade') profileData.character.energia_max += 5;
+                        }
+                    }
+                }
+
+                // Atualiza o perfil e a missão na transação
+                transaction.update(profileRef, profileData);
+                transaction.update(missionRef, { status: 'CONCLUIDA' });
+
+                // Adiciona o log de evento
+                const eventLogRef = doc(collection(missionRef, 'event_logs'));
+                transaction.set(eventLogRef, { tipo: 'CONCLUSAO', timestamp: Timestamp.now() });
+            });
+
+            console.log("Transação de conclusão de missão bem-sucedida!");
+            showMessage('Missão Concluída!', 'Você recebeu suas recompensas!');
+            loadMissionDetails(taskId); // Recarrega a tela para refletir a mudança
+
+        } catch (error) {
+            console.error("Erro ao concluir a missão:", error);
+            showMessage('Erro de Transação', `Não foi possível concluir a missão. ${error.message}`);
+        }
+    }
+
+    // --- LÓGICA DO CRONÔMETRO ---
+    function stopSessionTimer() {
+        if (sessionTimerInterval) {
+            clearInterval(sessionTimerInterval);
+            sessionTimerInterval = null;
+        }
+    }
+
+    function formatTime(totalSeconds) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = Math.floor(totalSeconds % 60);
+        return [hours, minutes, seconds]
+            .map(v => v.toString().padStart(2, '0'))
+            .join(':');
+    }
+
+    function updateTimers(startTime, accumulatedSeconds) {
+        const now = Date.now();
+        const sessionSeconds = Math.floor((now - startTime) / 1000);
+        const totalSeconds = accumulatedSeconds + sessionSeconds;
+
+        document.getElementById('session-timer').textContent = formatTime(sessionSeconds);
+        document.getElementById('total-timer').textContent = `Tempo Total Acumulado: ${formatTime(totalSeconds)}`;
+    }
+
+    function calculateAccumulatedTime(eventLogs) {
+        let totalSeconds = 0;
+        let lastStartTime = null;
+
+        // Ordena os logs por timestamp
+        eventLogs.sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
+
+        for (const log of eventLogs) {
+            const type = log.tipo;
+            const timestamp = log.timestamp.toDate();
+
+            if (type === 'INICIO' || type === 'RETOMADA') {
+                lastStartTime = timestamp;
+            } else if ((type === 'PAUSA' || type === 'CONCLUSAO') && lastStartTime) {
+                totalSeconds += (timestamp - lastStartTime) / 1000;
+                lastStartTime = null;
+            }
+        }
+        return totalSeconds;
+    }
+
+    function startSessionTimer(eventLogs) {
+        stopSessionTimer(); // Garante que não haja timers duplicados
+
+        accumulatedTime = calculateAccumulatedTime(eventLogs);
+
+        // Encontra o último evento de INICIO ou RETOMADA que não foi seguido por uma PAUSA
+        let lastActiveStartLog = null;
+        const sortedLogs = [...eventLogs].sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
+
+        const lastLog = sortedLogs[0];
+        if (lastLog && (lastLog.tipo === 'INICIO' || lastLog.tipo === 'RETOMADA')) {
+             lastActiveStartLog = lastLog;
+        }
+
+        if (lastActiveStartLog) {
+            const startTime = lastActiveStartLog.timestamp.toDate();
+            sessionTimerInterval = setInterval(() => {
+                updateTimers(startTime, accumulatedTime);
+            }, 1000);
+            updateTimers(startTime, accumulatedTime); // Chamada inicial para evitar atraso
+        } else {
+             // Se não houver timer ativo, apenas exibe o tempo acumulado
+             document.getElementById('session-timer').textContent = "00:00:00";
+             document.getElementById('total-timer').textContent = `Tempo Total Acumulado: ${formatTime(accumulatedTime)}`;
+        }
+    }
+
+    // --- LÓGICA DO MODAL DE HISTÓRICO ---
+    function showActivityLog(eventLogs) {
+        const content = activityLogModal.content;
+        content.innerHTML = ''; // Limpa o conteúdo anterior
+
+        if (!eventLogs || eventLogs.length === 0) {
+            content.innerHTML = '<p class="text-text-dark-secondary">Nenhum registro de atividade para esta missão.</p>';
+            activityLogModal.container.classList.remove('hidden');
+            return;
+        }
+
+        const sortedLogs = [...eventLogs].sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
+
+        let lastTimestamp = null;
+        let activitySessionCount = 0;
+        let pauseSessionCount = 0;
+
+        sortedLogs.forEach((log, index) => {
+            const currentTimestamp = log.timestamp.toDate();
+            let durationSeconds = 0;
+            if (lastTimestamp) {
+                durationSeconds = (currentTimestamp - lastTimestamp) / 1000;
+            }
+
+            const logEl = document.createElement('div');
+            logEl.className = 'flex items-center gap-3 p-2 rounded';
+
+            let icon = '';
+            let text = '';
+
+            if (log.tipo === 'INICIO' || log.tipo === 'RETOMADA') {
+                 if(index > 0) { // Se não for o primeiro evento, é uma pausa que terminou
+                    pauseSessionCount++;
+                    const durationFormatted = formatTime(durationSeconds);
+                    icon = `<span class="material-symbols-outlined text-yellow-400">shield</span>`;
+                    text = `Pausa ${pauseSessionCount} finalizada. Duração: <span class="font-bold">${durationFormatted}</span>`;
+                    logEl.innerHTML = `${icon} <p>${text}</p>`;
+                    content.appendChild(logEl);
+                 }
+            } else if (log.tipo === 'PAUSA' || log.tipo === 'CONCLUSAO') {
+                if (lastTimestamp) {
+                    activitySessionCount++;
+                    const durationFormatted = formatTime(durationSeconds);
+                    icon = `<span class="material-symbols-outlined text-primary">swords</span>`;
+                    text = `Sessão de Atividade ${activitySessionCount}. Duração: <span class="font-bold">${durationFormatted}</span>`;
+                     logEl.innerHTML = `${icon} <p>${text}</p>`;
+                    content.appendChild(logEl);
+                }
+            }
+             lastTimestamp = currentTimestamp;
+        });
+
+        activityLogModal.container.classList.remove('hidden');
+    }
+
+    activityLogModal.closeBtn.addEventListener('click', () => {
+        activityLogModal.container.classList.add('hidden');
+    });
+
+    document.getElementById('mission-history-btn').addEventListener('click', () => {
+        showActivityLog(currentMissionEventLogs);
+    });
+
+    // --- LÓGICA DO MODAL DE SUB-TAREFA ---
+    async function openSubtaskModal(missionId, subtaskId = null) {
+        const modal = document.getElementById('modal-subtask');
+        const title = document.getElementById('subtask-modal-title');
+        const input = document.getElementById('subtask-modal-input');
+
+        activeSubtaskModal = { isOpen: true, missionId, subtaskId };
+
+        if (subtaskId) {
+            title.textContent = 'Editar Sub-tarefa';
+            const subtaskRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', missionId, 'subtarefas', subtaskId);
+            const subtaskSnap = await getDoc(subtaskRef);
+            if (subtaskSnap.exists()) {
+                input.value = subtaskSnap.data().titulo;
+            }
+        } else {
+            title.textContent = 'Nova Sub-tarefa';
+            input.value = '';
+        }
+        modal.classList.remove('hidden');
+        input.focus();
+    }
+
+    function closeSubtaskModal() {
+        document.getElementById('modal-subtask').classList.add('hidden');
+        activeSubtaskModal = { isOpen: false, missionId: null, subtaskId: null };
+    }
+
+    document.getElementById('btn-add-subtask-modal').addEventListener('click', () => {
+        if (currentMissionId) {
+            openSubtaskModal(currentMissionId);
+        }
+    });
+
+    document.getElementById('subtask-modal-cancel-btn').addEventListener('click', closeSubtaskModal);
+
+    document.getElementById('subtask-modal-save-btn').addEventListener('click', async () => {
+        const { missionId, subtaskId } = activeSubtaskModal;
+        const newTitle = document.getElementById('subtask-modal-input').value.trim();
+
+        if (!missionId || newTitle === '') return;
+
+        await saveSubtask(missionId, newTitle, subtaskId);
+        closeSubtaskModal();
+    });
+
+    async function saveSubtask(missionId, title, subtaskId = null) {
+        if (!currentUserId || !missionId) return;
+
+        const subtasksCollectionRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks', missionId, 'subtarefas');
+
+        try {
+            if (subtaskId) {
+                // Atualizar subtarefa existente
+                const subtaskRef = doc(subtasksCollectionRef, subtaskId);
+                await updateDoc(subtaskRef, { titulo: title });
+            } else {
+                // Criar nova subtarefa
+                await addDoc(subtasksCollectionRef, {
+                    titulo: title,
+                    status: 'PENDENTE',
+                    tempoAcumulado: 0,
+                    createdAt: Timestamp.now()
+                });
+            }
+            console.log("Subtarefa salva com sucesso!");
+            loadMissionDetails(missionId); // Recarrega
+        } catch (error) {
+            console.error("Erro ao salvar subtarefa:", error);
+            showMessage('Erro', 'Não foi possível salvar a subtarefa.');
+        }
+    }
+
+
+    function resetRegistrationForm() {
+      currentRegistrationStep = 1;
+      updateRegistrationStepUI();
+      Object.values(regInputs).forEach(input => {
+        input.value = '';
+        input.disabled = false;
+      });
+      regInputs.password.closest('label').classList.remove('hidden');
+      selectedAvatarUrl = null;
+      document.querySelectorAll('.avatar-option').forEach(el => {
+        el.classList.remove('avatar-selected', 'border-primary');
+        el.classList.add('border-transparent');
+      });
+    }
+
+    async function handleRegister() {
+      let user;
+
+      const basicData = {
+          nickname: regInputs.nickname.value,
+          email: regInputs.email.value,
+          createdAt: Timestamp.now(),
+          uid: null
+      };
+
+      const vitals = {
+          altura_cm: Number(regInputs.height.value),
+          peso_atual_kg: Number(regInputs.weight.value),
+          meta_peso_kg: Number(regInputs.weightTarget.value) || null,
+          imc: 0
+      };
+      if (vitals.altura_cm > 0) {
+          const altura_m = vitals.altura_cm / 100;
+          vitals.imc = parseFloat((vitals.peso_atual_kg / (altura_m * altura_m)).toFixed(1));
+      }
+
+      const defaultStat = { level: 1, xp_atual: 0, xp_para_upar: 100 };
+      const stats = {
+          forca: { ...defaultStat },
+          inteligencia: { ...defaultStat },
+          velocidade: { ...defaultStat },
+          vitalidade: { ...defaultStat },
+          carisma: { ...defaultStat }
+      };
+
+      const base_hp = 100 + (stats.vitalidade.level * 10);
+      const base_mana = 100 + (stats.inteligencia.level * 10);
+
+      const character = {
+          level: 1,
+          xp_atual: 0,
+          xp_para_upar: 1000,
+          hp_max: base_hp,
+          hp_atual: base_hp,
+          energia_max: 100,
+          energia_atual: 100,
+          mana_max: base_mana,
+          mana_atual: base_mana,
+          moedas: 0,
+          avatar_url: selectedAvatarUrl
+      };
+
+      const status_effects = [];
+      if (vitals.imc > 25) {
+          status_effects.push({ id: "debuff_imc_alto", label: "Sobrepeso", effect: "energia_max", value: -10 });
+      } else if (vitals.imc < 18.5) {
+          status_effects.push({ id: "debuff_imc_baixo", label: "Abaixo do Peso", effect: "hp_max", value: -10 });
+      }
+
+      const profileData = {
+          ...basicData,
+          vitals,
+          stats,
+          character,
+          status_effects
+      };
+
+      try {
+        if (auth.currentUser && !auth.currentUser.isAnonymous && regInputs.email.disabled) {
+          user = auth.currentUser;
+          console.log('Atualizando perfil existente do Google...');
+          profileData.email = user.email;
+          profileData.nickname = user.displayName || basicData.nickname;
+          character.avatar_url = user.photoURL || selectedAvatarUrl;
+        } else {
+          console.log('Criando novo usuário com Email/Senha...');
+          const userCredential = await createUserWithEmailAndPassword(auth, basicData.email, regInputs.password.value);
+          user = userCredential.user;
+          await updateProfile(user, { displayName: basicData.nickname });
+        }
+
+        profileData.uid = user.uid;
+        const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
+        await setDoc(profileRef, profileData);
+
+        console.log('Personagem criado e salvo!');
+
+      } catch (error) {
+        console.error("Erro ao criar personagem:", error);
+        showMessage('Erro na Criação', `Não foi possível criar seu personagem. Erro: ${error.message}`);
+      }
+    }
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const email = loginInputs.email.value;
+      const password = loginInputs.password.value;
+      if (!email || !password) {
+        return showMessage('Campos Vazios', 'Digite seu email e senha.');
+      }
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        console.error("Erro no login:", error);
+        showMessage('Erro ao Entrar', 'Email ou senha inválidos. Verifique seus dados.');
+      }
+    });
+    document.getElementById('btn-google-login').addEventListener('click', async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (error) {
+        console.error("Erro no login com Google:", error);
+        showMessage('Erro no Login', `Não foi possível logar com o Google. Erro: ${error.message}`);
+      }
+    });
+    document.getElementById('forgot-btn').addEventListener('click', async () => {
+      const email = document.getElementById('forgot-email').value;
+      if (!email) {
+        return showMessage('Campo Vazio', 'Digite seu email para recuperação.');
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showMessage('Pergaminho Enviado', 'Um email de recuperação foi enviado para ' + email + '. Verifique sua caixa de entrada (e spam).');
+        showScreen('login');
+      } catch (error) {
+        console.error("Erro ao enviar email de recuperação:", error);
+        showMessage('Erro', `Não foi possível enviar o email. Verifique o endereço digitado. Erro: ${error.message}`);
+      }
+    });
+    document.getElementById('hub-logout-btn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Erro ao sair:", error);
+            showMessage('Erro', 'Não foi possível sair da aventura no momento.');
+        }
+    });
+
+    document.getElementById('sub-task-list').addEventListener('click', (e) => {
+        const editButton = e.target.closest('.edit-subtask-btn');
+        if (editButton && currentMissionId) {
+            const subtaskId = editButton.dataset.subtaskId;
+            openSubtaskModal(currentMissionId, subtaskId);
+            return;
+        }
+
+        const timerButton = e.target.closest('.toggle-subtask-timer-btn');
+        if (timerButton && currentMissionId) {
+            const subtaskId = timerButton.dataset.subtaskId;
+            toggleSubtaskTimer(currentMissionId, subtaskId);
+            return;
+        }
+    });
+
+    async function startSubtaskTimerInterval(subtaskId, accumulatedSeconds) {
+        if (activeSubtaskTimers[subtaskId]) {
+            clearInterval(activeSubtaskTimers[subtaskId]);
+        }
+
+        const subtaskRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', currentMissionId, 'subtarefas', subtaskId);
+        const eventLogsRef = collection(subtaskRef, 'event_logs');
+
+        const eventLogsSnap = await getDocs(eventLogsRef);
+        const eventLogs = eventLogsSnap.docs.map(d => d.data()).sort((a,b) => b.timestamp.seconds - a.timestamp.seconds);
+        const lastStartEvent = eventLogs.find(log => log.tipo === 'INICIO');
+
+        if (!lastStartEvent) return;
+
+        const startTime = lastStartEvent.timestamp.toDate();
+
+        const intervalId = setInterval(() => {
+            const now = new Date();
+            const sessionSeconds = Math.floor((now - startTime) / 1000);
+            const totalSeconds = accumulatedSeconds + sessionSeconds;
+
+            const timerDisplay = document.querySelector(`#subtask-timer-${subtaskId} .timer-text`);
+            if (timerDisplay) {
+                timerDisplay.textContent = formatTime(totalSeconds);
+            }
+        }, 1000);
+
+        activeSubtaskTimers[subtaskId] = intervalId;
+    }
+
+    async function toggleSubtaskTimer(missionId, subtaskId) {
+        if (!currentUserId) return;
+
+        const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', missionId);
+        const subtaskRef = doc(collection(missionRef, 'subtarefas'), subtaskId);
+        const eventLogsRef = collection(subtaskRef, 'event_logs');
+
+        try {
+            const missionSnap = await getDoc(missionRef);
+            if (!missionSnap.exists() || missionSnap.data().status !== 'EM_ANDAMENTO') {
+                showMessage('Ação Bloqueada', 'A missão principal precisa estar "EM ANDAMENTO" para iniciar o cronômetro de uma subtarefa.');
+                return;
+            }
+
+            const subtaskSnap = await getDoc(subtaskRef);
+            if (!subtaskSnap.exists()) return;
+
+            const subtaskData = subtaskSnap.data();
+
+            if (subtaskData.status === 'EM_ANDAMENTO') {
+                // Pausar o timer
+                if (activeSubtaskTimers[subtaskId]) {
+                    clearInterval(activeSubtaskTimers[subtaskId]);
+                    delete activeSubtaskTimers[subtaskId];
+                }
+
+                const eventLogsSnap = await getDocs(eventLogsRef);
+                const eventLogs = eventLogsSnap.docs.map(d => d.data()).sort((a,b) => b.timestamp.seconds - a.timestamp.seconds);
+                const lastStartEvent = eventLogs.find(log => log.tipo === 'INICIO');
+
+                let accumulatedTime = subtaskData.tempoAcumulado || 0;
+                if (lastStartEvent) {
+                    const now = Timestamp.now();
+                    const secondsElapsed = now.seconds - lastStartEvent.timestamp.seconds;
+                    accumulatedTime += secondsElapsed;
+                }
+
+                await updateDoc(subtaskRef, { status: 'PAUSADA', tempoAcumulado: accumulatedTime });
+                await addDoc(eventLogsRef, { tipo: 'PAUSA', timestamp: Timestamp.now() });
+                loadMissionDetails(missionId);
+
+            } else {
+                // Iniciar o timer
+                await updateDoc(subtaskRef, { status: 'EM_ANDAMENTO' });
+                await addDoc(eventLogsRef, { tipo: 'INICIO', timestamp: Timestamp.now() });
+                loadMissionDetails(missionId);
+            }
+
+        } catch (error) {
+            console.error("Erro ao alternar timer da subtarefa:", error);
+            showMessage('Erro', 'Ocorreu um erro ao controlar o cronômetro.');
+        }
+    }
+
+    // --- LÓGICA DA TELA DE CRIAR TAREFAS (IA) ---
+    function resetTaskForm() {
+        taskForm.title.value = '';
+        taskForm.durationHours.value = '';
+        taskForm.durationMinutes.value = '';
+        taskForm.deadline.value = '';
+        taskForm.notes.value = '';
+        taskForm.subtaskInput.value = '';
+        selectedTaskType = null;
+        selectedTaskPriority = 'contrato';
+        recurrenceRule = null;
+        taskForm.recurrenceSummary.textContent = '';
+        attachmentFile = null; // Limpa o anexo
+        taskForm.attachmentInput.value = ''; // Limpa o input de arquivo
+        taskForm.attachmentName.textContent = ''; // Limpa o nome do anexo
+        aiResults = null;
+        calculatedRewards = null;
+        subtasksList = [];
+        renderSubtasks();
+
+        taskForm.typeButtons.forEach(btn => btn.classList.remove('task-type-selected'));
+        taskForm.priorityButtons.forEach(btn => btn.classList.remove('task-priority-selected'));
+
+        rewardBox.loading.classList.remove('hidden');
+        rewardBox.loadingText.textContent = 'Digite sua missão para calcularmos a recompensa...';
+        rewardBox.spinner.classList.add('hidden');
+        rewardBox.results.classList.add('hidden');
+    }
+    function renderSubtasks() {
+        taskForm.subtaskList.innerHTML = '';
+        subtasksList.forEach((task, index) => {
+            const taskEl = document.createElement('div');
+            taskEl.className = 'flex items-center justify-between bg-surface-dark/50 p-3 rounded-lg';
+            taskEl.innerHTML = `
+                <span class="text-white/90">${task.titulo}</span>
+                <button data-index="${index}" class="remove-subtask-btn flex items-center justify-center h-6 w-6 rounded-full text-red-400 hover:bg-red-400/20">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            `;
+            taskForm.subtaskList.appendChild(taskEl);
+        });
+    }
+
+    taskForm.addSubtaskBtn.addEventListener('click', () => {
+        const title = taskForm.subtaskInput.value.trim();
+        if (title) {
+            subtasksList.push({ titulo: title, concluida: false });
+            taskForm.subtaskInput.value = '';
+            renderSubtasks();
+            triggerAIAnalysis();
+        }
+    });
+    taskForm.subtaskList.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.remove-subtask-btn');
+        if (removeBtn) {
+            const index = parseInt(removeBtn.dataset.index, 10);
+            subtasksList.splice(index, 1);
+            renderSubtasks();
+            triggerAIAnalysis();
+        }
+    });
+    taskForm.typeGroup.addEventListener('click', (e) => {
+        const button = e.target.closest('.task-type-btn');
+        if (!button) return;
+        selectedTaskType = button.dataset.type;
+        taskForm.typeButtons.forEach(btn => btn.classList.remove('task-type-selected'));
+        button.classList.add('task-type-selected');
+        triggerAIAnalysis();
+    });
+    taskForm.priorityGroup.addEventListener('click', (e) => {
+        const button = e.target.closest('.task-priority-btn');
+        if (!button) return;
+        selectedTaskPriority = button.dataset.priority;
+        taskForm.priorityButtons.forEach(btn => btn.classList.remove('task-priority-selected'));
+        button.classList.add('task-priority-selected');
+    });
+    taskForm.openRecurrenceBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        recurrenceModal.container.classList.remove('hidden');
+    });
+    recurrenceModal.cancelBtn.addEventListener('click', () => {
+        recurrenceModal.container.classList.add('hidden');
+    });
+    recurrenceModal.daysInput.addEventListener('input', () => {
+        recurrenceModal.weekdayButtons.forEach(btn => btn.classList.remove('weekday-btn-selected'));
+    });
+    recurrenceModal.weekdaysGroup.addEventListener('click', (e) => {
+        const button = e.target.closest('.weekday-btn');
+        if (button) {
+            recurrenceModal.daysInput.value = '';
+            button.classList.toggle('weekday-btn-selected');
+        }
+    });
+    recurrenceModal.saveBtn.addEventListener('click', () => {
+        const days = parseInt(recurrenceModal.daysInput.value, 10);
+        const selectedWeekdays = [...recurrenceModal.weekdayButtons]
+            .filter(btn => btn.classList.contains('weekday-btn-selected'))
+            .map(btn => parseInt(btn.dataset.day, 10));
+
+        if (days > 0) {
+            recurrenceRule = { type: 'days', value: days };
+            taskForm.recurrenceSummary.textContent = `Repete a cada ${days} dia(s).`;
+        } else if (selectedWeekdays.length > 0) {
+            recurrenceRule = { type: 'weekdays', value: selectedWeekdays.sort() };
+            const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const summary = selectedWeekdays.map(d => dayNames[d]).join(', ');
+            taskForm.recurrenceSummary.textContent = `Repete em: ${summary}.`;
+        } else {
+            recurrenceRule = null;
+            taskForm.recurrenceSummary.textContent = '';
+        }
+        recurrenceModal.container.classList.add('hidden');
+    });
+
+    function triggerAIAnalysis() {
+        const title = taskForm.title.value.trim();
+        const hours = parseInt(taskForm.durationHours.value, 10) || 0;
+        const minutes = parseInt(taskForm.durationMinutes.value, 10) || 0;
+        const totalMinutes = (hours * 60) + minutes;
+        
+        if (title.length < 3 || !selectedTaskType) {
+             rewardBox.loading.classList.remove('hidden');
+             rewardBox.loadingText.textContent = 'Preencha o Título e o Tipo de Missão...';
+             rewardBox.spinner.classList.add('hidden');
+             rewardBox.results.classList.add('hidden');
+            return;
+        }
+        
+        rewardBox.loading.classList.remove('hidden');
+        rewardBox.loadingText.textContent = 'Analisando missão...';
+        rewardBox.spinner.classList.remove('hidden');
+        rewardBox.results.classList.add('hidden');
+        
+        debounce(() => analyzeTaskWithAI(title, totalMinutes, selectedTaskType, subtasksList), 1000);
+    }
+
+    taskForm.title.addEventListener('keyup', triggerAIAnalysis);
+    taskForm.durationHours.addEventListener('keyup', triggerAIAnalysis);
+    taskForm.durationMinutes.addEventListener('keyup', triggerAIAnalysis);
+
+    taskForm.addAttachmentBtn.addEventListener('click', () => {
+        taskForm.attachmentInput.click();
+    });
+
+    taskForm.attachmentInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            attachmentFile = file;
+            taskForm.attachmentName.textContent = file.name;
+        } else {
+            attachmentFile = null;
+            taskForm.attachmentName.textContent = '';
+        }
+    });
+
+    async function analyzeTaskWithAI(taskTitle, totalMinutes, taskType, subtasks) {
+        console.log(`Analisando: Tipo=${taskType}, Título='${taskTitle}', Duração=${totalMinutes} min, Sub-tarefas=${subtasks.length}`);
+        
+        const apiKey = "AIzaSyCF4tD2jq3pEHfuilwMq-fjdUnBZDxcoxM";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        const subtasksString = JSON.stringify(subtasks.map(s => s.titulo));
+        const combinedPrompt = `Você é um mestre de jogo (Game Master) de um RPG da vida real. Sua função é analisar tarefas e classificá-las. Responda APENAS com um objeto JSON. Não inclua \`\`\`json ou qualquer texto antes ou depois.
+
+Analise a tarefa. Considere o TIPO, Título, Duração e Sub-tarefas para definir o atributo_associado (FORCA, INTELIGENCIA, VELOCIDADE, VITALIDADE, CARISMA) e a dificuldade (FACIL, MEDIA, DIFICIL).
+
+Use estas definições de Atributo:
+FORCA: Academia, levantar peso, limpeza pesada.
+INTELIGENCIA: Estudar, ler, planejar, meditar, aprender.
+VELOCIDADE: Correr, organizar, tarefas rápidas, caminhada.
+VITALIDADE: Beber água, comer saudável, dormir, tomar sol.
+CARISMA: Socializar, ligar para amigos, networking, apresentação.
+
+Regras de Dificuldade (INTELIGENTE - Use o TIPO como base):
+TIPO 'habito': É quase sempre FACIL. (Ex: 'Beber água', 'Meditar 5 min'). Só será MEDIA se a Duração for > 30 min. Um Hábito NUNCA pode ser 'DIFICIL'.
+TIPO 'diaria': É quase sempre MEDIA. (Ex: 'Ir na academia', 'Correr 30 min'). Só será 'DIFICIL' se Duração > 90 min OU tiver 4+ sub-tarefas.
+TIPO 'projeto': É quase sempre DIFICIL. (Ex: 'Fazer TCC', 'Limpar a casa toda'). Só será 'MEDIA' se tiver 0 sub-tarefas E Duração < 60 min.
+
+Exemplos de Classificação:
+TIPO: 'habito', Título: 'Beber água 1 copo', Duração: 1, Sub-tarefas: [] -> {"atributo_associado": "VITALIDADE", "dificuldade": "FACIL"}
+TIPO: 'diaria', Título: 'Correr', Duração: 30, Sub-tarefas: [] -> {"atributo_associado": "VELOCIDADE", "dificuldade": "MEDIA"}
+TIPO: 'projeto', Título: 'Estudar p/ prova', Duração: 60, Sub-tarefas: [] -> {"atributo_associado": "INTELIGENCIA", "dificuldade": "MEDIA"}
+TIPO: 'projeto', Título: 'Estudar p/ prova', Duração: 60, Sub-tarefas: ["Ler", "Resumir"] -> {"atributo_associado": "INTELIGENCIA", "dificuldade": "DIFICIL"}
+
+Tarefa:
+TIPO: '${taskType}'
+Título: '${taskTitle}'
+Duração (minutos): ${totalMinutes}
+Sub-tarefas: ${subtasksString}`;
+
+        const responseSchema = {
+            type: "OBJECT",
+            properties: {
+                "atributo_associado": { "type": "STRING" },
+                "dificuldade": { "type": "STRING" }
+            },
+            required: ["atributo_associado", "dificuldade"]
+        };
+        
+        const payload = {
+            contents: [{ parts: [{ text: combinedPrompt }] }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: responseSchema,
+                temperature: 0.1
+            }
+        };
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro na API: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            if (!text) {
+                 throw new Error("A IA não retornou uma análise válida.");
+            }
+
+            aiResults = JSON.parse(text);
+            console.log("Resultado da IA:", aiResults);
+            
+            updateRewardEstimation(aiResults.atributo_associado, aiResults.dificuldade);
+
+        } catch (error) {
+            console.error("Erro ao analisar tarefa:", error);
+            rewardBox.loading.classList.remove('hidden');
+            rewardBox.loadingText.textContent = 'Erro ao analisar. Tente novamente.';
+            rewardBox.spinner.classList.add('hidden');
+            rewardBox.results.classList.add('hidden');
+            aiResults = null;
+        }
+    }
+    
+     function updateRewardEstimation(attribute, difficulty) {
+        if (!selectedTaskType) {
+            rewardBox.loading.classList.remove('hidden');
+            rewardBox.loadingText.textContent = 'Selecione um Tipo de Missão...';
+            rewardBox.spinner.classList.add('hidden');
+            rewardBox.results.classList.add('hidden');
+            return;
+        }
+
+        const typeKey = selectedTaskType.toLowerCase();
+        const difficultyKey = difficulty.toUpperCase();
+        const attributeKey = attribute.toUpperCase();
+
+        const typeRewards = REWARDS_TYPE[typeKey] || { xp_global: 0, moedas: 0 };
+        const difficultyRewards = REWARDS_DIFFICULTY[difficultyKey] || { xp_attr: 0 };
+        
+        calculatedRewards = {
+            xp_global: typeRewards.xp_global,
+            xp_atributo: difficultyRewards.xp_attr,
+            moedas: typeRewards.moedas
+        };
+
+        rewardBox.attribute.textContent = attributeKey;
+        rewardBox.difficulty.textContent = difficultyKey;
+        rewardBox.xpGlobal.textContent = `+${calculatedRewards.xp_global} XP`;
+        rewardBox.xpAttributeLabel.textContent = `XP de ${attributeKey}:`;
+        rewardBox.xpAttribute.textContent = `+${calculatedRewards.xp_atributo} XP`;
+        rewardBox.coins.textContent = `+${calculatedRewards.moedas} Moedas`;
+        
+        rewardBox.loading.classList.add('hidden');
+        rewardBox.results.classList.remove('hidden');
+     }
+     
+    taskForm.saveBtn.addEventListener('click', async () => {
+        const title = taskForm.title.value.trim();
+        const hours = parseInt(taskForm.durationHours.value, 10) || 0;
+        const minutes = parseInt(taskForm.durationMinutes.value, 10) || 0;
+        const totalMinutes = (hours * 60) + minutes;
+        
+        if (title.length < 3) return showMessage('Missão Inválida', 'O título da missão é muito curto.');
+        if (!selectedTaskType) return showMessage('Missão Inválida', 'Selecione um tipo de missão.');
+        if (!aiResults || !calculatedRewards) return showMessage('Missão Inválida', 'Aguarde a análise da IA terminar.');
+        if (!currentUserId) return showMessage('Erro', 'Usuário não encontrado. Tente relogar.');
+        
+        const isRecurrenceTemplate = recurrenceRule !== null;
+
+        // Monta o objeto base com os dados do formulário
+        let taskData = {
+            titulo: title,
+            tipo: selectedTaskType,
+            prioridade: selectedTaskPriority,
+            notas: taskForm.notes.value.trim() || null,
+            recorrencia: recurrenceRule,
+            duracao_estimada_minutos: totalMinutes > 0 ? totalMinutes : null,
+            atributo_associado: aiResults.atributo_associado,
+            dificuldade: aiResults.dificuldade,
+            recompensa: calculatedRewards,
+            prazo_final: taskForm.deadline.value || null,
+            subtarefas: subtasksList,
+        };
+        
+        try {
+            // Faz o upload do anexo, se houver um novo
+            if (attachmentFile) {
+                 const timestamp = Date.now();
+                 const attachmentRef = ref(storage, `attachments/${currentUserId}/${timestamp}-${attachmentFile.name}`);
+                 showMessage('Enviando Anexo...', 'Aguarde...');
+                 await uploadBytes(attachmentRef, attachmentFile);
+                 taskData.anexo_url = await getDownloadURL(attachmentRef);
+            }
+
+            if (editingTaskId) {
+                // --- ATUALIZAR MISSÃO EXISTENTE ---
+                const missionRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', editingTaskId);
+                await updateDoc(missionRef, taskData);
+
+                console.log('Missão atualizada:', editingTaskId);
+                showMessage('Sucesso!', 'Sua missão foi atualizada!');
+
+            } else {
+                // --- CRIAR NOVA MISSÃO ---
+                taskData.isTemplate = isRecurrenceTemplate;
+                taskData.lastGenerated = null;
+                taskData.concluida = false; // Status inicial
+                taskData.status = 'PENDENTE'; // Status inicial
+                taskData.createdAt = Timestamp.now();
+
+                const tasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks');
+                await addDoc(tasksRef, taskData);
+
+                console.log('Nova missão salva:', taskData);
+                showMessage('Sucesso!', 'Sua nova missão foi adicionada ao registro!');
+            }
+            
+            editingTaskId = null; // Reseta o modo de edição
+            showScreen('dashboard');
+            
+        } catch (error) {
+            console.error("Erro ao salvar missão:", error);
+            showMessage('Erro', `Não foi possível salvar sua missão. Erro: ${error.message}`);
+        }
+    });
+
+    // --- LÓGICA DO CALENDÁRIO ---
+    function renderCalendar() {
+        const calendarGrid = document.getElementById('calendar-grid');
+        const monthYearEl = document.getElementById('calendar-month-year');
+        const missionListContainer = document.getElementById('calendar-mission-list');
+        const missionListTitle = document.getElementById('calendar-mission-list-title');
+
+        if (!calendarGrid || !monthYearEl) return;
+
+        calendarGrid.innerHTML = '';
+        const month = currentCalendarDate.getMonth();
+        const year = currentCalendarDate.getFullYear();
+
+        // Limpa a lista de missões ao renderizar um novo mês
+        missionListTitle.textContent = 'Selecione um dia';
+        missionListContainer.innerHTML = '<p class="text-sm text-text-dark-secondary p-4 text-center">Nenhuma missão para este dia.</p>';
+
+
+        monthYearEl.textContent = `${currentCalendarDate.toLocaleString('pt-BR', { month: 'long' })} ${year}`;
+
+        const firstDayOfMonth = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        // Preenche os dias vazios no início do mês
+        for (let i = 0; i < firstDayOfMonth; i++) {
+            calendarGrid.innerHTML += `<div class="p-2"></div>`;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayEl = document.createElement('div');
+            const currentDate = new Date(year, month, day);
+            currentDate.setHours(0,0,0,0);
+            const isToday = currentDate.getTime() === today.getTime();
+
+            // Marca as datas que têm missões
+            const hasMission = allUserTasks.some(task => {
+                if (!task.prazo_final) return false;
+                const deadline = parseLocalDate(task.prazo_final);
+                return deadline && deadline.getTime() === currentDate.getTime();
+            });
+
+            dayEl.className = `relative flex items-center justify-center h-10 w-10 rounded-full cursor-pointer hover:bg-primary/20 transition-colors`;
+            if (isToday) {
+                dayEl.classList.add('bg-primary', 'text-background-dark', 'font-bold');
+            }
+            if (hasMission) {
+                dayEl.innerHTML = `<span>${day}</span><div class="absolute bottom-1 h-1.5 w-1.5 rounded-full bg-yellow-400"></div>`;
+            } else {
+                dayEl.innerHTML = `<span>${day}</span>`;
+            }
+
+            dayEl.dataset.date = currentDate.toISOString().split('T')[0];
+            calendarGrid.appendChild(dayEl);
+        }
+    }
+
+    function renderMissionsForDate(dateString) {
+        const missionListContainer = document.getElementById('calendar-mission-list');
+        const missionListTitle = document.getElementById('calendar-mission-list-title');
+        const selectedDate = parseLocalDate(dateString);
+
+        if (!selectedDate) return;
+
+        missionListTitle.textContent = `Missões para ${selectedDate.toLocaleDateString('pt-BR')}`;
+
+        const tasksForDay = allUserTasks.filter(task => {
+            if (!task.prazo_final) return false;
+            const deadline = parseLocalDate(task.prazo_final);
+            return deadline && deadline.getTime() === selectedDate.getTime();
+        });
+
+        missionListContainer.innerHTML = ''; // Limpa a lista
+        if (tasksForDay.length === 0) {
+            missionListContainer.innerHTML = '<p class="text-sm text-text-dark-secondary p-4 text-center">Nenhuma missão agendada para este dia.</p>';
+            return;
+        }
+
+        tasksForDay.forEach(task => {
+             const taskEl = document.createElement('div');
+             taskEl.className = 'mission-card flex items-center gap-3 rounded-lg bg-surface-dark/50 p-3 cursor-pointer hover:bg-surface-dark/80 transition-colors';
+             taskEl.dataset.taskId = task.id;
+
+             const iconMap = {
+                diaria: 'fitness_center', habito: 'menu_book', projeto: 'work',
+                FORCA: 'swords', INTELIGENCIA: 'school', VELOCIDADE: 'sprint',
+                VITALIDADE: 'shield', CARISMA: 'sentiment_satisfied', default: 'task'
+             };
+             const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
+             const isCompleted = task.status === 'CONCLUIDA';
+
+             taskEl.innerHTML = `
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+                  <span class="material-symbols-outlined text-primary text-2xl">${icon}</span>
+                </div>
+                <div class="flex-1">
+                  <p class="font-bold text-sm ${isCompleted ? 'line-through opacity-60' : ''}">${task.titulo}</p>
+                  <p class="text-xs capitalize ${isCompleted ? 'text-gray-500' : 'text-primary'}">${(task.status || 'PENDENTE').replace('_', ' ')}</p>
+                </div>
+             `;
+             missionListContainer.appendChild(taskEl);
+        });
+    }
+
+
+    document.getElementById('prev-month-btn').addEventListener('click', () => {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+        renderCalendar();
+    });
+
+    document.getElementById('next-month-btn').addEventListener('click', () => {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+        renderCalendar();
+    });
+
+    document.getElementById('calendar-grid').addEventListener('click', (e) => {
+        const dayEl = e.target.closest('[data-date]');
+        if (dayEl) {
+            // Remove a seleção anterior
+            document.querySelectorAll('#calendar-grid [data-date]').forEach(el => {
+                el.classList.remove('ring-2', 'ring-primary');
+            });
+            // Adiciona a seleção ao dia clicado
+            dayEl.classList.add('ring-2', 'ring-primary');
+            renderMissionsForDate(dayEl.dataset.date);
+        }
+    });
+
+    // Event listener para abrir detalhes da missão a partir do calendário
+    document.getElementById('calendar-mission-list').addEventListener('click', (e) => {
+        const missionCard = e.target.closest('.mission-card');
+        if (missionCard && missionCard.dataset.taskId) {
+            showScreen('missionDetails', missionCard.dataset.taskId);
+        }
+    });
+
+    document.getElementById('btn-goto-calendar').addEventListener('click', () => {
+        renderCalendar();
+        showScreen('calendar');
+    });
+
+    document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
+
+
+    // --- LÓGICA DA TELA DE PERSONAGEM ---
+
+    async function loadCharacterData(uid) {
+        if (!uid) {
+            console.error("UID do usuário não fornecido para carregar dados do personagem.");
+            return;
+        }
+        const profileRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'details');
+        const inventoryRef = collection(db, 'artifacts', appId, 'users', uid, 'inventory');
+        const goalsRef = collection(db, 'artifacts', appId, 'users', uid, 'goals');
+        const dailyLogRef = collection(db, 'artifacts', appId, 'users', uid, 'daily_log');
+
+        try {
+            const [profileSnap, inventorySnap, goalsSnap, dailyLogSnap] = await Promise.all([
+                getDoc(profileRef),
+                getDocs(inventoryRef),
+                getDocs(goalsRef),
+                getDocs(query(dailyLogRef, orderBy("timestamp", "asc")))
+            ]);
+
+            if (profileSnap.exists()) {
+                fullProfileData = profileSnap.data();
+                renderAdventurerPanel(fullProfileData.character, fullProfileData.nickname);
+                renderVitalsPanel(fullProfileData.vitals, fullProfileData.status_effects);
+                renderAttributesPanel(fullProfileData.stats);
+            }
+
+            const inventoryItems = inventorySnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderInventory(inventoryItems);
+
+            const goals = goalsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderAchievements(goals);
+
+            characterDailyLogs = dailyLogSnap.docs.map(d => d.data()); // Armazena os logs
+            renderHealthChart(characterDailyLogs, fullProfileData.vitals);
+            renderProgressStats(characterDailyLogs, fullProfileData.vitals);
+            renderWeightOscillationChart(characterDailyLogs, 'day');
+
+        } catch (error) {
+            console.error("Error loading character data:", error);
+        }
+    }
+
+    function renderHealthChart(logs, vitals) {
+        const ctx = document.getElementById('health-chart').getContext('2d');
+        if (!ctx) return;
+
+        const labels = logs.map(log => new Date(log.timestamp.seconds * 1000).toLocaleDateString('pt-BR'));
+        const weightData = logs.map(log => log.peso_kg);
+        const fatData = logs.map(log => log.gordura_perc);
+
+        const datasets = [{
+            label: 'Peso (kg)',
+            data: weightData,
+            borderColor: 'rgba(19, 236, 109, 1)',
+            backgroundColor: 'rgba(19, 236, 109, 0.2)',
+            fill: true,
+            yAxisID: 'y-weight',
+        }];
+
+        if (fatData.some(d => d != null && d > 0)) {
+            datasets.push({
+                label: '% Gordura Corporal',
+                data: fatData,
+                borderColor: 'rgba(245, 158, 11, 1)',
+                backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                fill: false,
+                yAxisID: 'y-fat',
+            });
+        }
+
+        if (vitals && vitals.meta_peso_kg) {
+            datasets.push({
+                label: 'Meta de Peso',
+                data: Array(labels.length).fill(vitals.meta_peso_kg),
+                borderColor: 'rgba(239, 68, 68, 1)',
+                borderDash: [5, 5],
+                fill: false,
+                pointRadius: 0,
+                yAxisID: 'y-weight',
+            });
+        }
+
+        if (healthChart) {
+            healthChart.destroy();
+        }
+
+        healthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        ticks: { color: '#9db9a8' },
+                        grid: { color: '#335c47' }
+                    },
+                    'y-weight': {
+                        type: 'linear',
+                        position: 'left',
+                        title: { display: true, text: 'Peso (kg)', color: '#13ec6d' },
+                        ticks: { color: '#9db9a8' },
+                        grid: { color: '#335c47' }
+                    },
+                    'y-fat': {
+                        type: 'linear',
+                        position: 'right',
+                        title: { display: true, text: '% Gordura', color: '#f59e0b' },
+                        ticks: { color: '#9db9a8' },
+                        grid: { drawOnChartArea: false }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#ffffff' } }
+                }
+            }
+        });
+    }
+
+    function renderAdventurerPanel(character, nickname) {
+        document.getElementById('avatar-img').src = character.avatar_url || 'https://placehold.co/128x128/1a241e/13ec6d?text=?';
+        document.getElementById('character-level-title').textContent = `Nível ${character.level || 1}`;
+        document.getElementById('character-name').textContent = nickname || 'Aventureiro';
+
+        const equipment = character.equipment || {};
+        const slots = ['cabeca', 'peitoral', 'mao_direita', 'amuleto', 'botas'];
+        const defaultIcons = {
+            cabeca: 'skull',
+            peitoral: 'shield',
+            mao_direita: 'swords',
+            amuleto: 'diamond',
+            botas: 'foot_bones'
+        };
+
+        slots.forEach(slot => {
+            const slotEl = document.getElementById(`slot-${slot}`);
+            if (!slotEl) return;
+            const item = equipment[slot];
+            if (item && item.icon) {
+                slotEl.innerHTML = `<span class="material-symbols-outlined !text-4xl text-primary">${item.icon}</span>`;
+                slotEl.dataset.equippedItem = JSON.stringify(item);
+            } else {
+                slotEl.innerHTML = `<span class="material-symbols-outlined">${defaultIcons[slot]}</span>`;
+                delete slotEl.dataset.equippedItem;
+            }
+        });
+    }
+
+    function renderVitalsPanel(vitals, statusEffects) {
+        document.getElementById('current-weight').textContent = `${vitals.peso_atual_kg || '-'} kg`;
+        document.getElementById('current-imc').textContent = vitals.imc_atual || vitals.imc || '-';
+
+        const effectsContainer = document.getElementById('status-effects-container');
+        effectsContainer.innerHTML = '<h3 class="font-bold mb-2">Efeitos Ativos</h3>';
+
+        if (statusEffects && statusEffects.length > 0) {
+            const effectDisplayConfig = {
+                buff_composicao_saudavel: { icon: 'health_and_safety', color: 'text-primary' },
+                buff_descansado: { icon: 'bedtime', color: 'text-blue-400' },
+                buff_focado: { icon: 'psychology', color: 'text-purple-400' },
+                debuff_gordura_alta: { icon: 'sentiment_very_dissatisfied', color: 'text-debuff' },
+                debuff_gordura_baixa: { icon: 'sentiment_dissatisfied', color: 'text-debuff' },
+                debuff_imc_alto: { icon: 'sentiment_dissatisfied', color: 'text-debuff' },
+                debuff_imc_baixo: { icon: 'sentiment_dissatisfied', color: 'text-debuff' },
+                debuff_cansado: { icon: 'battery_alert', color: 'text-yellow-500' },
+                debuff_estressado: { icon: 'bolt', color: 'text-orange-500' },
+            };
+
+            const effectNameMap = {
+                energia_max: "Energia Máx",
+                hp_max: "HP Máx",
+                regeneracao_mana_energia: "Regen. Energia",
+                custo_mana: "Custo de Habilidade"
+            };
+
+            statusEffects.forEach(effect => {
+                const config = effectDisplayConfig[effect.id] || { icon: 'help', color: 'text-text-dark-secondary' };
+                const isBuff = (effect.id.startsWith('buff') && effect.value > 0) || (effect.id.startsWith('debuff') && effect.value > 0);
+                const effectText = effectNameMap[effect.effect] || effect.effect;
+                let valuePrefix = (effect.value > 0) ? '+' : '';
+                if (effect.id === 'debuff_estressado') valuePrefix = '+';
+                else if (effect.id === 'buff_focado') valuePrefix = '';
+                effectsContainer.innerHTML += `
+                    <div class="flex items-center gap-3 ${config.color}">
+                        <span class="material-symbols-outlined">${config.icon}</span>
+                        <p class="text-sm">"${effect.label}": ${valuePrefix}${effect.value}% ${effectText}</p>
+                    </div>
+                `;
+            });
+        } else {
+            effectsContainer.innerHTML += `<p class="text-sm text-text-dark-secondary">Nenhum efeito ativo.</p>`;
+        }
+    }
+
+    function renderAttributesPanel(stats) {
+        const attributesList = document.getElementById('attributes-list');
+        attributesList.innerHTML = '';
+        const attributeConfig = {
+            forca: { icon: 'fitness_center', name: 'FORÇA' },
+            inteligencia: { icon: 'school', name: 'INTELIGÊNCIA' },
+            velocidade: { icon: 'sprint', name: 'VELOCIDADE' },
+            vitalidade: { icon: 'favorite', name: 'VITALIDADE' },
+            carisma: { icon: 'star', name: 'CARISMA' }
+        };
+
+        for (const key in attributeConfig) {
+            const stat = stats[key] || { level: 1, xp_atual: 0, xp_para_upar: 100 };
+            const config = attributeConfig[key];
+            const xpPercent = (stat.xp_atual / stat.xp_para_upar) * 100;
+
+            attributesList.innerHTML += `
+                <div class="flex items-center gap-4">
+                    <div class="flex size-10 items-center justify-center rounded-full bg-surface-dark text-primary"><span class="material-symbols-outlined">${config.icon}</span></div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-baseline">
+                            <p class="font-bold">${config.name}</p>
+                            <p class="text-text-dark-secondary text-xs">Nível: ${stat.level}</p>
+                        </div>
+                        <div class="w-full bg-surface-secondary rounded-full h-2 mt-1">
+                            <div class="bg-primary h-2 rounded-full" style="width: ${xpPercent}%"></div>
+                        </div>
+                        <p class="text-text-dark-secondary text-xs text-right mt-1">${stat.xp_atual} / ${stat.xp_para_upar} XP</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function renderInventory(items) {
+        const inventoryGrid = document.getElementById('inventory-grid');
+        inventoryGrid.innerHTML = '';
+        const unequippedItems = items.filter(item => !item.equipado);
+
+        unequippedItems.forEach(item => {
+            inventoryGrid.innerHTML += `
+                <div class="inventory-item aspect-square bg-surface-dark border-2 border-border-dark rounded-lg flex items-center justify-center cursor-pointer" data-item='${JSON.stringify(item)}'>
+                    <span class="material-symbols-outlined !text-4xl text-primary">${item.icon || 'help'}</span>
+                </div>
+            `;
+        });
+    }
+
+    function renderAchievements(goals) {
+        const achievementsList = document.getElementById('achievements-list');
+        achievementsList.innerHTML = '';
+        if (!goals || goals.length === 0) {
+            achievementsList.innerHTML = `<p class="text-text-dark-secondary text-center">Nenhuma conquista ainda.</p>`;
+            return;
+        }
+
+        goals.forEach(goal => {
+            const progressPercent = (goal.progresso_atual / goal.progresso_total) * 100;
+            achievementsList.innerHTML += `
+                <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4 flex items-center gap-4 ${goal.concluido ? 'opacity-70' : ''}">
+                    <span class="material-symbols-outlined !text-4xl text-yellow-400">emoji_events</span>
+                    <div class="flex-1">
+                        <p class="font-bold">${goal.titulo}</p>
+                        <p class="text-text-dark-secondary text-sm">${goal.descricao}</p>
+                        ${!goal.concluido ? `
+                        <div class="w-full bg-surface-secondary rounded-full h-2 my-1">
+                            <div class="bg-yellow-400 h-2 rounded-full" style="width: ${progressPercent}%;"></div>
+                        </div>
+                        <p class="text-text-dark-secondary text-xs">${goal.progresso_atual} / ${goal.progresso_total}</p>
+                        ` : `<p class="text-primary text-sm font-semibold mt-1">Recompensa: ${goal.recompensa || '[Item Raro]'}</p>`}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    const dailyLogModal = document.getElementById('modal-add-log');
+    const itemActionModal = document.getElementById('modal-item-action');
+
+    document.getElementById('add-daily-log-btn').addEventListener('click', () => dailyLogModal.classList.remove('hidden'));
+    document.getElementById('cancel-log-update').addEventListener('click', () => dailyLogModal.classList.add('hidden'));
+    document.getElementById('confirm-log-update').addEventListener('click', handleAddDailyLog);
+    document.getElementById('item-action-cancel-btn').addEventListener('click', () => itemActionModal.classList.add('hidden'));
+
+    function calcularNovosStatus(imc, gordura_perc, sono, estresse) {
+        let status_array = [];
+        if (gordura_perc && gordura_perc > 0) {
+            if (gordura_perc > 30) status_array.push({ id: "debuff_gordura_alta", label: "Gordura Elevada", effect: "energia_max", value: -15 });
+            else if (gordura_perc < 10) status_array.push({ id: "debuff_gordura_baixa", label: "Gordura Baixa", effect: "hp_max", value: -10 });
+            else status_array.push({ id: "buff_composicao_saudavel", label: "Composição Saudável", effect: "energia_max", value: 5 });
+        } else {
+            if (imc > 25) status_array.push({ id: "debuff_imc_alto", label: "Sobrepeso", effect: "energia_max", value: -10 });
+            else if (imc < 18.5) status_array.push({ id: "debuff_imc_baixo", label: "Abaixo do Peso", effect: "hp_max", value: -10 });
+        }
+        if (sono && sono >= 8) status_array.push({ id: "buff_descansado", label: "Descansado", effect: "regeneracao_mana_energia", value: 10 });
+        else if (sono && sono < 5) status_array.push({ id: "debuff_cansado", label: "Cansado", effect: "regeneracao_mana_energia", value: -10 });
+        if (estresse && estresse === 1) status_array.push({ id: "buff_focado", label: "Focado", effect: "custo_mana", value: -5 });
+        else if (estresse && estresse === 5) status_array.push({ id: "debuff_estressado", label: "Estressado", effect: "custo_mana", value: 10 });
+        return status_array;
+    }
+
+    function recalcularAtributosDerivados(novos_status, stats) {
+        const safeStats = stats || {};
+        const forca = safeStats.forca?.level || 1;
+        const vitalidade = safeStats.vitalidade?.level || 1;
+        const velocidade = safeStats.velocidade?.level || 1;
+        let hp_max_base = 100 + (vitalidade * 10) + (forca * 2);
+        let energia_max_base = 100 + (forca * 5) + (velocidade * 5);
+        novos_status.forEach(effect => {
+            if (effect.effect === "hp_max") hp_max_base *= (1 + (effect.value / 100));
+            else if (effect.effect === "energia_max") energia_max_base *= (1 + (effect.value / 100));
+        });
+        return {
+            hp_max_final: Math.round(hp_max_base),
+            energia_max_final: Math.round(energia_max_base)
+        };
+    }
+
+    async function handleAddDailyLog() {
+        const getNumericValue = (id) => {
+            const value = document.getElementById(id).value;
+            return (value === '' || value === null) ? null : parseFloat(value);
+        };
+        const newWeight = getNumericValue('log-weight-input');
+        if (newWeight === null || newWeight <= 0) return alert("Por favor, insira um peso válido.");
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+                const dailyLogCollectionRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'daily_log');
+                const profileSnap = await transaction.get(profileRef);
+                if (!profileSnap.exists()) throw "Documento de perfil não existe!";
+
+                const recentLogsQuery = query(dailyLogCollectionRef, orderBy("timestamp", "desc"), limit(6));
+                const recentLogsSnap = await getDocs(recentLogsQuery);
+                const recentLogs = recentLogsSnap.docs.map(d => d.data());
+
+                const newFatPerc = getNumericValue('log-fat-perc-input');
+                const newSleepHours = getNumericValue('log-sleep-hours-input');
+                const newStressLevel = getNumericValue('log-stress-level-input');
+                const allLogsForAverage = [{ horas_sono: newSleepHours, nivel_estresse: newStressLevel }, ...recentLogs];
+                const calculateAverage = (logs, field) => {
+                    const valid = logs.map(log => log[field]).filter(val => val !== null && val !== undefined);
+                    return valid.length ? parseFloat((valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1)) : null;
+                };
+
+                const profileData = profileSnap.data();
+                const altura_m = profileData.vitals.altura_cm / 100;
+                const newImc = parseFloat((newWeight / (altura_m * altura_m)).toFixed(1));
+                const novosStatus = calcularNovosStatus(newImc, newFatPerc, newSleepHours, newStressLevel);
+                const atributosDerivados = recalcularAtributosDerivados(novosStatus, profileData.stats);
+
+                transaction.set(doc(dailyLogCollectionRef), {
+                    timestamp: new Date(),
+                    peso_kg: newWeight,
+                    gordura_perc: newFatPerc,
+                    horas_sono: newSleepHours,
+                    nivel_estresse: newStressLevel
+                });
+                transaction.update(profileRef, {
+                    vitals: {
+                        ...profileData.vitals,
+                        peso_atual_kg: newWeight,
+                        imc_atual: newImc,
+                        gordura_corporal_perc: newFatPerc !== null ? newFatPerc : (profileData.vitals.gordura_corporal_perc || null),
+                        horas_sono_media: calculateAverage(allLogsForAverage, 'horas_sono'),
+                        estresse_medio: calculateAverage(allLogsForAverage, 'nivel_estresse')
+                    },
+                    status_effects: novosStatus,
+                    character: {
+                        ...profileData.character,
+                        hp_max: atributosDerivados.hp_max_final,
+                        energia_max: atributosDerivados.energia_max_final
+                    }
+                });
+            });
+            dailyLogModal.classList.add('hidden');
+            ['log-weight-input', 'log-fat-perc-input', 'log-sleep-hours-input', 'log-stress-level-input'].forEach(id => document.getElementById(id).value = '');
+            loadCharacterData(currentUserId);
+            alert("Log diário adicionado com sucesso!");
+        } catch (e) {
+            console.error("Transação falhou: ", e);
+            alert("Falha ao adicionar o log diário. Tente novamente.");
+        }
+    }
+
+    document.getElementById('inventory-grid').addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.inventory-item');
+        if (itemEl) showItemActionModal(JSON.parse(itemEl.dataset.item), 'equip');
+    });
+
+    document.querySelectorAll('.equipment-slot').forEach(slot => {
+        slot.addEventListener('click', (e) => {
+            if (e.currentTarget.dataset.equippedItem) {
+                showItemActionModal(JSON.parse(e.currentTarget.dataset.equippedItem), 'unequip');
+            }
+        });
+    });
+
+    function showItemActionModal(item, actionType) {
+        document.getElementById('item-modal-title').textContent = item.nome;
+        document.getElementById('item-modal-effect').textContent = `Efeito: ${item.efeito}`;
+        const primaryBtn = document.getElementById('item-action-primary-btn');
+        if (actionType === 'equip') {
+            primaryBtn.textContent = 'Equipar';
+            primaryBtn.onclick = () => { equipItem(item.id, item.slot); itemActionModal.classList.add('hidden'); };
+        } else {
+            primaryBtn.textContent = 'Desequipar';
+            primaryBtn.onclick = () => { unequipItem(item.id, item.slot); itemActionModal.classList.add('hidden'); };
+        }
+        itemActionModal.classList.remove('hidden');
+    }
+
+    async function equipItem(itemId, slot) {
+        if (!slot) return alert("Este item não pode ser equipado.");
+        if (fullProfileData.character.equipment[slot]) return alert("Slot já ocupado. Desequipe o item atual primeiro.");
+        const batch = writeBatch(db);
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
+        const itemSnap = await getDoc(itemRef);
+        batch.update(itemRef, { equipado: true });
+        batch.update(profileRef, { [`character.equipment.${slot}`]: itemSnap.data() });
+        await batch.commit();
+        loadCharacterData(currentUserId);
+    }
+
+    async function unequipItem(itemId, slot) {
+        const batch = writeBatch(db);
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
+        batch.update(itemRef, { equipado: false });
+        batch.update(profileRef, { [`character.equipment.${slot}`]: deleteField() });
+        await batch.commit();
+        loadCharacterData(currentUserId);
+    }
+
+    const dots = document.querySelectorAll('.carousel-dot');
+    const slidesContainer = document.getElementById('health-slides');
+    let currentSlide = 0;
+    const goToSlide = (slideIndex) => {
+        currentSlide = slideIndex;
+        slidesContainer.style.transform = `translateX(-${slideIndex * 100}%)`;
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('bg-primary', index === slideIndex);
+            dot.classList.toggle('bg-surface-dark', index !== slideIndex);
+        });
+    };
+    dots.forEach(dot => dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.slideTo, 10))));
+    let touchStartX = 0;
+    const carousel = document.getElementById('health-carousel');
+    carousel.addEventListener('touchstart', (e) => touchStartX = e.changedTouches[0].screenX, { passive: true });
+    carousel.addEventListener('touchend', (e) => {
+        const swipeDist = e.changedTouches[0].screenX - touchStartX;
+        if (swipeDist > 50 && currentSlide > 0) goToSlide(currentSlide - 1);
+        else if (swipeDist < -50 && currentSlide < dots.length - 1) goToSlide(currentSlide + 1);
+    }, { passive: true });
+
+    function renderWeightOscillationChart(logs, period = 'day') {
+        const ctx = document.getElementById('weight-oscillation-chart').getContext('2d');
+        if (logs.length < 2) return;
+        let labels = [], data = [];
+        if (period === 'day') {
+            const last7 = logs.slice(-7);
+            labels = last7.map(l => new Date(l.timestamp.seconds * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+            data = last7.map((l, i) => i === 0 ? 0 : parseFloat((l.peso_kg - last7[i - 1].peso_kg).toFixed(2)));
+        } else {
+            const changes = logs.reduce((acc, log) => {
+                const key = period === 'month' ? new Date(log.timestamp.seconds * 1000).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : new Date(log.timestamp.seconds * 1000).getFullYear().toString();
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(log.peso_kg);
+                return acc;
+            }, {});
+            labels = Object.keys(changes);
+            data = labels.map(k => parseFloat((changes[k][changes[k].length - 1] - changes[k][0]).toFixed(2)));
+        }
+        if (weightOscillationChart) weightOscillationChart.destroy();
+        weightOscillationChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Oscilação (kg)',
+                    data,
+                    backgroundColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(19, 236, 109, 0.6)'),
+                    borderColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 1)' : 'rgba(19, 236, 109, 1)'),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: false, ticks: { color: '#a0a0a0' }, grid: { color: '#3b5445' } }, x: { ticks: { color: '#a0a0a0' }, grid: { color: '#3b5445' } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    document.getElementById('oscillation-period-btns').addEventListener('click', (e) => {
+        const btn = e.target.closest('.oscillation-btn');
+        if (btn) {
+            document.querySelectorAll('.oscillation-btn').forEach(b => {
+                b.classList.remove('bg-primary', 'text-background-dark');
+                b.classList.add('text-text-dark-secondary');
+            });
+            btn.classList.add('bg-primary', 'text-background-dark');
+            btn.classList.remove('text-text-dark-secondary');
+            renderWeightOscillationChart(characterDailyLogs, btn.dataset.period);
+        }
+    });
+
+    function renderProgressStats(logs, vitals) {
+        const container = document.getElementById('progress-stats-container');
+        if (logs.length < 2) return container.innerHTML = '<p class="text-text-dark-secondary">Adicione mais pesagens para ver suas estatísticas.</p>';
+
+        const lastLog = logs[logs.length - 1];
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const logs7d = logs.filter(l => new Date(l.timestamp.seconds * 1000) >= sevenDaysAgo);
+
+        let change7d = 0;
+        if (logs7d.length > 1) change7d = logs7d[logs7d.length - 1].peso_kg - logs7d[0].peso_kg;
+
+        let timeToGoal = 'N/A';
+        if (vitals.meta_peso_kg && change7d !== 0) {
+            const weightToChange = lastLog.peso_kg - vitals.meta_peso_kg;
+            if ((weightToChange > 0 && change7d < 0) || (weightToChange < 0 && change7d > 0)) {
+                const weeks = Math.abs(weightToChange / change7d);
+                timeToGoal = `${Math.ceil(weeks)} semanas`;
+            }
+        }
+
+        container.innerHTML = `
+            <div class="space-y-4">
+                <div>
+                    <p class="text-text-dark-secondary">Variação (7d)</p>
+                    <p class="text-2xl font-bold ${change7d > 0 ? 'text-debuff' : 'text-primary'}">${change7d > 0 ? 'Ganhou' : 'Perdeu'} ${Math.abs(change7d).toFixed(1)} kg</p>
+                </div>
+                <div>
+                    <p class="text-text-dark-secondary">Ritmo para Meta</p>
+                    <p class="text-2xl font-bold">${timeToGoal}</p>
+                </div>
+            </div>
+        `;
+    }
+
+  </script>
+
+</body>
+</html>
