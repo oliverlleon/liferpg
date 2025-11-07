@@ -16,6 +16,10 @@
   <!-- Chart.js for Character Screen -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- Leaflet.js for GPS Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <!-- Configuração do Tailwind -->
   <script>
     tailwind.config = {
@@ -129,6 +133,13 @@
     }
     .equipment-slot:hover {
         background-color: #28392f;
+    }
+    @keyframes slide-up {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .animate-slide-up {
+        animation: slide-up 0.3s ease-out forwards;
     }
   </style>
 </head>
@@ -456,7 +467,7 @@
 
           <!-- Abas de Filtro -->
           <div id="mission-tabs" class="grid grid-cols-4 gap-2 p-1 rounded-lg bg-surface-dark/50 border border-border-dark">
-            <button data-tab="today" class="mission-tab-btn mission-tab-active flex-1 text-center p-2 rounded-md text-sm font-bold transition-colors bg-primary text-background-dark">
+            <button data-tab="today" class="mission-tab-btn mission-tab-active flex-1 text-center p-2 rounded-md text-sm font-bold transition-colors">
               Hoje
             </button>
             <button data-tab="week" class="mission-tab-btn flex-1 text-center p-2 rounded-md text-sm font-bold text-text-dark-secondary transition-colors">
@@ -847,10 +858,114 @@
       </main>
     </div>
 
+    <!-- Tela 10: Rastreamento de Atividade (GPS) -->
+    <div id="screen-activity-tracker" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark pb-24">
+      <!-- Header -->
+      <header class="flex items-center p-4 pb-2 justify-between">
+          <h1 class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Atividade em Andamento</h1>
+      </header>
+
+      <!-- Mapa -->
+      <div class="px-4 py-2">
+        <div id="mapa-corrida" class="w-full h-64 rounded-lg bg-surface-dark/50 border border-border-dark flex items-center justify-center text-text-dark-secondary">
+          <p>Carregando mapa...</p>
+        </div>
+      </div>
+
+      <!-- Métricas em Tempo Real -->
+      <div class="grid grid-cols-2 gap-4 px-4 py-4">
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">TEMPO</p>
+          <p id="metric-time" class="text-white text-3xl font-bold">00:00:00</p>
+        </div>
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">DISTÂNCIA</p>
+          <p class="text-white text-3xl font-bold"><span id="metric-distance">0.00</span> km</p>
+        </div>
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">VELOCIDADE MÉDIA</p>
+          <p class="text-white text-3xl font-bold"><span id="metric-avg-speed">0.0</span> km/h</p>
+        </div>
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">CALORIAS</p>
+          <p class="text-white text-3xl font-bold"><span id="metric-calories">0</span> kcal</p>
+        </div>
+      </div>
+
+      <!-- Botão de Controle -->
+      <div class="flex-grow flex items-center justify-center px-4">
+        <button id="btn-stop-activity" class="w-full max-w-xs rounded-full bg-red-600 h-16 text-white text-xl font-bold shadow-lg hover:bg-red-700 transition-colors">
+          PARAR E SALVAR
+        </button>
+      </div>
+    </div>
+
+    <!-- Tela 11: Resumo da Atividade Concluída -->
+    <div id="screen-activity-summary" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark pb-24">
+      <!-- Header -->
+      <header class="flex items-center p-4 pb-2 justify-between sticky top-0 bg-background-dark z-10">
+          <button id="summary-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
+              <span class="material-symbols-outlined text-3xl">arrow_back</span>
+          </button>
+          <h1 id="summary-title" class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12 truncate">Resumo da Atividade</h1>
+      </header>
+
+      <!-- Mapa com Trajeto -->
+      <div class="px-4 py-2">
+        <div id="summary-mapa" class="w-full h-64 rounded-lg bg-surface-dark/50 border border-border-dark flex items-center justify-center text-text-dark-secondary">
+          <p>Carregando mapa...</p>
+        </div>
+      </div>
+
+      <!-- Métricas Finais -->
+      <div class="grid grid-cols-2 gap-4 px-4 py-4">
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">TEMPO TOTAL</p>
+          <p id="summary-metric-time" class="text-white text-3xl font-bold">00:00:00</p>
+        </div>
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">DISTÂNCIA TOTAL</p>
+          <p class="text-white text-3xl font-bold"><span id="summary-metric-distance">0.00</span> km</p>
+        </div>
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">VELOCIDADE MÉDIA</p>
+          <p class="text-white text-3xl font-bold"><span id="summary-metric-avg-speed">0.0</span> km/h</p>
+        </div>
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">CALORIAS</p>
+          <p class="text-white text-3xl font-bold"><span id="summary-metric-calories">0</span> kcal</p>
+        </div>
+      </div>
+
+      <!-- Recompensas Ganhass -->
+      <div id="summary-rewards-container" class="px-4 py-2">
+          <!-- Conteúdo inserido via JS -->
+      </div>
+    </div>
+
+
+  </div>
+
+  <!-- Modal de Ação Rápida (+) -->
+  <div id="modal-quick-start" class="hidden fixed inset-0 bg-black/70 z-50 flex items-end justify-center p-4">
+    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm mb-24 animate-slide-up">
+      <h3 class="text-primary text-xl font-bold mb-6 text-center">O que deseja fazer?</h3>
+      <div class="space-y-4">
+        <button id="quick-start-new-task" class="flex w-full items-center justify-center gap-3 rounded-xl h-14 bg-surface-secondary text-white font-bold text-lg">
+          <span class="material-symbols-outlined">add_task</span>
+          <span>Criar Nova Missão</span>
+        </button>
+        <button id="quick-start-run" class="flex w-full items-center justify-center gap-3 rounded-xl h-14 bg-surface-secondary text-white font-bold text-lg">
+          <span class="material-symbols-outlined">sprint</span>
+          <span>Iniciar Corrida Rápida</span>
+        </button>
+      </div>
+      <button id="quick-start-cancel" class="w-full mt-6 rounded-full h-10 bg-transparent text-text-dark-secondary">Cancelar</button>
+    </div>
   </div>
 
   <!-- Navegação Principal Persistente -->
-  <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
+  <nav id="main-navigation" class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
     <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
       <a id="btn-goto-hub" class="nav-btn flex flex-col items-center gap-1 text-primary" href="#">
         <span class="material-symbols-outlined">home</span>
@@ -1000,55 +1115,6 @@
   </div>
 
 
-  <!-- Modal de Adicionar Log Diário -->
-  <div id="modal-daily-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm space-y-4">
-          <h3 class="text-primary text-xl font-bold text-center">Adicionar Log Diário</h3>
-
-          <div>
-              <label for="log-peso" class="block text-sm font-medium text-text-dark-secondary mb-1">Novo Peso (kg) <span class="text-red-500">*</span></label>
-              <input id="log-peso" type="number" placeholder="Obrigatório" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div class="border-t border-border-dark my-4"></div>
-
-          <p class="text-center text-sm text-text-dark-secondary">Opcional - Para cálculos mais precisos:</p>
-
-          <div>
-              <label for="log-gordura" class="block text-sm font-medium text-text-dark-secondary mb-1">Gordura Corporal (%)</label>
-              <input id="log-gordura" type="number" placeholder="Ex: 15.2" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div>
-              <label for="log-sono" class="block text-sm font-medium text-text-dark-secondary mb-1">Horas de Sono</label>
-              <input id="log-sono" type="number" placeholder="Ex: 8" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div>
-              <label for="log-estresse" class="block text-sm font-medium text-text-dark-secondary mb-1">Nível de Estresse (1-5)</label>
-              <input id="log-estresse" type="number" min="1" max="5" placeholder="1 (baixo) - 5 (alto)" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div class="flex gap-4 pt-4">
-              <button id="cancel-daily-log" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Cancelar</button>
-              <button id="confirm-daily-log" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
-          </div>
-      </div>
-  </div>
-
-  <!-- Modal de Ação de Item -->
-  <div id="modal-item-action" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm text-center">
-      <h3 id="item-modal-title" class="text-primary text-xl font-bold mb-2">Nome do Item</h3>
-      <p id="item-modal-effect" class="text-text-dark-secondary mb-6">Efeito do item</p>
-      <div class="flex gap-4">
-        <button id="item-action-secondary-btn" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Descartar</button>
-        <button id="item-action-primary-btn" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Ação</button>
-      </div>
-      <button id="item-action-cancel-btn" class="w-full mt-3 rounded-full h-10 bg-transparent text-text-dark-secondary">Cancelar</button>
-    </div>
-  </div>
-
   <!-- Firebase SDKs -->
   <script type="module">
     // Importações do Firebase
@@ -1077,7 +1143,6 @@
       collection,
       addDoc,
       writeBatch,
-      deleteField,
       setLogLevel,
       Timestamp,
       runTransaction,
@@ -1167,6 +1232,17 @@
     let healthChart = null; // Variável para manter a instância do gráfico
     let weightOscillationChart = null; // Variável para o gráfico de oscilação
 
+    // --- Variáveis do Módulo de Atividade (GPS) ---
+    let mapa;
+    let linhaDoTrajeto;
+    let activityWatchId = null;
+    let activityPolyline = []; // Array de {lat, lng}
+    let activityTotalDistanceKm = 0;
+    let activityStartTime = 0;
+    let userWeightKg = 75; // Default, será atualizado com os dados do perfil
+    let activityAssociatedTaskId = null; // Para saber qual tarefa originou a atividade
+    let activityType = "corrida"; // "corrida" ou "caminhada"
+
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
     const REWARDS_DIFFICULTY = {
@@ -1190,7 +1266,9 @@
       addTask: document.getElementById('screen-add-task'),
       missionDetails: document.getElementById('screen-mission-details'),
       calendar: document.getElementById('screen-calendar'),
-      character: document.getElementById('screen-character')
+      character: document.getElementById('screen-character'),
+      activityTracker: document.getElementById('screen-activity-tracker'),
+      activitySummary: document.getElementById('screen-activity-summary')
     };
 
     const registerSteps = {
@@ -1288,6 +1366,14 @@
         screens[screenId].classList.remove('hidden');
       }
 
+      const nav = document.getElementById('main-navigation');
+      const authScreens = ['splash', 'login', 'register', 'forgot-password'];
+      if (authScreens.includes(screenId)) {
+        nav.classList.add('hidden');
+      } else {
+        nav.classList.remove('hidden');
+      }
+
       // Pré-processamento para a tela de detalhes da missão
       if (screenId === 'missionDetails' && data) {
         loadMissionDetails(data); // O 'data' aqui é o taskId
@@ -1364,9 +1450,25 @@
     document.getElementById('forgot-back-btn').addEventListener('click', () => showScreen('login'));
     document.getElementById('forgot-cancel-btn').addEventListener('click', () => showScreen('login'));
     document.getElementById('btn-show-add-task').addEventListener('click', () => {
-        editingTaskId = null; // Garante que não estamos em modo de edição
+        // Abre o novo modal de escolha em vez de ir direto para a tela de tarefa
+        document.getElementById('modal-quick-start').classList.remove('hidden');
+    });
+
+    // --- Lógica do Modal de Ação Rápida (+) ---
+    document.getElementById('quick-start-cancel').addEventListener('click', () => {
+        document.getElementById('modal-quick-start').classList.add('hidden');
+    });
+
+    document.getElementById('quick-start-new-task').addEventListener('click', () => {
+        document.getElementById('modal-quick-start').classList.add('hidden');
+        editingTaskId = null;
         resetTaskForm();
         showScreen('addTask');
+    });
+
+    document.getElementById('quick-start-run').addEventListener('click', () => {
+        document.getElementById('modal-quick-start').classList.add('hidden');
+        startGpsActivity(null); // Inicia uma corrida sem ID de tarefa associada
     });
 
     // Função para popular o formulário com dados da missão para edição
@@ -1758,13 +1860,17 @@
             case 'today':
                 filteredTasks = filteredTasks.filter(task => {
                     const deadline = task.prazo_final ? parseLocalDate(task.prazo_final) : null;
-                    // Condição 1: A tarefa tem um prazo final definido para hoje.
-                    if (deadline && deadline.getTime() === today.getTime()) {
-                        return true;
+
+                    // Condição 1: A tarefa tem prazo final para hoje OU está atrasada e não concluída.
+                    if (deadline) {
+                        const isOverdue = deadline < today && task.status !== 'CONCLUIDA';
+                        const isToday = deadline.getTime() === today.getTime();
+                        if (isToday || isOverdue) {
+                            return true;
+                        }
                     }
 
-                    // Condição 2: A tarefa é uma Diária ou Hábito sem prazo final,
-                    // e foi criada hoje (seja manualmente ou pelo gerador de recorrência).
+                    // Condição 2: A tarefa é uma Diária ou Hábito recorrente gerado hoje.
                     if (!deadline && (task.tipo === 'diaria' || task.tipo === 'habito')) {
                         if (task.createdAt) {
                             const createdAtDate = task.createdAt.toDate();
@@ -1773,7 +1879,7 @@
                         }
                     }
 
-                    return false; // Se nenhuma condição for atendida, não é para hoje.
+                    return false;
                 });
                 break;
             case 'week':
@@ -1815,12 +1921,30 @@
         });
     }
 
-    // Event Listener atualizado para lidar com cliques nos cards de missão
+    // Event Listener INTELIGENTE para lidar com cliques nos cards de missão
     document.getElementById('hub-mission-list').addEventListener('click', async (e) => {
         const missionCard = e.target.closest('.mission-card');
-        if (missionCard) {
-            const taskId = missionCard.dataset.taskId;
-            if (taskId) {
+        if (!missionCard || !missionCard.dataset.taskId) return;
+
+        const taskId = missionCard.dataset.taskId;
+        const task = allUserTasks.find(t => t.id === taskId);
+
+        if (!task) {
+            console.error("Tarefa não encontrada na lista local:", taskId);
+            return;
+        }
+
+        // NOVA LÓGICA DE DIRECIONAMENTO
+        if (task.status === 'CONCLUIDA' && task.activity_id_associada) {
+            // 1. Se a tarefa está concluída E tem uma atividade, mostra o resumo
+            loadActivitySummary(task.activity_id_associada, task.titulo);
+        } else {
+            const physicalAttributes = ['VELOCIDADE', 'FORCA', 'VITALIDADE'];
+            if (physicalAttributes.includes(task.atributo_associado)) {
+                // 2. Se for uma tarefa de atividade física PENDENTE, vai para a tela de GPS
+                startGpsActivity(taskId);
+            } else {
+                // 3. Senão, vai para a tela de detalhes normal
                 showScreen('missionDetails', taskId);
             }
         }
@@ -1845,6 +1969,7 @@
     // Função unificada para criar o card de uma missão
     function createMissionCardHTML(task) {
         const isCompleted = task.status === 'CONCLUIDA';
+        const physicalAttributes = ['VELOCIDADE', 'FORCA', 'VITALIDADE'];
 
         const priorityClasses = {
             principal: 'border-red-500/80',
@@ -1876,7 +2001,7 @@
                       <p class="text-sm ${statusColor} ${isCompleted ? 'line-through' : ''} capitalize">${statusText}</p>
                     </div>
                     <div class="text-text-dark-secondary">
-                        <span class="material-symbols-outlined text-3xl">chevron_right</span>
+                        <span class="material-symbols-outlined text-3xl">${isCompleted ? 'check_circle' : 'chevron_right'}</span>
                     </div>
                 </div>
             </div>
@@ -2605,6 +2730,355 @@
         }
     });
 
+    // --- LÓGICA DO MÓDULO DE ATIVIDADE (GPS) ---
+
+    let summaryMap; // Variável para o mapa da tela de resumo
+
+    async function loadActivitySummary(activityId, taskTitle) {
+        if (!currentUserId || !activityId) return;
+
+        showScreen('activitySummary');
+        document.getElementById('summary-title').textContent = taskTitle || 'Resumo da Atividade';
+
+        try {
+            const activityRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'activities', activityId);
+            const activitySnap = await getDoc(activityRef);
+
+            if (!activitySnap.exists()) {
+                throw new Error("Registro de atividade não encontrado.");
+            }
+
+            const data = activitySnap.data();
+
+            // Popula as métricas
+            document.getElementById('summary-metric-time').textContent = formatTime(data.duracao_total_segundos);
+            document.getElementById('summary-metric-distance').textContent = data.distancia_total_km.toFixed(2);
+            document.getElementById('summary-metric-avg-speed').textContent = data.velocidade_media_kmh.toFixed(1);
+            document.getElementById('summary-metric-calories').textContent = data.calorias_queimadas;
+
+            // Popula as recompensas
+            const rewards = data.recompensa_ganha;
+            const rewardsContainer = document.getElementById('summary-rewards-container');
+            rewardsContainer.innerHTML = `
+                <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+                    <h3 class="text-lg font-bold text-primary mb-3 text-center">Recompensas Ganhass</h3>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-primary text-4xl">sprint</span>
+                            <span class="text-xl font-bold text-white">+${rewards.XP_VEL}</span>
+                            <span class="text-sm text-text-dark-secondary">XP de VEL</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-green-400 text-4xl">shield</span>
+                            <span class="text-xl font-bold text-white">+${rewards.XP_VIT}</span>
+                            <span class="text-sm text-text-dark-secondary">XP de VIT</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-yellow-400 text-4xl">monetization_on</span>
+                            <span class="text-xl font-bold text-white">+${rewards.MOEDAS}</span>
+                            <span class="text-sm text-text-dark-secondary">Moedas</span>
+                        </div>
+                    </div>
+                </div>`;
+
+            // Renderiza o mapa
+            const trajeto = JSON.parse(data.trajeto_polyline_json);
+            if (summaryMap) summaryMap.remove();
+
+            if (trajeto && trajeto.length > 0) {
+                summaryMap = L.map('summary-mapa').setView([trajeto[0].lat, trajeto[0].lng], 16);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(summaryMap);
+                const polyline = L.polyline(trajeto, { color: '#13ec6d' }).addTo(summaryMap);
+                summaryMap.fitBounds(polyline.getBounds()); // Ajusta o zoom para mostrar o trajeto todo
+
+                // Marcadores de início e fim
+                L.marker(trajeto[0]).addTo(summaryMap).bindPopup("Início");
+                L.marker(trajeto[trajeto.length - 1]).addTo(summaryMap).bindPopup("Fim");
+            } else {
+                 document.getElementById('summary-mapa').innerHTML = '<p>Nenhum trajeto registrado.</p>';
+            }
+
+
+        } catch (error) {
+            console.error("Erro ao carregar resumo da atividade:", error);
+            showMessage('Erro', 'Não foi possível carregar o resumo da sua atividade.');
+            showScreen('dashboard');
+        }
+    }
+
+
+    // Chamado DEPOIS que o usuário dá permissão
+    function iniciarTelaDeRastreamento(coordsIniciais) {
+        // 1. Inicia o mapa
+        if(mapa) mapa.remove(); // Remove o mapa anterior se existir
+        mapa = L.map('mapa-corrida').setView([coordsIniciais.latitude, coordsIniciais.longitude], 16);
+
+        // 2. Adiciona o "fundo" do mapa (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(mapa);
+
+        // 3. Adiciona o marcador de "Início"
+        L.marker([coordsIniciais.latitude, coordsIniciais.longitude]).addTo(mapa).bindPopup("Início!");
+
+        // 4. Cria a linha (polyline) que vamos desenhar
+        linhaDoTrajeto = L.polyline([], { color: '#13ec6d' }).addTo(mapa);
+
+        // 5. Inicia o rastreamento (da Seção 5.3 da spec)
+        iniciarRastreamento(coordsIniciais);
+    }
+
+    // Chamado DENTRO do watchPosition
+    function desenharLinhaNoMapa(novoPonto) {
+        const latLng = [novoPonto.lat, novoPonto.lng];
+        // 1. Adiciona o novo ponto à linha
+        if(linhaDoTrajeto) linhaDoTrajeto.addLatLng(latLng);
+        // 2. Centraliza o mapa no novo ponto
+        if(mapa) mapa.panTo(latLng);
+    }
+
+    function startGpsActivity(taskId) {
+        activityAssociatedTaskId = taskId;
+        // Resetar estado anterior
+        activityPolyline = [];
+        activityTotalDistanceKm = 0;
+        activityStartTime = 0;
+
+        showScreen('activityTracker');
+
+        // 1. Verifica se o navegador suporta GPS
+        if (!("geolocation" in navigator)) {
+            showMessage("Erro", "Seu navegador não suporta geolocalização. Não é possível iniciar a atividade.");
+            showScreen('dashboard');
+            return;
+        }
+
+        // 2. Solicita a permissão
+        navigator.geolocation.getCurrentPosition(
+            // 3. (Callback de SUCESSO)
+            (posicao) => {
+                const coords = posicao.coords;
+                console.log(`Localização inicial obtida: ${coords.latitude}, ${coords.longitude}`);
+                // Inicia o mapa e o rastreamento
+                iniciarTelaDeRastreamento(coords);
+            },
+            // 4. (Callback de ERRO)
+            (erro) => {
+                if (erro.code === erro.PERMISSION_DENIED) {
+                    showMessage("Permissão Negada", "Você precisa permitir o acesso à localização para rastrear sua corrida.");
+                } else {
+                    showMessage("Erro de GPS", "Não foi possível obter sua localização. Tente novamente.");
+                }
+                showScreen('dashboard');
+            },
+            // 5. (Opções)
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }
+
+    function iniciarRastreamento(coordsIniciais) {
+        // 1. Adiciona o primeiro ponto e define o tempo de início
+        activityPolyline.push({ lat: coordsIniciais.latitude, lng: coordsIniciais.longitude });
+        activityStartTime = Date.now();
+
+        // Atualiza o peso do usuário a partir dos dados do perfil, se disponíveis
+        if(fullProfileData && fullProfileData.vitals) {
+            userWeightKg = fullProfileData.vitals.peso_atual_kg || 75;
+        }
+
+        // 2. Inicia o "observador"
+        activityWatchId = navigator.geolocation.watchPosition(
+            (posicao) => {
+                const coords = posicao.coords;
+                const novoPonto = { lat: coords.latitude, lng: coords.longitude };
+                const ultimoPonto = activityPolyline[activityPolyline.length - 1];
+
+                const distanciaParcialKm = calcularDistanciaHaversine(ultimoPonto, novoPonto);
+
+                // FILTRO ANTI-DRIFT
+                if (distanciaParcialKm * 1000 < 3) {
+                    return;
+                }
+
+                activityTotalDistanceKm += distanciaParcialKm;
+                activityPolyline.push(novoPonto);
+
+                atualizarMetricasNaTela();
+                desenharLinhaNoMapa(novoPonto);
+            },
+            (erro) => {
+                console.warn("GPS perdido durante a corrida:", erro.message);
+            },
+            { enableHighAccuracy: true, maximumAge: 0 }
+        );
+    }
+
+    function pararRastreamento() {
+        if (activityWatchId) {
+            navigator.geolocation.clearWatch(activityWatchId);
+            activityWatchId = null;
+        }
+        // A função salvarAtividade será chamada a partir do botão
+    }
+
+    function atualizarMetricasNaTela() {
+        const duracaoSegundos = (Date.now() - activityStartTime) / 1000;
+        const velocidadeMedia = (activityTotalDistanceKm / (duracaoSegundos / 3600)) || 0;
+        const calorias = calcularCalorias(duracaoSegundos, activityType);
+
+        document.getElementById('metric-time').textContent = formatTime(duracaoSegundos);
+        document.getElementById('metric-distance').textContent = activityTotalDistanceKm.toFixed(2);
+        document.getElementById('metric-avg-speed').textContent = velocidadeMedia.toFixed(1);
+        document.getElementById('metric-calories').textContent = Math.round(calorias);
+    }
+
+    // --- Funções de Cálculo (Haversine e MET) ---
+
+    function calcularDistanciaHaversine(ponto1, ponto2) {
+        const R = 6371; // Raio da Terra em KM
+        const dLat = (ponto2.lat - ponto1.lat) * (Math.PI / 180);
+        const dLon = (ponto2.lng - ponto1.lng) * (Math.PI / 180);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(ponto1.lat * (Math.PI / 180)) * Math.cos(ponto2.lat * (Math.PI / 180)) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // Distância em KM
+    }
+
+    function calcularCalorias(duracaoSegundos, tipoAtividade) {
+        let MET = 1; // Repouso
+        if (tipoAtividade === "corrida") MET = 9.8;
+        else if (tipoAtividade === "caminhada") MET = 3.5;
+
+        const caloriasPorMinuto = (MET * 3.5 * userWeightKg) / 200;
+        const duracaoMinutos = duracaoSegundos / 60;
+        return caloriasPorMinuto * duracaoMinutos;
+    }
+
+    document.getElementById('btn-stop-activity').addEventListener('click', () => {
+        pararRastreamento();
+        // A função salvarAtividade() será implementada no próximo passo
+        salvarAtividade();
+    });
+
+    async function salvarAtividade() {
+        // 1. Parar o rastreador (garantia extra)
+        pararRastreamento();
+
+        // 2. Obter dados finais
+        const fimTimestamp = Date.now();
+        const duracaoSegundos = (fimTimestamp - activityStartTime) / 1000;
+        const distanciaKm = activityTotalDistanceKm;
+        const velocidadeMedia = (distanciaKm / (duracaoSegundos / 3600)) || 0;
+        const calorias = calcularCalorias(duracaoSegundos, activityType);
+
+        // 3. Serializar o trajeto
+        const trajetoString = JSON.stringify(activityPolyline);
+
+        // 4. Calcular Recompensas (Conforme GDD 4.0)
+        const XP_VEL = Math.round(distanciaKm * 20);
+        const XP_VIT = Math.round((duracaoSegundos / 60) * 2);
+        const MOEDAS = Math.round(distanciaKm * 5);
+
+        // 5. Preparar dados para o Firebase
+        const activityData = {
+            task_id_associada: activityAssociatedTaskId || null,
+            tipo_atividade: activityType,
+            data_inicio: Timestamp.fromMillis(activityStartTime),
+            data_fim: Timestamp.fromMillis(fimTimestamp),
+            duracao_total_segundos: duracaoSegundos,
+            distancia_total_km: distanciaKm,
+            velocidade_media_kmh: velocidadeMedia,
+            calorias_queimadas: Math.round(calorias),
+            trajeto_polyline_json: trajetoString,
+            recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS }
+        };
+
+        // 6. Executar a Transação
+        try {
+            const userRef = doc(db, 'artifacts', appId, 'users', currentUserId);
+            const profileRef = doc(userRef, 'profile', 'details');
+
+            await runTransaction(db, async (transaction) => {
+                // É necessário ler o perfil dentro da transação para evitar race conditions
+                const profileSnap = await transaction.get(profileRef);
+                if (!profileSnap.exists()) {
+                    throw "Perfil do usuário não encontrado!";
+                }
+
+                const newActivityRef = doc(collection(userRef, 'activities'));
+                // Write 1: Salva a nova atividade
+                transaction.set(newActivityRef, activityData);
+
+                // Write 2: Atualiza o perfil do usuário (stats e moedas) com lógica de level-up
+                const profileData = profileSnap.data();
+
+                // Garante que a estrutura de stats exista
+                if (!profileData.stats) profileData.stats = {};
+                const defaultStat = { level: 1, xp_atual: 0, xp_para_upar: 100 };
+                if (!profileData.stats.velocidade) profileData.stats.velocidade = { ...defaultStat };
+                if (!profileData.stats.vitalidade) profileData.stats.vitalidade = { ...defaultStat };
+
+                // Lógica de Level Up para Velocidade
+                profileData.stats.velocidade.xp_atual += XP_VEL;
+                while (profileData.stats.velocidade.xp_atual >= profileData.stats.velocidade.xp_para_upar) {
+                    profileData.stats.velocidade.level += 1;
+                    profileData.stats.velocidade.xp_atual -= profileData.stats.velocidade.xp_para_upar;
+                    profileData.stats.velocidade.xp_para_upar = Math.floor(profileData.stats.velocidade.xp_para_upar * 1.15);
+                }
+
+                // Lógica de Level Up para Vitalidade
+                profileData.stats.vitalidade.xp_atual += XP_VIT;
+                while (profileData.stats.vitalidade.xp_atual >= profileData.stats.vitalidade.xp_para_upar) {
+                    profileData.stats.vitalidade.level += 1;
+                    profileData.stats.vitalidade.xp_atual -= profileData.stats.vitalidade.xp_para_upar;
+                    profileData.stats.vitalidade.xp_para_upar = Math.floor(profileData.stats.vitalidade.xp_para_upar * 1.15);
+                }
+
+                // Atualiza moedas
+                profileData.character.moedas = (profileData.character.moedas || 0) + MOEDAS;
+
+                // Salva o objeto de perfil atualizado
+                transaction.update(profileRef, {
+                    stats: profileData.stats,
+                    character: profileData.character
+                });
+
+                // Write 3 (Opcional): Se veio de uma tarefa planejada, marca ela como concluída
+                if (activityAssociatedTaskId) {
+                    const taskRef = doc(userRef, 'tasks', activityAssociatedTaskId);
+                    transaction.update(taskRef, {
+                        status: 'CONCLUIDA', // Usando 'status' em vez de 'concluida'
+                        recompensa_real: activityData.recompensa_ganha,
+                        activity_id_associada: newActivityRef.id
+                    });
+                } else {
+                    // Write 3 (Alternativo): Se for uma "Corrida Rápida", cria uma nova tarefa concluída para o histórico
+                    const newTaskRef = doc(collection(userRef, 'tasks'));
+                    transaction.set(newTaskRef, {
+                        titulo: `Corrida Rápida de ${distanciaKm.toFixed(2)} km`,
+                        tipo: 'diaria', // Classifica como 'diaria' para fins de histórico
+                        prioridade: 'secundaria',
+                        atributo_associado: 'VELOCIDADE', // Define o atributo para o ícone correto
+                        status: 'CONCLUIDA',
+                        recompensa_real: activityData.recompensa_ganha,
+                        activity_id_associada: newActivityRef.id,
+                        createdAt: Timestamp.fromMillis(activityStartTime),
+                        isGenerated: true // Flag para indicar que foi gerada pelo sistema
+                    });
+                }
+            });
+
+            showMessage("Atividade Salva!", `Você ganhou +${XP_VEL} XP de VEL, +${XP_VIT} XP de VIT e +${MOEDAS} Moedas!`);
+            showScreen('dashboard');
+
+        } catch (error) {
+            console.error("Erro ao salvar atividade:", error);
+            showMessage("Erro", "Não foi possível salvar sua atividade. Tente novamente.");
+        }
+    }
+
+
     document.getElementById('sub-task-list').addEventListener('click', (e) => {
         const editButton = e.target.closest('.edit-subtask-btn');
         if (editButton && currentMissionId) {
@@ -3193,6 +3667,7 @@ Sub-tarefas: ${subtasksString}`;
     });
 
     document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
+    document.getElementById('summary-back-btn').addEventListener('click', () => showScreen('dashboard'));
 
 
     // --- LÓGICA DA TELA DE PERSONAGEM ---
