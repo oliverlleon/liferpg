@@ -456,7 +456,7 @@
 
           <!-- Abas de Filtro -->
           <div id="mission-tabs" class="grid grid-cols-4 gap-2 p-1 rounded-lg bg-surface-dark/50 border border-border-dark">
-            <button data-tab="today" class="mission-tab-btn mission-tab-active flex-1 text-center p-2 rounded-md text-sm font-bold transition-colors bg-primary text-background-dark">
+            <button data-tab="today" class="mission-tab-btn mission-tab-active flex-1 text-center p-2 rounded-md text-sm font-bold transition-colors">
               Hoje
             </button>
             <button data-tab="week" class="mission-tab-btn flex-1 text-center p-2 rounded-md text-sm font-bold text-text-dark-secondary transition-colors">
@@ -850,7 +850,7 @@
   </div>
 
   <!-- Navegação Principal Persistente -->
-  <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
+  <nav id="main-navigation" class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
     <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
       <a id="btn-goto-hub" class="nav-btn flex flex-col items-center gap-1 text-primary" href="#">
         <span class="material-symbols-outlined">home</span>
@@ -1000,55 +1000,6 @@
   </div>
 
 
-  <!-- Modal de Adicionar Log Diário -->
-  <div id="modal-daily-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm space-y-4">
-          <h3 class="text-primary text-xl font-bold text-center">Adicionar Log Diário</h3>
-
-          <div>
-              <label for="log-peso" class="block text-sm font-medium text-text-dark-secondary mb-1">Novo Peso (kg) <span class="text-red-500">*</span></label>
-              <input id="log-peso" type="number" placeholder="Obrigatório" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div class="border-t border-border-dark my-4"></div>
-
-          <p class="text-center text-sm text-text-dark-secondary">Opcional - Para cálculos mais precisos:</p>
-
-          <div>
-              <label for="log-gordura" class="block text-sm font-medium text-text-dark-secondary mb-1">Gordura Corporal (%)</label>
-              <input id="log-gordura" type="number" placeholder="Ex: 15.2" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div>
-              <label for="log-sono" class="block text-sm font-medium text-text-dark-secondary mb-1">Horas de Sono</label>
-              <input id="log-sono" type="number" placeholder="Ex: 8" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div>
-              <label for="log-estresse" class="block text-sm font-medium text-text-dark-secondary mb-1">Nível de Estresse (1-5)</label>
-              <input id="log-estresse" type="number" min="1" max="5" placeholder="1 (baixo) - 5 (alto)" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div class="flex gap-4 pt-4">
-              <button id="cancel-daily-log" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Cancelar</button>
-              <button id="confirm-daily-log" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
-          </div>
-      </div>
-  </div>
-
-  <!-- Modal de Ação de Item -->
-  <div id="modal-item-action" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm text-center">
-      <h3 id="item-modal-title" class="text-primary text-xl font-bold mb-2">Nome do Item</h3>
-      <p id="item-modal-effect" class="text-text-dark-secondary mb-6">Efeito do item</p>
-      <div class="flex gap-4">
-        <button id="item-action-secondary-btn" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Descartar</button>
-        <button id="item-action-primary-btn" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Ação</button>
-      </div>
-      <button id="item-action-cancel-btn" class="w-full mt-3 rounded-full h-10 bg-transparent text-text-dark-secondary">Cancelar</button>
-    </div>
-  </div>
-
   <!-- Firebase SDKs -->
   <script type="module">
     // Importações do Firebase
@@ -1077,7 +1028,6 @@
       collection,
       addDoc,
       writeBatch,
-      deleteField,
       setLogLevel,
       Timestamp,
       runTransaction,
@@ -1286,6 +1236,14 @@
 
       if (screens[screenId]) {
         screens[screenId].classList.remove('hidden');
+      }
+
+      const nav = document.getElementById('main-navigation');
+      const authScreens = ['splash', 'login', 'register', 'forgot-password'];
+      if (authScreens.includes(screenId)) {
+        nav.classList.add('hidden');
+      } else {
+        nav.classList.remove('hidden');
       }
 
       // Pré-processamento para a tela de detalhes da missão
@@ -1758,13 +1716,17 @@
             case 'today':
                 filteredTasks = filteredTasks.filter(task => {
                     const deadline = task.prazo_final ? parseLocalDate(task.prazo_final) : null;
-                    // Condição 1: A tarefa tem um prazo final definido para hoje.
-                    if (deadline && deadline.getTime() === today.getTime()) {
-                        return true;
+
+                    // Condição 1: A tarefa tem prazo final para hoje OU está atrasada e não concluída.
+                    if (deadline) {
+                        const isOverdue = deadline < today && task.status !== 'CONCLUIDA';
+                        const isToday = deadline.getTime() === today.getTime();
+                        if (isToday || isOverdue) {
+                            return true;
+                        }
                     }
 
-                    // Condição 2: A tarefa é uma Diária ou Hábito sem prazo final,
-                    // e foi criada hoje (seja manualmente ou pelo gerador de recorrência).
+                    // Condição 2: A tarefa é uma Diária ou Hábito recorrente gerado hoje.
                     if (!deadline && (task.tipo === 'diaria' || task.tipo === 'habito')) {
                         if (task.createdAt) {
                             const createdAtDate = task.createdAt.toDate();
@@ -1773,7 +1735,7 @@
                         }
                     }
 
-                    return false; // Se nenhuma condição for atendida, não é para hoje.
+                    return false;
                 });
                 break;
             case 'week':
