@@ -120,13 +120,6 @@
         border-radius: 50%;
         animation: particle-rise 3s infinite ease-out;
     }
-    .equipment-slot {
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-    .equipment-slot:hover {
-        background-color: #28392f;
-    }
   </style>
 </head>
 
@@ -772,94 +765,160 @@
         </div>
     </div>
 
-    <!-- Tela 9: Personagem (Ficha e Inventário) -->
-    <div id="screen-character" class="hidden relative flex min-h-screen w-full flex-col pb-24">
-      <header class="flex flex-col items-center p-4 pt-8">
-        <div class="relative w-full max-w-sm mx-auto h-72">
-        <div class="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <img alt="Avatar do Aventureiro" id="avatar-img" class="w-32 h-32 rounded-full border-4 border-primary object-cover shadow-lg" src="https://placehold.co/128x128/1a241e/13ec6d?text=?"/>
+    <!-- Tela 9: Personagem (antigo character.html) -->
+    <div id="screen-character" class="hidden relative flex min-h-screen w-full flex-col overflow-x-hidden">
+        <!-- Background -->
+        <div class="absolute inset-0 z-0">
+            <div class="h-full w-full bg-center bg-no-repeat bg-cover opacity-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD6sSjEhz7hgGMCO9BdTp0pHGvGbE3XMpV6jPLsVzsYPwCqNXpNCbXwpEujggDvZYrE9pQH3Y5d5BVF7gvg7jPZ0AXCp2Nwx2A7FFDzew_5BcOaQSLjVdbARuQ92QAHPYPKFF8zuiCOXoXUsMSviMA_KKbTiUtBIpnFlJBm280neUs4DCq_Bfit7g90h0YuQrldqBiXPliiGMqqxXfOBfNx_NLz-YaO63IyoVmNdwY8nkPEARovFkiWn0qj-T5XhZjUWMi1i1P7O7tL_");'></div>
         </div>
-        <div id="slot-cabeca" data-slot="cabeca" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 0; left: 50%; transform: translateX(-50%);"><span class="material-symbols-outlined">skull</span></div>
-        <div id="slot-peitoral" data-slot="peitoral" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 50%; left: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">shield</span></div>
-        <div id="slot-mao_direita" data-slot="mao_direita" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 50%; right: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">swords</span></div>
-        <div id="slot-amuleto" data-slot="amuleto" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="bottom: 0; left: 25%; transform: translateX(-50%);"><span class="material-symbols-outlined">diamond</span></div>
-        <div id="slot-botas" data-slot="botas" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="bottom: 0; right: 25%; transform: translateX(50%);"><span class="material-symbols-outlined">foot_bones</span></div>
+        <!-- Conteúdo -->
+        <div id="character-content" class="relative z-10 flex w-full grow flex-col pb-24">
+            <!-- Header -->
+            <header class="flex items-center justify-between p-4">
+                <div class="flex items-center gap-3">
+                    <img id="char-avatar" alt="Avatar do Aventureiro" class="h-12 w-12 rounded-full border-2 border-primary" src="https://placehold.co/100x100/1a3828/13ec6d?text=?" />
+                    <div>
+                        <h1 id="char-nickname" class="text-xl font-bold">Carregando...</h1>
+                        <p id="char-level-title" class="text-sm text-text-dark-secondary">
+                            <span id="char-level">Nv. 1</span>
+                        </p>
+                    </div>
+                </div>
+                <button id="char-logout-btn" class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-dark/80 backdrop-blur-sm">
+                    <span class="material-symbols-outlined text-text-dark-secondary">logout</span>
+                </button>
+            </header>
+
+            <!-- Carrossel de Saúde -->
+            <section id="health-carousel-container" class="relative w-full overflow-hidden px-4">
+                <div id="health-carousel" class="flex transition-transform duration-300">
+                    <!-- Slide 1: Vitals -->
+                    <div class="health-slide w-full flex-shrink-0">
+                        <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+                            <h2 class="text-lg font-bold text-primary mb-4">Vitals</h2>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-text-dark-secondary">Peso Atual</span>
+                                    <span id="char-weight" class="font-bold">-- kg</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-text-dark-secondary">Meta de Peso</span>
+                                    <span id="char-target-weight" class="font-bold">-- kg</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-text-dark-secondary">IMC</span>
+                                    <span id="char-imc" class="font-bold">--</span>
+                                </div>
+                                 <div class="flex justify-between items-center">
+                                    <span class="text-text-dark-secondary">Gordura Corporal</span>
+                                    <span id="char-body-fat" class="font-bold">-- %</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 2: Gráfico de Peso -->
+                    <div class="health-slide w-full flex-shrink-0">
+                        <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark h-[165px]">
+                            <canvas id="weight-chart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Slide 3: Gráfico de Sono -->
+                    <div class="health-slide w-full flex-shrink-0">
+                        <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark h-[165px]">
+                            <canvas id="sleep-chart"></canvas>
+                        </div>
+                    </div>
+                     <!-- Slide 4: Gráfico de Estresse -->
+                    <div class="health-slide w-full flex-shrink-0">
+                        <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark h-[165px]">
+                            <canvas id="stress-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!-- Indicadores do Carrossel -->
+                <div id="carousel-indicators" class="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-2">
+                    <!-- Indicadores serão adicionados via JS -->
+                </div>
+            </section>
+
+             <!-- Botão de Adicionar Log Diário -->
+            <div class="px-4 py-4">
+                <button id="btn-add-daily-log" class="flex w-full items-center justify-center gap-2 rounded-lg h-12 bg-primary/20 text-primary font-bold hover:bg-primary/30 transition-colors">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    Registrar Log Diário
+                </button>
+            </div>
+
+
+            <!-- Equipamentos -->
+            <section class="px-4 py-2">
+                <h2 class="text-lg font-bold mb-3">Equipamentos</h2>
+                <div id="equipment-slots" class="grid grid-cols-4 gap-3">
+                    <!-- Slots serão populados via JS -->
+                </div>
+            </section>
+
+            <!-- Inventário -->
+            <section class="px-4 py-2">
+                <h2 class="text-lg font-bold mb-3">Inventário</h2>
+                <div id="inventory-grid" class="grid grid-cols-4 gap-3">
+                    <!-- Itens do inventário serão populados via JS -->
+                </div>
+            </section>
         </div>
-        <h1 id="character-level-title" class="text-2xl font-bold mt-4">Carregando...</h1>
-        <p id="character-name" class="text-text-dark-secondary">...</p>
-      </header>
-      <main class="flex-1 px-4 space-y-8">
-        <section>
-          <div class="bg-surface-dark/50 rounded-lg p-4 border border-border-dark">
-            <div class="flex justify-between items-center mb-4">
-              <div>
-                <p class="text-text-dark-secondary text-sm">Peso Atual</p>
-                <p id="current-weight" class="text-xl font-bold">- kg</p>
-              </div>
-              <div>
-                <p class="text-text-dark-secondary text-sm text-right">IMC</p>
-                <p id="current-imc" class="text-xl font-bold text-right">-</p>
-              </div>
-              <button id="add-daily-log-btn" class="flex items-center justify-center gap-2 rounded-full h-10 px-4 bg-surface-dark text-primary text-sm font-bold">
-                <span class="material-symbols-outlined !text-base">add_circle</span>
-                <span>Adicionar Log Diário</span>
-              </button>
-            </div>
-            <div id="status-effects-container" class="border-t border-border-dark pt-4">
-              <h3 class="font-bold mb-2 text-primary">Efeitos Ativos</h3>
-            </div>
-          </div>
-        </section>
-        <section id="health-carousel" class="relative w-full max-w-lg mx-auto overflow-hidden bg-surface-dark/50 rounded-lg p-4 border border-border-dark">
-          <div id="health-slides" class="flex transition-transform duration-300 ease-in-out">
-            <!-- Slide 1: Gráfico Principal -->
-            <div class="w-full flex-shrink-0">
-              <canvas id="healthChart"></canvas>
-            </div>
-            <!-- Slide 2: Oscilação de Peso -->
-            <div class="w-full flex-shrink-0">
-              <h3 class="text-center font-bold text-primary mb-2">Oscilação de Peso</h3>
-              <div id="oscillation-period-btns" class="flex justify-center gap-2 mb-3">
-                <button data-period="day" class="oscillation-btn px-3 py-1 text-xs rounded-full bg-primary text-background-dark">7 Dias</button>
-                <button data-period="month" class="oscillation-btn px-3 py-1 text-xs rounded-full text-text-dark-secondary">Mês</button>
-                <button data-period="year" class="oscillation-btn px-3 py-1 text-xs rounded-full text-text-dark-secondary">Ano</button>
-              </div>
-              <canvas id="weight-oscillation-chart" height="250"></canvas>
-            </div>
-            <!-- Slide 3: Estatísticas de Progresso -->
-            <div class="w-full flex-shrink-0 flex items-center justify-center h-full min-h-[300px]">
-              <div id="progress-stats-container" class="text-center">
-                <p class="text-text-dark-secondary">Carregando estatísticas...</p>
-              </div>
-            </div>
-          </div>
-          <!-- Bolinhas de Navegação -->
-          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            <button data-slide-to="0" class="carousel-dot h-2 w-2 rounded-full bg-primary"></button>
-            <button data-slide-to="1" class="carousel-dot h-2 w-2 rounded-full bg-surface-dark"></button>
-            <button data-slide-to="2" class="carousel-dot h-2 w-2 rounded-full bg-surface-dark"></button>
-          </div>
-        </section>
-        <section>
-          <h2 class="text-xl font-bold mb-4">Atributos</h2>
-          <div id="attributes-list" class="bg-surface-dark/50 rounded-lg p-4 space-y-4 border border-border-dark">
-          </div>
-        </section>
-        <section>
-          <h2 class="text-xl font-bold mb-4">Inventário</h2>
-          <div id="inventory-grid" class="grid grid-cols-4 sm:grid-cols-5 gap-4">
-          </div>
-        </section>
-        <section>
-          <h2 class="text-xl font-bold mb-4">Conquistas</h2>
-          <div id="achievements-list" class="space-y-3">
-          </div>
-        </section>
-      </main>
     </div>
 
 
   </div>
+
+  <!-- Modal de Log Diário -->
+    <div id="modal-daily-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm">
+            <h3 class="text-primary text-xl font-bold mb-4">Registro Diário</h3>
+            <form id="daily-log-form" class="space-y-4">
+                 <div>
+                    <label for="log-date" class="block text-sm font-medium text-text-dark-secondary mb-1">Data do Registro</label>
+                    <input type="date" id="log-date" class="form-input w-full bg-[#102218] border-border-dark rounded text-white" required>
+                </div>
+                <div>
+                    <label for="log-weight" class="block text-sm font-medium text-text-dark-secondary mb-1">Peso (kg)</label>
+                    <input type="number" step="0.1" id="log-weight" class="form-input w-full bg-[#102218] border-border-dark rounded text-white" placeholder="Ex: 85.5">
+                </div>
+                 <div>
+                    <label for="log-body-fat" class="block text-sm font-medium text-text-dark-secondary mb-1">Gordura Corporal (%)</label>
+                    <input type="number" step="0.1" id="log-body-fat" class="form-input w-full bg-[#102218] border-border-dark rounded text-white" placeholder="Opcional. Ex: 18.2">
+                </div>
+                <div>
+                    <label for="log-sleep" class="block text-sm font-medium text-text-dark-secondary mb-1">Horas de Sono</label>
+                    <input type="number" step="0.5" id="log-sleep" class="form-input w-full bg-[#102218] border-border-dark rounded text-white" placeholder="Ex: 7.5">
+                </div>
+                <div>
+                    <label for="log-stress" class="block text-sm font-medium text-text-dark-secondary mb-1">Nível de Estresse (1-10)</label>
+                    <input type="number" min="1" max="10" id="log-stress" class="form-input w-full bg-[#102218] border-border-dark rounded text-white" placeholder="De 1 (calmo) a 10 (caótico)">
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" id="log-cancel-btn" class="px-4 py-2 rounded bg-surface-dark/50 text-white/80">Cancelar</button>
+                    <button type="submit" id="log-save-btn" class="px-4 py-2 rounded bg-primary text-background-dark font-bold">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+  <!-- Modal de Detalhes do Item -->
+    <div id="modal-item-details" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div class="bg-[#1C2720] border border-primary/50 rounded-lg p-6 w-full max-w-sm text-center">
+            <div id="item-details-content">
+                <!-- Conteúdo injetado via JS -->
+            </div>
+             <div class="mt-6 flex flex-col gap-2">
+                <button id="item-equip-btn" class="hidden w-full px-4 py-2 rounded bg-primary text-background-dark font-bold">Equipar</button>
+                <button id="item-unequip-btn" class="hidden w-full px-4 py-2 rounded bg-yellow-500 text-background-dark font-bold">Desequipar</button>
+                <button id="item-use-btn" class="hidden w-full px-4 py-2 rounded bg-green-500 text-background-dark font-bold">Usar</button>
+                <button id="item-details-close-btn" class="w-full px-4 py-2 mt-2 rounded bg-surface-dark/50 text-white/80">Fechar</button>
+            </div>
+        </div>
+    </div>
+
 
   <!-- Modal de Mensagem/Erro -->
   <div id="modal-message" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
@@ -937,55 +996,6 @@
     </div>
 
 
-  <!-- Modal de Adicionar Log Diário -->
-  <div id="modal-daily-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm space-y-4">
-          <h3 class="text-primary text-xl font-bold text-center">Adicionar Log Diário</h3>
-
-          <div>
-              <label for="log-peso" class="block text-sm font-medium text-text-dark-secondary mb-1">Novo Peso (kg) <span class="text-red-500">*</span></label>
-              <input id="log-peso" type="number" placeholder="Obrigatório" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div class="border-t border-border-dark my-4"></div>
-
-          <p class="text-center text-sm text-text-dark-secondary">Opcional - Para cálculos mais precisos:</p>
-
-          <div>
-              <label for="log-gordura" class="block text-sm font-medium text-text-dark-secondary mb-1">Gordura Corporal (%)</label>
-              <input id="log-gordura" type="number" placeholder="Ex: 15.2" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div>
-              <label for="log-sono" class="block text-sm font-medium text-text-dark-secondary mb-1">Horas de Sono</label>
-              <input id="log-sono" type="number" placeholder="Ex: 8" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div>
-              <label for="log-estresse" class="block text-sm font-medium text-text-dark-secondary mb-1">Nível de Estresse (1-5)</label>
-              <input id="log-estresse" type="number" min="1" max="5" placeholder="1 (baixo) - 5 (alto)" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
-          </div>
-
-          <div class="flex gap-4 pt-4">
-              <button id="cancel-daily-log" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Cancelar</button>
-              <button id="confirm-daily-log" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
-          </div>
-      </div>
-  </div>
-
-  <!-- Modal de Ação de Item -->
-  <div id="modal-item-action" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm text-center">
-      <h3 id="item-modal-title" class="text-primary text-xl font-bold mb-2">Nome do Item</h3>
-      <p id="item-modal-effect" class="text-text-dark-secondary mb-6">Efeito do item</p>
-      <div class="flex gap-4">
-        <button id="item-action-secondary-btn" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Descartar</button>
-        <button id="item-action-primary-btn" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Ação</button>
-      </div>
-      <button id="item-action-cancel-btn" class="w-full mt-3 rounded-full h-10 bg-transparent text-text-dark-secondary">Cancelar</button>
-    </div>
-  </div>
-
   <!-- Firebase SDKs -->
   <script type="module">
     // Importações do Firebase
@@ -1014,13 +1024,9 @@
       collection,
       addDoc,
       writeBatch,
-      deleteField,
       setLogLevel,
       Timestamp,
-      runTransaction,
-      query,
-      orderBy,
-      limit
+      runTransaction
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import {
         getStorage,
@@ -1097,14 +1103,12 @@
     // --- Variáveis da Tela do Calendário ---
     let currentCalendarDate = new Date();
 
-    // --- Variáveis da Tela de Personagem ---
-    let fullProfileData = null;
-    let characterDailyLogs = [];
-    let healthChart = null;
-
-    // --- Lógica do Carrossel de Saúde ---
-    let weightOscillationChart = null;
-    let currentSlide = 0;
+    // --- Variáveis da Tela do Personagem ---
+    let dailyLogListener = null;
+    let inventoryListener = null;
+    let charts = { weight: null, sleep: null, stress: null };
+    let currentCarouselIndex = 0;
+    let dailyLogDataCache = []; // Cache para os logs diários
 
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
@@ -1231,6 +1235,7 @@
       if (screenId === 'missionDetails' && data) {
         loadMissionDetails(data); // O 'data' aqui é o taskId
       }
+      // Adicionado para carregar os dados do personagem apenas quando a tela é exibida
       if (screenId === 'character') {
         loadCharacterData(currentUserId);
       }
@@ -2467,8 +2472,9 @@
         profileData.uid = user.uid;
         const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'details');
         await setDoc(profileRef, profileData);
+        await seedInventory(user.uid);
 
-        console.log('Personagem criado e salvo!');
+        console.log('Personagem criado e salvo com inventário inicial!');
 
       } catch (error) {
         console.error("Erro ao criar personagem:", error);
@@ -3111,582 +3117,525 @@ Sub-tarefas: ${subtasksString}`;
 
     document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
 
-    // --- LÓGICA DE NAVEGAÇÃO DA BARRA INFERIOR ---
-    document.getElementById('btn-goto-home').addEventListener('click', () => {
+
+    // --- NAVEGAÇÃO SPA PRINCIPAL ---
+    document.getElementById('btn-goto-home').addEventListener('click', (e) => {
+        e.preventDefault();
         showScreen('dashboard');
-        updateNavUI('home');
     });
 
-    document.getElementById('btn-goto-character').addEventListener('click', () => {
+    document.getElementById('btn-goto-character').addEventListener('click', (e) => {
+        e.preventDefault();
         showScreen('character');
-        updateNavUI('character');
     });
-
-    function updateNavUI(activeScreen) {
-        const homeBtn = document.getElementById('btn-goto-home');
-        const charBtn = document.getElementById('btn-goto-character');
-
-        homeBtn.classList.remove('text-primary');
-        charBtn.classList.remove('text-primary');
-        homeBtn.classList.add('text-text-dark-secondary');
-        charBtn.classList.add('text-text-dark-secondary');
-
-        if (activeScreen === 'home') {
-            homeBtn.classList.add('text-primary');
-            homeBtn.classList.remove('text-text-dark-secondary');
-        } else if (activeScreen === 'character') {
-            charBtn.classList.add('text-primary');
-            charBtn.classList.remove('text-text-dark-secondary');
-        }
-    }
-
-    const goToSlide = (slideIndex) => {
-        const slidesContainer = document.getElementById('health-slides');
-        const dots = document.querySelectorAll('.carousel-dot');
-        if (!slidesContainer) return;
-        currentSlide = slideIndex;
-        slidesContainer.style.transform = `translateX(-${slideIndex * 100}%)`;
-        dots.forEach((dot, index) => {
-            dot.classList.toggle('bg-primary', index === slideIndex);
-            dot.classList.toggle('bg-surface-dark', index !== slideIndex);
-        });
-    };
-
-    document.querySelectorAll('.carousel-dot').forEach(dot => {
-        dot.addEventListener('click', () => {
-            goToSlide(parseInt(dot.dataset.slideTo, 10));
-        });
-    });
-
-    let touchStartX = 0;
-    let touchEndX = 0;
-    const carousel = document.getElementById('health-carousel');
-
-    if (carousel) {
-        carousel.addEventListener('touchstart', (event) => {
-            touchStartX = event.changedTouches[0].screenX;
-        }, { passive: true });
-
-        carousel.addEventListener('touchend', (event) => {
-            touchEndX = event.changedTouches[0].screenX;
-            handleSwipe();
-        }, { passive: true });
-    }
-
-    const handleSwipe = () => {
-        const swipeThreshold = 50;
-        const swipeDistance = touchEndX - touchStartX;
-        if (swipeDistance > swipeThreshold) {
-            if (currentSlide > 0) goToSlide(currentSlide - 1);
-        } else if (swipeDistance < -swipeThreshold) {
-            if (currentSlide < 2) goToSlide(currentSlide + 1); // Assumes 3 slides
-        }
-    };
-
-    function renderWeightOscillationChart(logs, period = 'day') {
-        const ctx = document.getElementById('weight-oscillation-chart')?.getContext('2d');
-        if (!ctx || logs.length < 2) return;
-
-        let labels = [];
-        let data = [];
-
-        if (period === 'day') {
-            const last7Logs = logs.slice(-7);
-            labels = last7Logs.map(log => new Date(log.timestamp.seconds * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
-            data = last7Logs.map((log, i) => {
-                if (i === 0) return 0;
-                const change = log.peso_kg - last7Logs[i-1].peso_kg;
-                return parseFloat(change.toFixed(2));
-            });
-        } else if (period === 'month') {
-            const monthlyChanges = logs.reduce((acc, log) => {
-                const date = new Date(log.timestamp.seconds * 1000);
-                const monthYear = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-                if (!acc[monthYear]) acc[monthYear] = { logs: [] };
-                acc[monthYear].logs.push(log.peso_kg);
-                return acc;
-            }, {});
-            labels = Object.keys(monthlyChanges);
-            data = labels.map(month => {
-                const monthLogs = monthlyChanges[month].logs;
-                const change = monthLogs[monthLogs.length - 1] - monthLogs[0];
-                return parseFloat(change.toFixed(2));
-            });
-        } else if (period === 'year') {
-                const yearlyChanges = logs.reduce((acc, log) => {
-                const date = new Date(log.timestamp.seconds * 1000);
-                const year = date.getFullYear().toString();
-                if (!acc[year]) acc[year] = { logs: [] };
-                acc[year].logs.push(log.peso_kg);
-                return acc;
-            }, {});
-            labels = Object.keys(yearlyChanges);
-            data = labels.map(year => {
-                const yearLogs = yearlyChanges[year].logs;
-                const change = yearLogs[yearLogs.length - 1] - yearLogs[0];
-                return parseFloat(change.toFixed(2));
-            });
-        }
-
-        if (weightOscillationChart) weightOscillationChart.destroy();
-
-        weightOscillationChart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels, datasets: [{ label: 'Oscilação (kg)', data, backgroundColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(19, 236, 109, 0.6)'), borderColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 1)' : 'rgba(19, 236, 109, 1)'), borderWidth: 1 }] },
-            options: { scales: { y: { beginAtZero: false, ticks: { color: '#a0a0a0' }, grid: { color: '#3b5445' } }, x: { ticks: { color: '#a0a0a0' }, grid: { color: '#3b5445' } } }, plugins: { legend: { display: false } } }
-        });
-    }
-
-    const oscillationPeriodBtns = document.getElementById('oscillation-period-btns');
-    if(oscillationPeriodBtns) {
-        oscillationPeriodBtns.addEventListener('click', (e) => {
-            const button = e.target.closest('.oscillation-btn');
-            if (button) {
-                document.querySelectorAll('.oscillation-btn').forEach(btn => {
-                    btn.classList.remove('bg-primary', 'text-background-dark');
-                    btn.classList.add('text-text-dark-secondary');
-                });
-                button.classList.add('bg-primary', 'text-background-dark');
-                renderWeightOscillationChart(characterDailyLogs, button.dataset.period);
-            }
-        });
-    }
-
-    function renderProgressStats(logs, vitals) {
-        const container = document.getElementById('progress-stats-container');
-        if(!container || logs.length < 2) {
-            if(container) container.innerHTML = '<p class="text-text-dark-secondary">Adicione mais pesagens para ver suas estatísticas.</p>';
-            return;
-        }
-
-        const lastLog = logs[logs.length - 1];
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const logsLast7Days = logs.filter(log => new Date(log.timestamp.seconds * 1000) >= sevenDaysAgo);
-
-        let weightChange7Days = 0;
-        if (logsLast7Days.length > 1) {
-            weightChange7Days = logsLast7Days[logsLast7Days.length - 1].peso_kg - logsLast7Days[0].peso_kg;
-        }
-
-        let timeToGoal = 'N/A';
-        if (vitals.meta_peso_kg && weightChange7Days !== 0) {
-            const weightToLose = lastLog.peso_kg - vitals.meta_peso_kg;
-            if (weightToLose > 0 && weightChange7Days < 0) timeToGoal = `${Math.ceil(weightToLose / -weightChange7Days)} semanas`;
-            else if (weightToLose < 0 && weightChange7Days > 0) timeToGoal = `${Math.ceil(-weightToLose / weightChange7Days)} semanas`;
-        }
-
-        const weeklyChangeText = weightChange7Days > 0 ? `Ganhou ${weightChange7Days.toFixed(1)} kg` : `Perdeu ${(-weightChange7Days).toFixed(1)} kg`;
-        container.innerHTML = `<div class="space-y-4"><div><p class="text-text-dark-secondary">Variação (7d)</p><p class="text-2xl font-bold ${weightChange7Days > 0 ? 'text-red-500' : 'text-primary'}">${weeklyChangeText}</p></div><div><p class="text-text-dark-secondary">Ritmo para Meta</p><p class="text-2xl font-bold">${timeToGoal}</p></div></div>`;
-    }
 
 
     // --- LÓGICA DA TELA DE PERSONAGEM ---
-    async function loadCharacterData(uid) {
-        if (!uid) return;
-        const profileRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'details');
-        const inventoryRef = collection(db, 'artifacts', appId, 'users', uid, 'inventory');
-        const goalsRef = collection(db, 'artifacts', appId, 'users', uid, 'goals');
-        const dailyLogRef = collection(db, 'artifacts', appId, 'users', uid, 'daily_log');
 
-        try {
-            const [profileSnap, inventorySnap, goalsSnap, logSnap] = await Promise.all([
-                getDoc(profileRef),
-                getDocs(inventoryRef),
-                getDocs(goalsRef),
-                getDocs(dailyLogRef)
-            ]);
+    function setupCarousel() {
+        const carousel = document.getElementById('health-carousel');
+        const slides = document.querySelectorAll('.health-slide');
+        const indicatorsContainer = document.getElementById('carousel-indicators');
+        if (!carousel || slides.length === 0 || !indicatorsContainer) return;
 
-            if (profileSnap.exists()) {
-                fullProfileData = profileSnap.data();
-                renderAdventurerPanel(fullProfileData.character, fullProfileData.nickname);
-                renderVitalsPanel(fullProfileData.vitals, fullProfileData.status_effects);
-                renderAttributesPanel(fullProfileData.stats);
+        const totalSlides = slides.length;
+        indicatorsContainer.innerHTML = '';
+        for (let i = 0; i < totalSlides; i++) {
+            const indicator = document.createElement('div');
+            indicator.className = 'h-2 w-2 rounded-full bg-gray-500 transition-colors cursor-pointer';
+            if (i === 0) indicator.classList.add('bg-primary');
+            indicator.addEventListener('click', () => goToSlide(i));
+            indicatorsContainer.appendChild(indicator);
+        }
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const swipeThreshold = 50; // Mínimo de pixels para registrar como swipe
+
+        carousel.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            if (touchEndX < touchStartX - swipeThreshold) {
+                // Swipe para a esquerda (próximo slide)
+                goToSlide(currentCarouselIndex + 1);
+            } else if (touchEndX > touchStartX + swipeThreshold) {
+                // Swipe para a direita (slide anterior)
+                goToSlide(currentCarouselIndex - 1);
             }
-
-            const inventoryItems = inventorySnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderInventory(inventoryItems);
-
-            const goals = goalsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderAchievements(goals);
-
-            characterDailyLogs = logSnap.docs.map(d => d.data()).sort((a,b) => a.timestamp.seconds - b.timestamp.seconds);
-            renderHealthChart();
-            renderWeightOscillationChart(characterDailyLogs);
-            renderProgressStats(characterDailyLogs, fullProfileData.vitals);
-
-        } catch (error) {
-            console.error("Error loading character data:", error);
         }
     }
 
-    function renderAdventurerPanel(character, nickname) {
-        document.getElementById('avatar-img').src = character.avatar_url || 'https://placehold.co/128x128/1a241e/13ec6d?text=?';
-        document.getElementById('character-level-title').textContent = `Nível ${character.level || 1}`;
-        document.getElementById('character-name').textContent = nickname || 'Aventureiro';
+    function goToSlide(index) {
+        const carousel = document.getElementById('health-carousel');
+        const slides = document.querySelectorAll('.health-slide');
+        const indicators = document.querySelectorAll('#carousel-indicators div');
+        const totalSlides = slides.length;
 
-        const equipment = character.equipment || {};
-        const slots = ['cabeca', 'peitoral', 'mao_direita', 'amuleto', 'botas'];
-        const defaultIcons = {
-            cabeca: 'skull',
-            peitoral: 'shield',
-            mao_direita: 'swords',
-            amuleto: 'diamond',
-            botas: 'foot_bones'
-        };
+        if (index >= totalSlides) {
+            index = 0;
+        } else if (index < 0) {
+            index = totalSlides - 1;
+        }
 
-        slots.forEach(slot => {
-            const slotEl = document.getElementById(`slot-${slot}`);
-            if(!slotEl) return;
-            const item = equipment[slot];
-            if (item && item.icon) {
-                slotEl.innerHTML = `<span class="material-symbols-outlined !text-4xl text-primary">${item.icon}</span>`;
-                slotEl.dataset.equippedItem = JSON.stringify(item);
+        currentCarouselIndex = index;
+        carousel.style.transform = `translateX(-${currentCarouselIndex * 100}%)`;
+
+        indicators.forEach((indicator, i) => {
+            if (i === currentCarouselIndex) {
+                indicator.classList.remove('bg-gray-500');
+                indicator.classList.add('bg-primary');
             } else {
-                slotEl.innerHTML = `<span class="material-symbols-outlined">${defaultIcons[slot]}</span>`;
-                delete slotEl.dataset.equippedItem;
+                indicator.classList.remove('bg-primary');
+                indicator.classList.add('bg-gray-500');
             }
         });
     }
 
-    function renderVitalsPanel(vitals, statusEffects) {
-        document.getElementById('current-weight').textContent = `${vitals.peso_atual_kg || '-'} kg`;
-        document.getElementById('current-imc').textContent = vitals.imc_atual || vitals.imc || '-';
+    async function loadCharacterData(userId) {
+        console.log("loadCharacterData chamada para o usuário:", userId);
+        if (!userId) return;
 
-        const effectsContainer = document.getElementById('status-effects-container');
-        effectsContainer.innerHTML = '<h3 class="font-bold mb-2 text-primary">Efeitos Ativos</h3>';
+        // Limpa listeners antigos para evitar duplicação
+        if (dailyLogListener) dailyLogListener();
+        if (inventoryListener) inventoryListener();
 
-        if (statusEffects && statusEffects.length > 0) {
-            const effectDisplayConfig = {
-                buff_composicao_saudavel: { icon: 'health_and_safety', color: 'text-primary' },
-                buff_descansado: { icon: 'bedtime', color: 'text-blue-400' },
-                buff_focado: { icon: 'psychology', color: 'text-purple-400' },
-                debuff_gordura_alta: { icon: 'sentiment_very_dissatisfied', color: 'text-red-500' },
-                debuff_gordura_baixa: { icon: 'sentiment_dissatisfied', color: 'text-red-500' },
-                debuff_imc_alto: { icon: 'sentiment_dissatisfied', color: 'text-red-500' },
-                debuff_imc_baixo: { icon: 'sentiment_dissatisfied', color: 'text-red-500' },
-                debuff_cansado: { icon: 'battery_alert', color: 'text-yellow-500' },
-                debuff_estressado: { icon: 'bolt', color: 'text-orange-500' },
-            };
+        // Listener para o perfil
+        const profileRef = doc(db, 'artifacts', appId, 'users', userId, 'profile', 'details');
+        onSnapshot(profileRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                populateCharacterHeader(data);
+                populateVitals(data);
+            }
+        });
 
-            const effectNameMap = {
-                energia_max: "Energia Máx",
-                hp_max: "HP Máx",
-                regeneracao_mana_energia: "Regen. Energia",
-                custo_mana: "Custo de Habilidade"
-            };
+        // Listener para os logs diários
+        const dailyLogRef = collection(db, 'artifacts', appId, 'users', userId, 'daily_log');
+        dailyLogListener = onSnapshot(dailyLogRef, (snapshot) => {
+            dailyLogDataCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => a.date.localeCompare(b.date)); // Ordena por data
+            renderAllCharts(dailyLogDataCache);
+        });
 
-            statusEffects.forEach(effect => {
-                const config = effectDisplayConfig[effect.id] || { icon: 'help', color: 'text-text-dark-secondary' };
-                const effectText = effectNameMap[effect.effect] || effect.effect;
-                let valuePrefix = (effect.value > 0) ? '+' : '';
-                if (effect.id === 'debuff_estressado') valuePrefix = '+';
-                else if (effect.id === 'buff_focado') valuePrefix = '';
-
-                effectsContainer.innerHTML += `
-                    <div class="flex items-center gap-3 ${config.color}">
-                        <span class="material-symbols-outlined">${config.icon}</span>
-                        <p class="text-sm">"${effect.label}": ${valuePrefix}${effect.value}% ${effectText}</p>
-                    </div>
-                `;
-            });
-
-        } else {
-            effectsContainer.innerHTML += `<p class="text-sm text-text-dark-secondary">Nenhum efeito ativo.</p>`;
-        }
-    }
-
-    function renderAttributesPanel(stats) {
-        const attributesList = document.getElementById('attributes-list');
-        attributesList.innerHTML = '';
-        const attributeConfig = {
-            forca: { icon: 'fitness_center', name: 'FORÇA' },
-            inteligencia: { icon: 'school', name: 'INTELIGÊNCIA' },
-            velocidade: { icon: 'sprint', name: 'VELOCIDADE' },
-            vitalidade: { icon: 'favorite', name: 'VITALIDADE' },
-            carisma: { icon: 'star', name: 'CARISMA' }
-        };
-
-        for (const key in attributeConfig) {
-            const stat = stats[key] || { level: 1, xp_atual: 0, xp_para_upar: 100 };
-            const config = attributeConfig[key];
-            const xpPercent = (stat.xp_atual / stat.xp_para_upar) * 100;
-
-            attributesList.innerHTML += `
-                <div class="flex items-center gap-4">
-                    <div class="flex size-10 items-center justify-center rounded-full bg-surface-dark text-primary"><span class="material-symbols-outlined">${config.icon}</span></div>
-                    <div class="flex-1">
-                        <div class="flex justify-between items-baseline">
-                            <p class="font-bold">${config.name}</p>
-                            <p class="text-text-dark-secondary text-xs">Nível: ${stat.level}</p>
-                        </div>
-                        <div class="w-full bg-surface-dark rounded-full h-2 mt-1">
-                            <div class="bg-primary h-2 rounded-full" style="width: ${xpPercent}%"></div>
-                        </div>
-                        <p class="text-text-dark-secondary text-xs text-right mt-1">${stat.xp_atual} / ${stat.xp_para_upar} XP</p>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
-    function renderInventory(items) {
-        const inventoryGrid = document.getElementById('inventory-grid');
-        inventoryGrid.innerHTML = '';
-        const unequippedItems = items.filter(item => !item.equipado);
-
-        unequippedItems.forEach(item => {
-            inventoryGrid.innerHTML += `
-                <div class="inventory-item aspect-square bg-surface-dark border-2 border-border-dark rounded-lg flex items-center justify-center cursor-pointer" data-item='${JSON.stringify(item)}'>
-                    <span class="material-symbols-outlined !text-4xl text-primary">${item.icon || 'help'}</span>
-                </div>
-            `;
+        // Listener para o inventário
+        const inventoryRef = collection(db, 'artifacts', appId, 'users', userId, 'inventory');
+        inventoryListener = onSnapshot(inventoryRef, (snapshot) => {
+            const inventoryItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            populateInventory(inventoryItems);
         });
     }
 
-    function renderAchievements(goals) {
-        const achievementsList = document.getElementById('achievements-list');
-        achievementsList.innerHTML = '';
-        if (!goals || goals.length === 0) {
-            achievementsList.innerHTML = `<p class="text-text-dark-secondary text-center">Nenhuma conquista ainda.</p>`;
-            return;
-        }
-
-        goals.forEach(goal => {
-            const progressPercent = (goal.progresso_atual / goal.progresso_total) * 100;
-            achievementsList.innerHTML += `
-                <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4 flex items-center gap-4 ${goal.concluido ? 'opacity-70' : ''}">
-                    <span class="material-symbols-outlined !text-4xl text-yellow-400">emoji_events</span>
-                    <div class="flex-1">
-                        <p class="font-bold">${goal.titulo}</p>
-                        <p class="text-text-dark-secondary text-sm">${goal.descricao}</p>
-                        ${!goal.concluido ? `
-                        <div class="w-full bg-surface-dark rounded-full h-2 my-1">
-                            <div class="bg-yellow-400 h-2 rounded-full" style="width: ${progressPercent}%;"></div>
-                        </div>
-                        <p class="text-text-dark-secondary text-xs">${goal.progresso_atual} / ${goal.progresso_total}</p>
-                        ` : `<p class="text-primary text-sm font-semibold mt-1">Recompensa: ${goal.recompensa || '[Item Raro]'}</p>`}
-                    </div>
-                </div>
-            `;
-        });
+    function populateCharacterHeader(profileData) {
+        const character = profileData.character || {};
+        document.getElementById('char-avatar').src = character.avatar_url || 'https://placehold.co/100x100';
+        document.getElementById('char-nickname').textContent = profileData.nickname || 'Aventureiro';
+        document.getElementById('char-level').textContent = `Nv. ${character.level || 1}`;
     }
 
-    async function renderHealthChart() {
-        if (characterDailyLogs.length === 0) return;
-        const labels = characterDailyLogs.map(log => log.timestamp.toDate().toLocaleDateString('pt-BR'));
-        const weightData = characterDailyLogs.map(log => log.peso_kg);
-        const fatData = characterDailyLogs.map(log => log.gordura_perc);
-        const ctx = document.getElementById('healthChart').getContext('2d');
+    function populateVitals(profileData) {
+        const vitals = profileData.vitals || {};
+        document.getElementById('char-weight').textContent = `${vitals.peso_atual_kg || '--'} kg`;
+        document.getElementById('char-target-weight').textContent = `${vitals.meta_peso_kg || '--'} kg`;
+        document.getElementById('char-imc').textContent = vitals.imc || '--';
+        document.getElementById('char-body-fat').textContent = `${vitals.body_fat_percentage || '--'} %`;
+    }
 
-        if (healthChart) {
-            healthChart.destroy();
+    // --- LÓGICA DOS GRÁFICOS ---
+    function renderChart(canvasId, label, labels, data, borderColor) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        // Destrói o gráfico existente antes de criar um novo
+        if (charts[canvasId]) {
+            charts[canvasId].destroy();
         }
 
-        healthChart = new Chart(ctx, {
+        charts[canvasId] = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [
-                    {
-                        label: 'Peso (kg)',
-                        data: weightData,
-                        borderColor: '#13ec6d',
-                        backgroundColor: 'rgba(19, 236, 109, 0.1)',
-                        fill: true,
-                        yAxisID: 'y',
-                    },
-                    {
-                        label: '% Gordura Corporal',
-                        data: fatData,
-                        borderColor: '#f59e0b',
-                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                        fill: true,
-                        yAxisID: 'y1',
-                        hidden: !fatData.some(d => d)
-                    }
-                ]
+                datasets: [{
+                    label: label,
+                    data: data,
+                    fill: false,
+                    borderColor: borderColor,
+                    tension: 0.2,
+                    pointBackgroundColor: borderColor,
+                    pointRadius: 3
+                }]
             },
             options: {
                 responsive: true,
-                scales: {
-                    y: { type: 'linear', display: true, position: 'left', ticks: { color: '#9db9a8' } },
-                    y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#9db9a8' } },
-                    x: { ticks: { color: '#9db9a8' } }
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#9db9a8',
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
                 },
-                plugins: { legend: { labels: { color: '#9db9a8' } } }
+                scales: {
+                    x: {
+                        ticks: { color: '#9db9a8', maxRotation: 0, autoSkip: true, maxTicksLimit: 5 },
+                        grid: { color: 'rgba(51, 92, 71, 0.2)' }
+                    },
+                    y: {
+                        ticks: { color: '#9db9a8' },
+                        grid: { color: 'rgba(51, 92, 71, 0.5)' }
+                    }
+                }
             }
         });
     }
 
-    document.getElementById('add-daily-log-btn').addEventListener('click', () => document.getElementById('modal-daily-log').classList.remove('hidden'));
-    document.getElementById('cancel-daily-log').addEventListener('click', () => document.getElementById('modal-daily-log').classList.add('hidden'));
-    document.getElementById('confirm-daily-log').addEventListener('click', handleDailyLogUpdate);
-    document.getElementById('item-action-cancel-btn').addEventListener('click', () => document.getElementById('modal-item-action').classList.add('hidden'));
-
-    function calcularNovosStatus(imc, gordura_perc, sono, estresse) {
-        let status_array = [];
-
-        if (gordura_perc && gordura_perc > 0) {
-            if (gordura_perc > 30) {
-                status_array.push({ id: "debuff_gordura_alta", label: "Gordura Elevada", effect: "energia_max", value: -15 });
-            } else if (gordura_perc < 10) {
-                status_array.push({ id: "debuff_gordura_baixa", label: "Gordura Baixa", effect: "hp_max", value: -10 });
-            } else {
-                status_array.push({ id: "buff_composicao_saudavel", label: "Composição Saudável", effect: "energia_max", value: 5 });
-            }
-        } else {
-            if (imc > 25) {
-                status_array.push({ id: "debuff_imc_alto", label: "Sobrepeso", effect: "energia_max", value: -10 });
-            } else if (imc < 18.5) {
-                status_array.push({ id: "debuff_imc_baixo", label: "Abaixo do Peso", effect: "hp_max", value: -10 });
-            }
-        }
-
-        if (sono && sono >= 8) {
-            status_array.push({ id: "buff_descansado", label: "Descansado", effect: "regeneracao_mana_energia", value: 10 });
-        } else if (sono && sono < 5) {
-            status_array.push({ id: "debuff_cansado", label: "Cansado", effect: "regeneracao_mana_energia", value: -10 });
-        }
-
-        if (estresse && estresse === 1) {
-            status_array.push({ id: "buff_focado", label: "Focado", effect: "custo_mana", value: -5 });
-        } else if (estresse && estresse === 5) {
-            status_array.push({ id: "debuff_estressado", label: "Estressado", effect: "custo_mana", value: 10 });
-        }
-
-        return status_array;
-    }
-
-    function recalcularAtributosDerivados(status, stats) {
-        let hp_max = 100 + (stats.vitalidade.level * 10) + (stats.forca.level * 2);
-        let energia_max = 100 + (stats.forca.level * 5) + (stats.velocidade.level * 5);
-
-        status.forEach(effect => {
-            if (effect.id === "debuff_gordura_alta" || effect.id === "debuff_imc_alto") {
-                energia_max += (energia_max * (effect.value / 100));
-            } else if (effect.id === "debuff_gordura_baixa" || effect.id === "debuff_imc_baixo") {
-                hp_max += (hp_max * (effect.value / 100));
-            } else if (effect.id === "buff_composicao_saudavel") {
-                energia_max += (energia_max * (effect.value / 100));
-            }
-        });
-
-        return { hp_max: Math.round(hp_max), energia_max: Math.round(energia_max) };
-    }
-
-    async function handleDailyLogUpdate() {
-        const inputs = {
-            novo_peso: parseFloat(document.getElementById('log-peso').value),
-            nova_gordura_perc: parseFloat(document.getElementById('log-gordura').value) || null,
-            horas_sono_hoje: parseInt(document.getElementById('log-sono').value) || null,
-            estresse_hoje: parseInt(document.getElementById('log-estresse').value) || null
+    function renderAllCharts(logData) {
+        if (logData.length === 0) {
+            // Se não houver dados, você pode querer mostrar um estado vazio nos gráficos
+            renderChart('weight-chart', 'Peso (kg)', [], [], '#13ec6d');
+            renderChart('sleep-chart', 'Sono (horas)', [], [], '#3b82f6');
+            renderChart('stress-chart', 'Estresse (1-10)', [], [], '#ef4444');
+            return;
         };
 
-        if (isNaN(inputs.novo_peso) || inputs.novo_peso <= 0) {
-            showMessage("Dados Inválidos", "O peso é obrigatório e deve ser um número válido.");
-            return;
+        const last7Logs = logData.slice(-7);
+        const labels = last7Logs.map(log => new Date(log.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+
+        const weightData = last7Logs.map(log => log.weight_kg);
+        renderChart('weight-chart', 'Peso (kg)', labels, weightData, '#13ec6d');
+
+        const sleepData = last7Logs.map(log => log.sleep_hours);
+        renderChart('sleep-chart', 'Sono (horas)', labels, sleepData, '#3b82f6');
+
+        const stressData = last7Logs.map(log => log.stress_level);
+        renderChart('stress-chart', 'Estresse (1-10)', labels, stressData, '#ef4444');
+    }
+
+     // --- LÓGICA DO LOG DIÁRIO ---
+
+    function openDailyLogModal(latestLog = {}) {
+        const form = document.getElementById('daily-log-form');
+        const dateInput = document.getElementById('log-date');
+
+        // Formata a data de hoje como YYYY-MM-DD
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+
+        dateInput.value = todayStr;
+        form.elements['log-weight'].value = latestLog.weight_kg || '';
+        form.elements['log-body-fat'].value = latestLog.body_fat_percentage || '';
+        form.elements['log-sleep'].value = ''; // Sempre limpo
+        form.elements['log-stress'].value = ''; // Sempre limpo
+
+        document.getElementById('modal-daily-log').classList.remove('hidden');
+    }
+
+    document.getElementById('btn-add-daily-log').addEventListener('click', () => {
+        const latestLog = dailyLogDataCache.length > 0 ? dailyLogDataCache[dailyLogDataCache.length - 1] : {};
+        openDailyLogModal(latestLog);
+    });
+
+    document.getElementById('log-cancel-btn').addEventListener('click', () => {
+        document.getElementById('modal-daily-log').classList.add('hidden');
+    });
+
+    document.getElementById('daily-log-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const date = form.elements['log-date'].value;
+
+        // Validações
+        if (!date) {
+            return showMessage("Data Inválida", "Por favor, selecione uma data para o registro.");
+        }
+
+        const parseOptionalFloat = (value) => {
+            if (value === null || value.trim() === '') return null;
+            const num = parseFloat(value);
+            return isNaN(num) ? null : num;
+        };
+
+        const newLog = {
+            date: date,
+            weight_kg: parseOptionalFloat(form.elements['log-weight'].value),
+            body_fat_percentage: parseOptionalFloat(form.elements['log-body-fat'].value),
+            sleep_hours: parseOptionalFloat(form.elements['log-sleep'].value),
+            stress_level: parseOptionalFloat(form.elements['log-stress'].value),
+            createdAt: Timestamp.now()
+        };
+
+        if (Object.values(newLog).slice(1, 5).every(v => v === null)) {
+            return showMessage("Dados Insuficientes", "Preencha pelo menos um campo de dados (peso, gordura, sono ou estresse).");
         }
 
         try {
             await runTransaction(db, async (transaction) => {
                 const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
-                const dailyLogCollectionRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'daily_log');
-                const newLogRef = doc(dailyLogCollectionRef);
-
                 const profileSnap = await transaction.get(profileRef);
-                if (!profileSnap.exists()) throw "Perfil não encontrado!";
-
+                if (!profileSnap.exists()) {
+                    throw "Perfil do usuário não encontrado.";
+                }
                 const profileData = profileSnap.data();
 
-                const novo_imc = parseFloat((inputs.novo_peso / ((profileData.vitals.altura_cm / 100) ** 2)).toFixed(1));
-                const novos_status = calcularNovosStatus(novo_imc, inputs.nova_gordura_perc, inputs.horas_sono_hoje, inputs.estresse_hoje);
-                const { hp_max, energia_max } = recalcularAtributosDerivados(novos_status, profileData.stats);
+                // Salva o novo log diário
+                const logRef = doc(collection(db, 'artifacts', appId, 'users', currentUserId, 'daily_log'));
+                transaction.set(logRef, newLog);
 
-                transaction.set(newLogRef, {
-                    timestamp: Timestamp.now(),
-                    peso_kg: inputs.novo_peso,
-                    gordura_perc: inputs.nova_gordura_perc,
-                    horas_sono: inputs.horas_sono_hoje,
-                    nivel_estresse: inputs.estresse_hoje
+                // --- ATUALIZAÇÃO DO PERFIL ---
+                // Pega os últimos 7 logs (incluindo o novo) para calcular as médias
+                const updatedLogs = [...dailyLogDataCache.filter(log => log.date !== date), newLog]
+                    .sort((a, b) => a.date.localeCompare(b.date))
+                    .slice(-7);
+
+                const avgSleep = updatedLogs.reduce((sum, log) => sum + (log.sleep_hours || 0), 0) / updatedLogs.length;
+                const avgStress = updatedLogs.reduce((sum, log) => sum + (log.stress_level || 0), 0) / updatedLogs.length;
+
+                profileData.vitals.average_sleep_7d = parseFloat(avgSleep.toFixed(1));
+                profileData.vitals.average_stress_7d = parseFloat(avgStress.toFixed(1));
+
+                // Atualiza peso e IMC se foram fornecidos no log de hoje
+                if (newLog.weight_kg !== null) {
+                    profileData.vitals.peso_atual_kg = newLog.weight_kg;
+                    const altura_m = (profileData.vitals.altura_cm || 0) / 100;
+                    if (altura_m > 0) {
+                        profileData.vitals.imc = parseFloat((newLog.weight_kg / (altura_m * altura_m)).toFixed(1));
+                    }
+                }
+                 if (newLog.body_fat_percentage !== null) {
+                    profileData.vitals.body_fat_percentage = newLog.body_fat_percentage;
+                }
+
+                // --- RECALCULAR EFEITOS DE STATUS E ATRIBUTOS DERIVADOS ---
+                let statusEffects = [];
+                const vitals = profileData.vitals;
+
+                // Hierarquia de Status: Gordura Corporal > IMC
+                if (vitals.body_fat_percentage && vitals.body_fat_percentage > 20) { // Exemplo de limite
+                     statusEffects.push({ id: "debuff_bf_alto", label: "Gordura Elevada", effect: "energia_max", value: -15 });
+                } else if (vitals.imc > 25) {
+                    statusEffects.push({ id: "debuff_imc_alto", label: "Sobrepeso", effect: "energia_max", value: -10 });
+                } else if (vitals.imc < 18.5) {
+                    statusEffects.push({ id: "debuff_imc_baixo", label: "Abaixo do Peso", effect: "hp_max", value: -10 });
+                }
+
+                if (vitals.average_sleep_7d < 6) {
+                    statusEffects.push({ id: "debuff_sono_baixo", label: "Sono Ruim", effect: "mana_max", value: -15 });
+                }
+                if (vitals.average_stress_7d > 7) {
+                    statusEffects.push({ id: "debuff_estresse_alto", label: "Estresse Alto", effect: "hp_max", value: -15 });
+                }
+                profileData.status_effects = statusEffects;
+
+                // --- RECALCULAR HP E MANA MÁXIMOS ---
+                const stats = profileData.stats;
+                let base_hp = 100 + ((stats.vitalidade?.level || 1) * 10);
+                let base_mana = 100 + ((stats.inteligencia?.level || 1) * 10);
+
+                statusEffects.forEach(effect => {
+                    if (effect.effect === 'hp_max') base_hp += effect.value;
+                    if (effect.effect === 'mana_max') base_mana += effect.value;
                 });
 
-                profileData.vitals.peso_atual_kg = inputs.novo_peso;
-                profileData.vitals.imc_atual = novo_imc;
-                if(inputs.nova_gordura_perc) profileData.vitals.gordura_corporal_perc = inputs.nova_gordura_perc;
-                profileData.status_effects = novos_status;
-                profileData.character.hp_max = hp_max;
-                profileData.character.energia_max = energia_max;
+                profileData.character.hp_max = base_hp;
+                profileData.character.mana_max = base_mana;
 
+                // Atualiza o perfil na transação
                 transaction.update(profileRef, profileData);
             });
 
+            showMessage("Sucesso!", "Seu registro diário foi salvo e seu perfil atualizado.");
             document.getElementById('modal-daily-log').classList.add('hidden');
-            ['log-peso', 'log-gordura', 'log-sono', 'log-estresse'].forEach(id => document.getElementById(id).value = '');
-            loadCharacterData(currentUserId);
-            showMessage("Log Salvo!", "Seus dados diários foram registrados com sucesso.");
 
-        } catch (e) {
-            console.error("Transação de log diário falhou: ", e);
-            showMessage("Erro", "Falha ao salvar o log diário. Tente novamente.");
-        }
-    }
-
-    document.getElementById('inventory-grid').addEventListener('click', (e) => {
-        const itemEl = e.target.closest('.inventory-item');
-        if (itemEl) {
-            const item = JSON.parse(itemEl.dataset.item);
-            showItemActionModal(item, 'equip');
+        } catch (error) {
+            console.error("Erro ao salvar log diário:", error);
+            showMessage("Erro na Transação", "Não foi possível salvar seu registro. Tente novamente.");
         }
     });
 
-    document.querySelectorAll('.equipment-slot').forEach(slot => {
-        slot.addEventListener('click', (e) => {
-            const itemJson = e.currentTarget.dataset.equippedItem;
-            if (itemJson) {
-                const item = JSON.parse(itemJson);
-                showItemActionModal(item, 'unequip');
+
+     // --- LÓGICA DE INVENTÁRIO E EQUIPAMENTOS ---
+
+    const ITEM_CATALOG = {
+        // Consumíveis
+        'potion_hp_1': { name: 'Poção de Vida Pequena', icon: 'medication', type: 'consumable', effect: 'restore_hp', value: 50, description: 'Recupera 50 HP.' },
+        'potion_mana_1': { name: 'Poção de Mana Pequena', icon: 'science', type: 'consumable', effect: 'restore_mana', value: 50, description: 'Recupera 50 de Mana.' },
+        // Equipamentos
+        'sword_1': { name: 'Espada de Treino', icon: 'swords', type: 'equipment', slot: 'main_hand', stats: { forca: 1 }, description: '+1 Força' },
+        'shield_1': { name: 'Escudo de Madeira', icon: 'shield', type: 'equipment', slot: 'off_hand', stats: { vitalidade: 1 }, description: '+1 Vitalidade' },
+        'helmet_1': { name: 'Elmo de Couro', icon: 'military_tech', type: 'equipment', slot: 'head', stats: { vitalidade: 1 }, description: '+1 Vitalidade' },
+        'chest_1': { name: 'Peitoral de Couro', icon: 'accessibility_new', type: 'equipment', slot: 'chest', stats: { vitalidade: 2 }, description: '+2 Vitalidade' },
+        'legs_1': { name: 'Calças de Couro', icon: 'airline_seat_legroom_normal', type: 'equipment', slot: 'legs', stats: { velocidade: 1 }, description: '+1 Velocidade' },
+        'boots_1': { name: 'Botas de Viagem', icon: 'directions_walk', type: 'equipment', slot: 'feet', stats: { velocidade: 1 }, description: '+1 Velocidade' },
+    };
+
+    // Função para dar itens iniciais a um novo jogador
+    async function seedInventory(userId) {
+        if (!userId) return;
+        const batch = writeBatch(db);
+        const inventoryRef = collection(db, 'artifacts', appId, 'users', userId, 'inventory');
+
+        // Adiciona 3 poções de vida
+        for (let i = 0; i < 3; i++) {
+            const newItemRef = doc(inventoryRef);
+            batch.set(newItemRef, { itemId: 'potion_hp_1', quantity: 1, equipped: false });
+        }
+
+        // Adiciona uma espada
+        const swordRef = doc(inventoryRef);
+        batch.set(swordRef, { itemId: 'sword_1', quantity: 1, equipped: false });
+
+        try {
+            await batch.commit();
+            console.log(`Inventário inicial criado para o usuário ${userId}`);
+        } catch (error) {
+            console.error("Erro ao criar inventário inicial:", error);
+        }
+    }
+
+
+    function populateInventory(inventoryItems) {
+        const inventoryGrid = document.getElementById('inventory-grid');
+        const equipmentSlots = document.getElementById('equipment-slots');
+        if (!inventoryGrid || !equipmentSlots) return;
+
+        inventoryGrid.innerHTML = '';
+        equipmentSlots.innerHTML = '';
+
+        const equippedItems = {};
+        inventoryItems.filter(item => item.equipped).forEach(item => {
+            const itemDetails = ITEM_CATALOG[item.itemId];
+            if (itemDetails) {
+                equippedItems[itemDetails.slot] = item;
             }
         });
+
+        const slotOrder = ['head', 'chest', 'main_hand', 'off_hand', 'legs', 'feet'];
+        slotOrder.forEach(slot => {
+            const equippedItem = equippedItems[slot];
+            const itemDetails = equippedItem ? ITEM_CATALOG[equippedItem.itemId] : null;
+
+            const slotEl = document.createElement('div');
+            slotEl.className = 'aspect-square rounded-lg border-2 border-dashed border-border-dark flex items-center justify-center cursor-pointer hover:bg-surface-dark/80';
+            slotEl.dataset.slot = slot;
+            if (equippedItem) {
+                slotEl.dataset.itemId = equippedItem.id; // ID do documento do inventário
+                slotEl.innerHTML = `<span class="material-symbols-outlined text-primary text-4xl">${itemDetails.icon}</span>`;
+                slotEl.classList.remove('border-dashed');
+                slotEl.classList.add('bg-surface-dark/50');
+            } else {
+                slotEl.innerHTML = `<span class="material-symbols-outlined text-text-dark-secondary text-2xl">add</span>`;
+            }
+            equipmentSlots.appendChild(slotEl);
+        });
+
+        const unequippedItems = inventoryItems.filter(item => !item.equipped);
+        unequippedItems.forEach(item => {
+            const itemDetails = ITEM_CATALOG[item.itemId];
+            if (itemDetails) {
+                 const itemEl = document.createElement('div');
+                itemEl.className = 'inventory-item aspect-square rounded-lg bg-surface-dark/50 flex items-center justify-center cursor-pointer hover:bg-surface-dark/80';
+                itemEl.dataset.itemId = item.id;
+                itemEl.innerHTML = `<span class="material-symbols-outlined text-text-dark-secondary text-3xl">${itemDetails.icon}</span>`;
+                inventoryGrid.appendChild(itemEl);
+            }
+        });
+    }
+
+    // Event delegation para cliques no inventário e equipamentos
+    document.getElementById('character-content').addEventListener('click', async (e) => {
+        const itemEl = e.target.closest('.inventory-item, [data-slot]');
+        if (itemEl && itemEl.dataset.itemId) {
+            const inventoryDocId = itemEl.dataset.itemId;
+            const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', inventoryDocId);
+            const itemSnap = await getDoc(itemRef);
+            if (itemSnap.exists()) {
+                openItemDetailsModal({ id: itemSnap.id, ...itemSnap.data() });
+            }
+        }
     });
 
-    function showItemActionModal(item, actionType) {
-        document.getElementById('item-modal-title').textContent = item.nome;
-        document.getElementById('item-modal-effect').textContent = `Efeito: ${item.efeito}`;
-        const primaryBtn = document.getElementById('item-action-primary-btn');
-        if (actionType === 'equip') {
-            primaryBtn.textContent = 'Equipar';
-            primaryBtn.onclick = () => { equipItem(item.id, item.slot); document.getElementById('modal-item-action').classList.add('hidden'); };
-        } else {
-            primaryBtn.textContent = 'Desequipar';
-            primaryBtn.onclick = () => { unequipItem(item.id, item.slot); document.getElementById('modal-item-action').classList.add('hidden'); };
+    function openItemDetailsModal(inventoryItem) {
+        const itemDetails = ITEM_CATALOG[inventoryItem.itemId];
+        if (!itemDetails) return;
+
+        const modal = document.getElementById('modal-item-details');
+        const content = document.getElementById('item-details-content');
+
+        content.innerHTML = `
+            <span class="material-symbols-outlined text-primary text-5xl">${itemDetails.icon}</span>
+            <h3 class="text-primary text-xl font-bold mt-2">${itemDetails.name}</h3>
+            <p class="text-white/80 mt-2">${itemDetails.description}</p>
+            <p class="text-text-dark-secondary text-sm mt-1 capitalize">Tipo: ${itemDetails.type}</p>
+        `;
+
+        const equipBtn = document.getElementById('item-equip-btn');
+        const unequipBtn = document.getElementById('item-unequip-btn');
+        const useBtn = document.getElementById('item-use-btn');
+
+        // Reset state
+        [equipBtn, unequipBtn, useBtn].forEach(btn => btn.classList.add('hidden'));
+
+        if (itemDetails.type === 'equipment') {
+            if (inventoryItem.equipped) {
+                unequipBtn.classList.remove('hidden');
+                unequipBtn.onclick = () => unequipItem(inventoryItem.id);
+            } else {
+                equipBtn.classList.remove('hidden');
+                equipBtn.onclick = () => equipItem(inventoryItem.id);
+            }
+        } else if (itemDetails.type === 'consumable') {
+            useBtn.classList.remove('hidden');
+            useBtn.onclick = () => useConsumable(inventoryItem.id);
         }
-        document.getElementById('modal-item-action').classList.remove('hidden');
+
+        modal.classList.remove('hidden');
     }
 
-    async function equipItem(itemId, slot) {
-        if (!slot) { alert("Este item não pode ser equipado."); return; }
-        if (fullProfileData.character.equipment[slot]) { alert("Slot já ocupado. Desequipe o item atual primeiro."); return; }
-        const batch = writeBatch(db);
-        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
-        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
-        const itemSnap = await getDoc(itemRef);
-        batch.update(itemRef, { equipado: true });
-        batch.update(profileRef, { [`character.equipment.${slot}`]: itemSnap.data() });
-        await batch.commit();
-        loadCharacterData(currentUserId);
+    document.getElementById('item-details-close-btn').addEventListener('click', () => {
+        document.getElementById('modal-item-details').classList.add('hidden');
+    });
+
+    async function equipItem(inventoryDocId) {
+         // Lógica para equipar um item... (será implementada se necessário)
+         console.log("Equipar item:", inventoryDocId);
+         showMessage("Em breve", "A funcionalidade de equipar itens será implementada em futuras atualizações.");
+         document.getElementById('modal-item-details').classList.add('hidden');
     }
 
-    async function unequipItem(itemId, slot) {
-        const batch = writeBatch(db);
-        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
-        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
-        batch.update(itemRef, { equipado: false });
-        batch.update(profileRef, { [`character.equipment.${slot}`]: deleteField() });
-        await batch.commit();
-        loadCharacterData(currentUserId);
+    async function unequipItem(inventoryDocId) {
+        // Lógica para desequipar um item... (será implementada se necessário)
+        console.log("Desequipar item:", inventoryDocId);
+        showMessage("Em breve", "A funcionalidade de desequipar itens será implementada em futuras atualizações.");
+        document.getElementById('modal-item-details').classList.add('hidden');
     }
 
+    async function useConsumable(inventoryDocId) {
+        // Lógica para usar um consumível... (será implementada se necessário)
+        console.log("Usar item:", inventoryDocId);
+        showMessage("Em breve", "A funcionalidade de usar consumíveis será implementada em futuras atualizações.");
+        document.getElementById('modal-item-details').classList.add('hidden');
+    }
+
+    // --- INICIALIZAÇÃO ---
+    document.addEventListener('DOMContentLoaded', () => {
+        setupCarousel();
+    });
 
   </script>
 
