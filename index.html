@@ -1000,6 +1000,55 @@
   </div>
 
 
+  <!-- Modal de Adicionar Log Diário -->
+  <div id="modal-daily-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm space-y-4">
+          <h3 class="text-primary text-xl font-bold text-center">Adicionar Log Diário</h3>
+
+          <div>
+              <label for="log-peso" class="block text-sm font-medium text-text-dark-secondary mb-1">Novo Peso (kg) <span class="text-red-500">*</span></label>
+              <input id="log-peso" type="number" placeholder="Obrigatório" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div class="border-t border-border-dark my-4"></div>
+
+          <p class="text-center text-sm text-text-dark-secondary">Opcional - Para cálculos mais precisos:</p>
+
+          <div>
+              <label for="log-gordura" class="block text-sm font-medium text-text-dark-secondary mb-1">Gordura Corporal (%)</label>
+              <input id="log-gordura" type="number" placeholder="Ex: 15.2" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div>
+              <label for="log-sono" class="block text-sm font-medium text-text-dark-secondary mb-1">Horas de Sono</label>
+              <input id="log-sono" type="number" placeholder="Ex: 8" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div>
+              <label for="log-estresse" class="block text-sm font-medium text-text-dark-secondary mb-1">Nível de Estresse (1-5)</label>
+              <input id="log-estresse" type="number" min="1" max="5" placeholder="1 (baixo) - 5 (alto)" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div class="flex gap-4 pt-4">
+              <button id="cancel-daily-log" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Cancelar</button>
+              <button id="confirm-daily-log" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- Modal de Ação de Item -->
+  <div id="modal-item-action" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm text-center">
+      <h3 id="item-modal-title" class="text-primary text-xl font-bold mb-2">Nome do Item</h3>
+      <p id="item-modal-effect" class="text-text-dark-secondary mb-6">Efeito do item</p>
+      <div class="flex gap-4">
+        <button id="item-action-secondary-btn" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Descartar</button>
+        <button id="item-action-primary-btn" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Ação</button>
+      </div>
+      <button id="item-action-cancel-btn" class="w-full mt-3 rounded-full h-10 bg-transparent text-text-dark-secondary">Cancelar</button>
+    </div>
+  </div>
+
   <!-- Firebase SDKs -->
   <script type="module">
     // Importações do Firebase
@@ -1028,6 +1077,7 @@
       collection,
       addDoc,
       writeBatch,
+      deleteField,
       setLogLevel,
       Timestamp,
       runTransaction,
