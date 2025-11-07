@@ -13,6 +13,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
+  <!-- Chart.js for Character Screen -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <!-- Configuração do Tailwind -->
   <script>
     tailwind.config = {
@@ -22,15 +25,17 @@
           colors: {
             "primary": "#13ec6d",
             "background-light": "#f6f8f7",
-            "background-dark": "#102218",
-            // Cores do novo Hub
-            "surface-dark": "#1a3828",
+            "background-dark": "#102218", // Unificado, mantendo o mais escuro
+            // Cores do Hub e Ficha
+            "surface-dark": "#1a3828", // Unificado
+            "surface-secondary": "#28392f", // Novo da Ficha
             "text-dark-primary": "#ffffff",
-            "text-dark-secondary": "#9db9a8",
-            "border-dark": "#335c47",
+            "text-dark-secondary": "#9db9a8", // Unificado
+            "border-dark": "#335c47", // Unificado
             "health": "#ef4444",
             "mana": "#3b82f6",
-            "xp": "#f59e0b"
+            "xp": "#f59e0b",
+            "debuff": "#ef4444", // Novo da Ficha (igual a health)
           },
           fontFamily: {
             "display": ["Spline Sans", "sans-serif"]
@@ -116,6 +121,14 @@
         background: #13ec6d;
         border-radius: 50%;
         animation: particle-rise 3s infinite ease-out;
+    }
+    /* Estilos da Ficha de Personagem */
+    .equipment-slot {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .equipment-slot:hover {
+        background-color: #28392f;
     }
   </style>
 </head>
@@ -474,15 +487,15 @@
       <!-- Navegação Principal -->
       <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
         <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
-          <a classa="flex flex-col items-center gap-1 text-primary" href="#">
+          <a id="btn-goto-hub" class="nav-btn flex flex-col items-center gap-1 text-primary" href="#">
             <span class="material-symbols-outlined">home</span>
             <span class="text-xs font-bold">Início</span>
           </a>
-          <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="character.html">
+          <a id="btn-goto-character" class="nav-btn flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
             <span class="material-symbols-outlined">shield_person</span>
             <span class="text-xs">Personagem</span>
           </a>
-          <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+          <a class="nav-btn flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
             <span class="material-symbols-outlined">swords</span>
             <span class="text-xs">Guilda</span>
           </a>
@@ -762,6 +775,103 @@
         </div>
     </div>
 
+    <!-- Tela 9: Ficha de Personagem -->
+    <div id="screen-character" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-dark pb-20">
+      <header class="flex flex-col items-center p-4 pt-8">
+        <div class="relative w-full max-w-sm mx-auto h-72">
+        <div class="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <img alt="Avatar do Aventureiro" id="avatar-img" class="w-32 h-32 rounded-full border-4 border-primary object-cover shadow-lg" src="https://placehold.co/128x128/1a241e/13ec6d?text=?"/>
+        </div>
+        <div id="slot-cabeca" data-slot="cabeca" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 0; left: 50%; transform: translateX(-50%);"><span class="material-symbols-outlined">skull</span></div>
+        <div id="slot-peitoral" data-slot="peitoral" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 50%; left: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">shield</span></div>
+        <div id="slot-mao_direita" data-slot="mao_direita" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 50%; right: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">swords</span></div>
+        <div id="slot-amuleto" data-slot="amuleto" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="bottom: 0; left: 25%; transform: translateX(-50%);"><span class="material-symbols-outlined">diamond</span></div>
+        <div id="slot-botas" data-slot="botas" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface-dark border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="bottom: 0; right: 25%; transform: translateX(50%);"><span class="material-symbols-outlined">foot_bones</span></div>
+        </div>
+        <h1 id="character-level-title" class="text-2xl font-bold mt-4">Carregando...</h1>
+        <p id="character-name" class="text-text-dark-secondary">...</p>
+      </header>
+      <main class="flex-1 pb-24 px-4 space-y-8">
+        <section>
+          <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <p class="text-text-dark-secondary text-sm">Peso Atual</p>
+                <p id="current-weight" class="text-xl font-bold">- kg</p>
+              </div>
+              <div>
+                <p class="text-text-dark-secondary text-sm text-right">IMC</p>
+                <p id="current-imc" class="text-xl font-bold text-right">-</p>
+              </div>
+              <button id="add-daily-log-btn" class="flex items-center justify-center gap-2 rounded-full h-10 px-4 bg-surface-dark text-primary text-sm font-bold">
+                <span class="material-symbols-outlined !text-base">add_circle</span>
+                <span>Adicionar Log Diário</span>
+              </button>
+            </div>
+            <div id="status-effects-container" class="border-t border-border-dark pt-4">
+              <h3 class="font-bold mb-2">Efeitos Ativos</h3>
+            </div>
+          </div>
+        </section>
+        <section class="relative">
+            <h2 class="text-xl font-bold mb-4">Jornada da Saúde</h2>
+            <div id="health-carousel" class="relative overflow-hidden">
+                <div id="health-slides" class="flex transition-transform duration-500 ease-in-out">
+                    <!-- Slide 1: Gráfico Principal -->
+                    <div class="w-full flex-shrink-0">
+                        <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4">
+                            <canvas id="health-chart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Slide 2: Estatísticas -->
+                    <div class="w-full flex-shrink-0">
+                        <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4 h-full">
+                            <h3 class="text-lg font-bold text-primary text-center mb-4">Análise de Progresso</h3>
+                            <div id="progress-stats-container" class="text-center">
+                                <p class="text-text-dark-secondary">Carregando estatísticas...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Slide 3: Oscilação de Peso -->
+                    <div class="w-full flex-shrink-0">
+                        <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-primary">Oscilação de Peso</h3>
+                                <div id="oscillation-period-btns" class="flex items-center bg-surface-dark rounded-full p-1 text-sm">
+                                    <button data-period="day" class="oscillation-btn bg-primary text-background-dark rounded-full px-3 py-1">Dia</button>
+                                    <button data-period="month" class="oscillation-btn text-text-dark-secondary rounded-full px-3 py-1">Mês</button>
+                                    <button data-period="year" class="oscillation-btn text-text-dark-secondary rounded-full px-3 py-1">Ano</button>
+                                </div>
+                            </div>
+                            <canvas id="weight-oscillation-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Navegação do Carrossel -->
+            <div id="carousel-dots" class="flex justify-center mt-4 space-x-2">
+                <button data-slide-to="0" class="carousel-dot h-3 w-3 rounded-full bg-primary"></button>
+                <button data-slide-to="1" class="carousel-dot h-3 w-3 rounded-full bg-surface-dark"></button>
+                <button data-slide-to="2" class="carousel-dot h-3 w-3 rounded-full bg-surface-dark"></button>
+            </div>
+        </section>
+        <section>
+          <h2 class="text-xl font-bold mb-4">Atributos</h2>
+          <div id="attributes-list" class="bg-surface-dark/50 border border-border-dark rounded-lg p-4 space-y-4">
+          </div>
+        </section>
+        <section>
+          <h2 class="text-xl font-bold mb-4">Inventário</h2>
+          <div id="inventory-grid" class="grid grid-cols-4 sm:grid-cols-5 gap-4">
+          </div>
+        </section>
+        <section>
+          <h2 class="text-xl font-bold mb-4">Conquistas</h2>
+          <div id="achievements-list" class="space-y-3">
+          </div>
+        </section>
+      </main>
+    </div>
 
   </div>
 
@@ -840,6 +950,55 @@
         </div>
     </div>
 
+  <!-- Modal de Adicionar Log Diário -->
+  <div id="modal-add-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm">
+      <h3 class="text-primary text-xl font-bold mb-2 text-center">Adicionar Log Diário</h3>
+      <p class="text-text-dark-secondary mb-6 text-center text-sm">Registre suas métricas de hoje.</p>
+
+      <div class="space-y-4">
+        <div>
+          <label for="log-weight-input" class="text-text-dark-secondary text-sm font-bold mb-1 block">Novo Peso (kg) <span class="text-red-500">*</span></label>
+          <input id="log-weight-input" type="number" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg" placeholder="Ex: 75.5">
+        </div>
+
+        <div>
+          <label for="log-fat-perc-input" class="text-text-dark-secondary text-sm font-bold mb-1 block">Gordura Corporal (%) <span class="text-xs">(Opcional)</span></label>
+          <input id="log-fat-perc-input" type="number" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg" placeholder="Ex: 18.5">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="log-sleep-hours-input" class="text-text-dark-secondary text-sm font-bold mb-1 block">Horas de Sono <span class="text-xs">(Opcional)</span></label>
+            <input id="log-sleep-hours-input" type="number" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg" placeholder="Ex: 8">
+          </div>
+          <div>
+            <label for="log-stress-level-input" class="text-text-dark-secondary text-sm font-bold mb-1 block">Nível Estresse (1-5) <span class="text-xs">(Opcional)</span></label>
+            <input id="log-stress-level-input" type="number" min="1" max="5" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg" placeholder="Ex: 2">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-4 mt-8">
+        <button id="cancel-log-update" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Cancelar</button>
+        <button id="confirm-log-update" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Ação de Item -->
+  <div id="modal-item-action" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm text-center">
+      <h3 id="item-modal-title" class="text-primary text-xl font-bold mb-2">Nome do Item</h3>
+      <p id="item-modal-effect" class="text-text-dark-secondary mb-6">Efeito do item</p>
+      <div class="flex gap-4">
+        <button id="item-action-secondary-btn" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Descartar</button>
+        <button id="item-action-primary-btn" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Ação</button>
+      </div>
+      <button id="item-action-cancel-btn" class="w-full mt-3 rounded-full h-10 bg-transparent text-text-dark-secondary">Cancelar</button>
+    </div>
+  </div>
+
 
   <!-- Firebase SDKs -->
   <script type="module">
@@ -871,7 +1030,11 @@
       writeBatch,
       setLogLevel,
       Timestamp,
-      runTransaction
+      runTransaction,
+      deleteField,
+      query,
+      orderBy,
+      limit
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import {
         getStorage,
@@ -948,6 +1111,12 @@
     // --- Variáveis da Tela do Calendário ---
     let currentCalendarDate = new Date();
 
+    // --- Variáveis da Tela de Personagem ---
+    let fullProfileData = null;
+    let characterDailyLogs = []; // Armazenar logs para reutilização
+    let healthChart = null; // Variável para manter a instância do gráfico
+    let weightOscillationChart = null; // Variável para o gráfico de oscilação
+
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
     const REWARDS_DIFFICULTY = {
@@ -970,7 +1139,8 @@
       dashboard: document.getElementById('screen-dashboard'),
       addTask: document.getElementById('screen-add-task'),
       missionDetails: document.getElementById('screen-mission-details'),
-      calendar: document.getElementById('screen-calendar')
+      calendar: document.getElementById('screen-calendar'),
+      character: document.getElementById('screen-character')
     };
 
     const registerSteps = {
@@ -1072,6 +1242,27 @@
       if (screenId === 'missionDetails' && data) {
         loadMissionDetails(data); // O 'data' aqui é o taskId
       }
+      updateNavUI(screenId);
+    }
+
+    function updateNavUI(activeScreen) {
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.remove('text-primary');
+            btn.classList.add('text-text-dark-secondary');
+            const span = btn.querySelector('span:last-child');
+            if (span) span.classList.remove('font-bold');
+        });
+
+        let activeBtn;
+        if (activeScreen === 'dashboard') activeBtn = document.getElementById('btn-goto-hub');
+        if (activeScreen === 'character') activeBtn = document.getElementById('btn-goto-character');
+
+        if (activeBtn) {
+            activeBtn.classList.add('text-primary');
+            activeBtn.classList.remove('text-text-dark-secondary');
+            const span = activeBtn.querySelector('span:last-child');
+            if (span) span.classList.add('font-bold');
+        }
     }
 
     function showMessage(title, message) {
@@ -1114,7 +1305,10 @@
 
     // --- Lógica de Navegação ---
     document.getElementById('btn-goto-register').addEventListener('click', () => showScreen('register'));
+    document.getElementById('btn-goto-register').addEventListener('click', () => showScreen('register'));
     document.getElementById('btn-goto-login').addEventListener('click', () => showScreen('login'));
+    document.getElementById('btn-goto-hub').addEventListener('click', (e) => { e.preventDefault(); showScreen('dashboard'); });
+    document.getElementById('btn-goto-character').addEventListener('click', (e) => { e.preventDefault(); showScreen('character'); });
     document.getElementById('login-back-btn').addEventListener('click', () => showScreen('splash'));
     document.getElementById('login-forgot-link').addEventListener('click', () => showScreen('forgot'));
     document.getElementById('forgot-back-btn').addEventListener('click', () => showScreen('login'));
@@ -1303,6 +1497,7 @@
           if (docSnap.exists()) {
             const data = docSnap.data();
             populateDashboard(user, data);
+            loadCharacterData(user.uid); // Carrega os dados detalhados da ficha
             showScreen('dashboard');
           } else {
             console.log('Perfil não encontrado, redirecionando para cadastro...');
@@ -2948,6 +3143,547 @@ Sub-tarefas: ${subtasksString}`;
     });
 
     document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
+
+
+    // --- LÓGICA DA TELA DE PERSONAGEM ---
+
+    async function loadCharacterData(uid) {
+        if (!uid) {
+            console.error("UID do usuário não fornecido para carregar dados do personagem.");
+            return;
+        }
+        const profileRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'details');
+        const inventoryRef = collection(db, 'artifacts', appId, 'users', uid, 'inventory');
+        const goalsRef = collection(db, 'artifacts', appId, 'users', uid, 'goals');
+        const dailyLogRef = collection(db, 'artifacts', appId, 'users', uid, 'daily_log');
+
+        try {
+            const [profileSnap, inventorySnap, goalsSnap, dailyLogSnap] = await Promise.all([
+                getDoc(profileRef),
+                getDocs(inventoryRef),
+                getDocs(goalsRef),
+                getDocs(query(dailyLogRef, orderBy("timestamp", "asc")))
+            ]);
+
+            if (profileSnap.exists()) {
+                fullProfileData = profileSnap.data();
+                renderAdventurerPanel(fullProfileData.character, fullProfileData.nickname);
+                renderVitalsPanel(fullProfileData.vitals, fullProfileData.status_effects);
+                renderAttributesPanel(fullProfileData.stats);
+            }
+
+            const inventoryItems = inventorySnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderInventory(inventoryItems);
+
+            const goals = goalsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderAchievements(goals);
+
+            characterDailyLogs = dailyLogSnap.docs.map(d => d.data()); // Armazena os logs
+            renderHealthChart(characterDailyLogs, fullProfileData.vitals);
+            renderProgressStats(characterDailyLogs, fullProfileData.vitals);
+            renderWeightOscillationChart(characterDailyLogs, 'day');
+
+        } catch (error) {
+            console.error("Error loading character data:", error);
+        }
+    }
+
+    function renderHealthChart(logs, vitals) {
+        const ctx = document.getElementById('health-chart').getContext('2d');
+        if (!ctx) return;
+
+        const labels = logs.map(log => new Date(log.timestamp.seconds * 1000).toLocaleDateString('pt-BR'));
+        const weightData = logs.map(log => log.peso_kg);
+        const fatData = logs.map(log => log.gordura_perc);
+
+        const datasets = [{
+            label: 'Peso (kg)',
+            data: weightData,
+            borderColor: 'rgba(19, 236, 109, 1)',
+            backgroundColor: 'rgba(19, 236, 109, 0.2)',
+            fill: true,
+            yAxisID: 'y-weight',
+        }];
+
+        if (fatData.some(d => d != null && d > 0)) {
+            datasets.push({
+                label: '% Gordura Corporal',
+                data: fatData,
+                borderColor: 'rgba(245, 158, 11, 1)',
+                backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                fill: false,
+                yAxisID: 'y-fat',
+            });
+        }
+
+        if (vitals && vitals.meta_peso_kg) {
+            datasets.push({
+                label: 'Meta de Peso',
+                data: Array(labels.length).fill(vitals.meta_peso_kg),
+                borderColor: 'rgba(239, 68, 68, 1)',
+                borderDash: [5, 5],
+                fill: false,
+                pointRadius: 0,
+                yAxisID: 'y-weight',
+            });
+        }
+
+        if (healthChart) {
+            healthChart.destroy();
+        }
+
+        healthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        ticks: { color: '#9db9a8' },
+                        grid: { color: '#335c47' }
+                    },
+                    'y-weight': {
+                        type: 'linear',
+                        position: 'left',
+                        title: { display: true, text: 'Peso (kg)', color: '#13ec6d' },
+                        ticks: { color: '#9db9a8' },
+                        grid: { color: '#335c47' }
+                    },
+                    'y-fat': {
+                        type: 'linear',
+                        position: 'right',
+                        title: { display: true, text: '% Gordura', color: '#f59e0b' },
+                        ticks: { color: '#9db9a8' },
+                        grid: { drawOnChartArea: false }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#ffffff' } }
+                }
+            }
+        });
+    }
+
+    function renderAdventurerPanel(character, nickname) {
+        document.getElementById('avatar-img').src = character.avatar_url || 'https://placehold.co/128x128/1a241e/13ec6d?text=?';
+        document.getElementById('character-level-title').textContent = `Nível ${character.level || 1}`;
+        document.getElementById('character-name').textContent = nickname || 'Aventureiro';
+
+        const equipment = character.equipment || {};
+        const slots = ['cabeca', 'peitoral', 'mao_direita', 'amuleto', 'botas'];
+        const defaultIcons = {
+            cabeca: 'skull',
+            peitoral: 'shield',
+            mao_direita: 'swords',
+            amuleto: 'diamond',
+            botas: 'foot_bones'
+        };
+
+        slots.forEach(slot => {
+            const slotEl = document.getElementById(`slot-${slot}`);
+            if (!slotEl) return;
+            const item = equipment[slot];
+            if (item && item.icon) {
+                slotEl.innerHTML = `<span class="material-symbols-outlined !text-4xl text-primary">${item.icon}</span>`;
+                slotEl.dataset.equippedItem = JSON.stringify(item);
+            } else {
+                slotEl.innerHTML = `<span class="material-symbols-outlined">${defaultIcons[slot]}</span>`;
+                delete slotEl.dataset.equippedItem;
+            }
+        });
+    }
+
+    function renderVitalsPanel(vitals, statusEffects) {
+        document.getElementById('current-weight').textContent = `${vitals.peso_atual_kg || '-'} kg`;
+        document.getElementById('current-imc').textContent = vitals.imc_atual || vitals.imc || '-';
+
+        const effectsContainer = document.getElementById('status-effects-container');
+        effectsContainer.innerHTML = '<h3 class="font-bold mb-2">Efeitos Ativos</h3>';
+
+        if (statusEffects && statusEffects.length > 0) {
+            const effectDisplayConfig = {
+                buff_composicao_saudavel: { icon: 'health_and_safety', color: 'text-primary' },
+                buff_descansado: { icon: 'bedtime', color: 'text-blue-400' },
+                buff_focado: { icon: 'psychology', color: 'text-purple-400' },
+                debuff_gordura_alta: { icon: 'sentiment_very_dissatisfied', color: 'text-debuff' },
+                debuff_gordura_baixa: { icon: 'sentiment_dissatisfied', color: 'text-debuff' },
+                debuff_imc_alto: { icon: 'sentiment_dissatisfied', color: 'text-debuff' },
+                debuff_imc_baixo: { icon: 'sentiment_dissatisfied', color: 'text-debuff' },
+                debuff_cansado: { icon: 'battery_alert', color: 'text-yellow-500' },
+                debuff_estressado: { icon: 'bolt', color: 'text-orange-500' },
+            };
+
+            const effectNameMap = {
+                energia_max: "Energia Máx",
+                hp_max: "HP Máx",
+                regeneracao_mana_energia: "Regen. Energia",
+                custo_mana: "Custo de Habilidade"
+            };
+
+            statusEffects.forEach(effect => {
+                const config = effectDisplayConfig[effect.id] || { icon: 'help', color: 'text-text-dark-secondary' };
+                const isBuff = (effect.id.startsWith('buff') && effect.value > 0) || (effect.id.startsWith('debuff') && effect.value > 0);
+                const effectText = effectNameMap[effect.effect] || effect.effect;
+                let valuePrefix = (effect.value > 0) ? '+' : '';
+                if (effect.id === 'debuff_estressado') valuePrefix = '+';
+                else if (effect.id === 'buff_focado') valuePrefix = '';
+                effectsContainer.innerHTML += `
+                    <div class="flex items-center gap-3 ${config.color}">
+                        <span class="material-symbols-outlined">${config.icon}</span>
+                        <p class="text-sm">"${effect.label}": ${valuePrefix}${effect.value}% ${effectText}</p>
+                    </div>
+                `;
+            });
+        } else {
+            effectsContainer.innerHTML += `<p class="text-sm text-text-dark-secondary">Nenhum efeito ativo.</p>`;
+        }
+    }
+
+    function renderAttributesPanel(stats) {
+        const attributesList = document.getElementById('attributes-list');
+        attributesList.innerHTML = '';
+        const attributeConfig = {
+            forca: { icon: 'fitness_center', name: 'FORÇA' },
+            inteligencia: { icon: 'school', name: 'INTELIGÊNCIA' },
+            velocidade: { icon: 'sprint', name: 'VELOCIDADE' },
+            vitalidade: { icon: 'favorite', name: 'VITALIDADE' },
+            carisma: { icon: 'star', name: 'CARISMA' }
+        };
+
+        for (const key in attributeConfig) {
+            const stat = stats[key] || { level: 1, xp_atual: 0, xp_para_upar: 100 };
+            const config = attributeConfig[key];
+            const xpPercent = (stat.xp_atual / stat.xp_para_upar) * 100;
+
+            attributesList.innerHTML += `
+                <div class="flex items-center gap-4">
+                    <div class="flex size-10 items-center justify-center rounded-full bg-surface-dark text-primary"><span class="material-symbols-outlined">${config.icon}</span></div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-baseline">
+                            <p class="font-bold">${config.name}</p>
+                            <p class="text-text-dark-secondary text-xs">Nível: ${stat.level}</p>
+                        </div>
+                        <div class="w-full bg-surface-secondary rounded-full h-2 mt-1">
+                            <div class="bg-primary h-2 rounded-full" style="width: ${xpPercent}%"></div>
+                        </div>
+                        <p class="text-text-dark-secondary text-xs text-right mt-1">${stat.xp_atual} / ${stat.xp_para_upar} XP</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function renderInventory(items) {
+        const inventoryGrid = document.getElementById('inventory-grid');
+        inventoryGrid.innerHTML = '';
+        const unequippedItems = items.filter(item => !item.equipado);
+
+        unequippedItems.forEach(item => {
+            inventoryGrid.innerHTML += `
+                <div class="inventory-item aspect-square bg-surface-dark border-2 border-border-dark rounded-lg flex items-center justify-center cursor-pointer" data-item='${JSON.stringify(item)}'>
+                    <span class="material-symbols-outlined !text-4xl text-primary">${item.icon || 'help'}</span>
+                </div>
+            `;
+        });
+    }
+
+    function renderAchievements(goals) {
+        const achievementsList = document.getElementById('achievements-list');
+        achievementsList.innerHTML = '';
+        if (!goals || goals.length === 0) {
+            achievementsList.innerHTML = `<p class="text-text-dark-secondary text-center">Nenhuma conquista ainda.</p>`;
+            return;
+        }
+
+        goals.forEach(goal => {
+            const progressPercent = (goal.progresso_atual / goal.progresso_total) * 100;
+            achievementsList.innerHTML += `
+                <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4 flex items-center gap-4 ${goal.concluido ? 'opacity-70' : ''}">
+                    <span class="material-symbols-outlined !text-4xl text-yellow-400">emoji_events</span>
+                    <div class="flex-1">
+                        <p class="font-bold">${goal.titulo}</p>
+                        <p class="text-text-dark-secondary text-sm">${goal.descricao}</p>
+                        ${!goal.concluido ? `
+                        <div class="w-full bg-surface-secondary rounded-full h-2 my-1">
+                            <div class="bg-yellow-400 h-2 rounded-full" style="width: ${progressPercent}%;"></div>
+                        </div>
+                        <p class="text-text-dark-secondary text-xs">${goal.progresso_atual} / ${goal.progresso_total}</p>
+                        ` : `<p class="text-primary text-sm font-semibold mt-1">Recompensa: ${goal.recompensa || '[Item Raro]'}</p>`}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    const dailyLogModal = document.getElementById('modal-add-log');
+    const itemActionModal = document.getElementById('modal-item-action');
+
+    document.getElementById('add-daily-log-btn').addEventListener('click', () => dailyLogModal.classList.remove('hidden'));
+    document.getElementById('cancel-log-update').addEventListener('click', () => dailyLogModal.classList.add('hidden'));
+    document.getElementById('confirm-log-update').addEventListener('click', handleAddDailyLog);
+    document.getElementById('item-action-cancel-btn').addEventListener('click', () => itemActionModal.classList.add('hidden'));
+
+    function calcularNovosStatus(imc, gordura_perc, sono, estresse) {
+        let status_array = [];
+        if (gordura_perc && gordura_perc > 0) {
+            if (gordura_perc > 30) status_array.push({ id: "debuff_gordura_alta", label: "Gordura Elevada", effect: "energia_max", value: -15 });
+            else if (gordura_perc < 10) status_array.push({ id: "debuff_gordura_baixa", label: "Gordura Baixa", effect: "hp_max", value: -10 });
+            else status_array.push({ id: "buff_composicao_saudavel", label: "Composição Saudável", effect: "energia_max", value: 5 });
+        } else {
+            if (imc > 25) status_array.push({ id: "debuff_imc_alto", label: "Sobrepeso", effect: "energia_max", value: -10 });
+            else if (imc < 18.5) status_array.push({ id: "debuff_imc_baixo", label: "Abaixo do Peso", effect: "hp_max", value: -10 });
+        }
+        if (sono && sono >= 8) status_array.push({ id: "buff_descansado", label: "Descansado", effect: "regeneracao_mana_energia", value: 10 });
+        else if (sono && sono < 5) status_array.push({ id: "debuff_cansado", label: "Cansado", effect: "regeneracao_mana_energia", value: -10 });
+        if (estresse && estresse === 1) status_array.push({ id: "buff_focado", label: "Focado", effect: "custo_mana", value: -5 });
+        else if (estresse && estresse === 5) status_array.push({ id: "debuff_estressado", label: "Estressado", effect: "custo_mana", value: 10 });
+        return status_array;
+    }
+
+    function recalcularAtributosDerivados(novos_status, stats) {
+        const safeStats = stats || {};
+        const forca = safeStats.forca?.level || 1;
+        const vitalidade = safeStats.vitalidade?.level || 1;
+        const velocidade = safeStats.velocidade?.level || 1;
+        let hp_max_base = 100 + (vitalidade * 10) + (forca * 2);
+        let energia_max_base = 100 + (forca * 5) + (velocidade * 5);
+        novos_status.forEach(effect => {
+            if (effect.effect === "hp_max") hp_max_base *= (1 + (effect.value / 100));
+            else if (effect.effect === "energia_max") energia_max_base *= (1 + (effect.value / 100));
+        });
+        return {
+            hp_max_final: Math.round(hp_max_base),
+            energia_max_final: Math.round(energia_max_base)
+        };
+    }
+
+    async function handleAddDailyLog() {
+        const getNumericValue = (id) => {
+            const value = document.getElementById(id).value;
+            return (value === '' || value === null) ? null : parseFloat(value);
+        };
+        const newWeight = getNumericValue('log-weight-input');
+        if (newWeight === null || newWeight <= 0) return alert("Por favor, insira um peso válido.");
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+                const dailyLogCollectionRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'daily_log');
+                const profileSnap = await transaction.get(profileRef);
+                if (!profileSnap.exists()) throw "Documento de perfil não existe!";
+
+                const recentLogsQuery = query(dailyLogCollectionRef, orderBy("timestamp", "desc"), limit(6));
+                const recentLogsSnap = await getDocs(recentLogsQuery);
+                const recentLogs = recentLogsSnap.docs.map(d => d.data());
+
+                const newFatPerc = getNumericValue('log-fat-perc-input');
+                const newSleepHours = getNumericValue('log-sleep-hours-input');
+                const newStressLevel = getNumericValue('log-stress-level-input');
+                const allLogsForAverage = [{ horas_sono: newSleepHours, nivel_estresse: newStressLevel }, ...recentLogs];
+                const calculateAverage = (logs, field) => {
+                    const valid = logs.map(log => log[field]).filter(val => val !== null && val !== undefined);
+                    return valid.length ? parseFloat((valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1)) : null;
+                };
+
+                const profileData = profileSnap.data();
+                const altura_m = profileData.vitals.altura_cm / 100;
+                const newImc = parseFloat((newWeight / (altura_m * altura_m)).toFixed(1));
+                const novosStatus = calcularNovosStatus(newImc, newFatPerc, newSleepHours, newStressLevel);
+                const atributosDerivados = recalcularAtributosDerivados(novosStatus, profileData.stats);
+
+                transaction.set(doc(dailyLogCollectionRef), {
+                    timestamp: new Date(),
+                    peso_kg: newWeight,
+                    gordura_perc: newFatPerc,
+                    horas_sono: newSleepHours,
+                    nivel_estresse: newStressLevel
+                });
+                transaction.update(profileRef, {
+                    vitals: {
+                        ...profileData.vitals,
+                        peso_atual_kg: newWeight,
+                        imc_atual: newImc,
+                        gordura_corporal_perc: newFatPerc !== null ? newFatPerc : (profileData.vitals.gordura_corporal_perc || null),
+                        horas_sono_media: calculateAverage(allLogsForAverage, 'horas_sono'),
+                        estresse_medio: calculateAverage(allLogsForAverage, 'nivel_estresse')
+                    },
+                    status_effects: novosStatus,
+                    character: {
+                        ...profileData.character,
+                        hp_max: atributosDerivados.hp_max_final,
+                        energia_max: atributosDerivados.energia_max_final
+                    }
+                });
+            });
+            dailyLogModal.classList.add('hidden');
+            ['log-weight-input', 'log-fat-perc-input', 'log-sleep-hours-input', 'log-stress-level-input'].forEach(id => document.getElementById(id).value = '');
+            loadCharacterData(currentUserId);
+            alert("Log diário adicionado com sucesso!");
+        } catch (e) {
+            console.error("Transação falhou: ", e);
+            alert("Falha ao adicionar o log diário. Tente novamente.");
+        }
+    }
+
+    document.getElementById('inventory-grid').addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.inventory-item');
+        if (itemEl) showItemActionModal(JSON.parse(itemEl.dataset.item), 'equip');
+    });
+
+    document.querySelectorAll('.equipment-slot').forEach(slot => {
+        slot.addEventListener('click', (e) => {
+            if (e.currentTarget.dataset.equippedItem) {
+                showItemActionModal(JSON.parse(e.currentTarget.dataset.equippedItem), 'unequip');
+            }
+        });
+    });
+
+    function showItemActionModal(item, actionType) {
+        document.getElementById('item-modal-title').textContent = item.nome;
+        document.getElementById('item-modal-effect').textContent = `Efeito: ${item.efeito}`;
+        const primaryBtn = document.getElementById('item-action-primary-btn');
+        if (actionType === 'equip') {
+            primaryBtn.textContent = 'Equipar';
+            primaryBtn.onclick = () => { equipItem(item.id, item.slot); itemActionModal.classList.add('hidden'); };
+        } else {
+            primaryBtn.textContent = 'Desequipar';
+            primaryBtn.onclick = () => { unequipItem(item.id, item.slot); itemActionModal.classList.add('hidden'); };
+        }
+        itemActionModal.classList.remove('hidden');
+    }
+
+    async function equipItem(itemId, slot) {
+        if (!slot) return alert("Este item não pode ser equipado.");
+        if (fullProfileData.character.equipment[slot]) return alert("Slot já ocupado. Desequipe o item atual primeiro.");
+        const batch = writeBatch(db);
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
+        const itemSnap = await getDoc(itemRef);
+        batch.update(itemRef, { equipado: true });
+        batch.update(profileRef, { [`character.equipment.${slot}`]: itemSnap.data() });
+        await batch.commit();
+        loadCharacterData(currentUserId);
+    }
+
+    async function unequipItem(itemId, slot) {
+        const batch = writeBatch(db);
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
+        batch.update(itemRef, { equipado: false });
+        batch.update(profileRef, { [`character.equipment.${slot}`]: deleteField() });
+        await batch.commit();
+        loadCharacterData(currentUserId);
+    }
+
+    const dots = document.querySelectorAll('.carousel-dot');
+    const slidesContainer = document.getElementById('health-slides');
+    let currentSlide = 0;
+    const goToSlide = (slideIndex) => {
+        currentSlide = slideIndex;
+        slidesContainer.style.transform = `translateX(-${slideIndex * 100}%)`;
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('bg-primary', index === slideIndex);
+            dot.classList.toggle('bg-surface-dark', index !== slideIndex);
+        });
+    };
+    dots.forEach(dot => dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.slideTo, 10))));
+    let touchStartX = 0;
+    const carousel = document.getElementById('health-carousel');
+    carousel.addEventListener('touchstart', (e) => touchStartX = e.changedTouches[0].screenX, { passive: true });
+    carousel.addEventListener('touchend', (e) => {
+        const swipeDist = e.changedTouches[0].screenX - touchStartX;
+        if (swipeDist > 50 && currentSlide > 0) goToSlide(currentSlide - 1);
+        else if (swipeDist < -50 && currentSlide < dots.length - 1) goToSlide(currentSlide + 1);
+    }, { passive: true });
+
+    function renderWeightOscillationChart(logs, period = 'day') {
+        const ctx = document.getElementById('weight-oscillation-chart').getContext('2d');
+        if (logs.length < 2) return;
+        let labels = [], data = [];
+        if (period === 'day') {
+            const last7 = logs.slice(-7);
+            labels = last7.map(l => new Date(l.timestamp.seconds * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+            data = last7.map((l, i) => i === 0 ? 0 : parseFloat((l.peso_kg - last7[i - 1].peso_kg).toFixed(2)));
+        } else {
+            const changes = logs.reduce((acc, log) => {
+                const key = period === 'month' ? new Date(log.timestamp.seconds * 1000).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : new Date(log.timestamp.seconds * 1000).getFullYear().toString();
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(log.peso_kg);
+                return acc;
+            }, {});
+            labels = Object.keys(changes);
+            data = labels.map(k => parseFloat((changes[k][changes[k].length - 1] - changes[k][0]).toFixed(2)));
+        }
+        if (weightOscillationChart) weightOscillationChart.destroy();
+        weightOscillationChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Oscilação (kg)',
+                    data,
+                    backgroundColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(19, 236, 109, 0.6)'),
+                    borderColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 1)' : 'rgba(19, 236, 109, 1)'),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: false, ticks: { color: '#a0a0a0' }, grid: { color: '#3b5445' } }, x: { ticks: { color: '#a0a0a0' }, grid: { color: '#3b5445' } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    document.getElementById('oscillation-period-btns').addEventListener('click', (e) => {
+        const btn = e.target.closest('.oscillation-btn');
+        if (btn) {
+            document.querySelectorAll('.oscillation-btn').forEach(b => {
+                b.classList.remove('bg-primary', 'text-background-dark');
+                b.classList.add('text-text-dark-secondary');
+            });
+            btn.classList.add('bg-primary', 'text-background-dark');
+            btn.classList.remove('text-text-dark-secondary');
+            renderWeightOscillationChart(characterDailyLogs, btn.dataset.period);
+        }
+    });
+
+    function renderProgressStats(logs, vitals) {
+        const container = document.getElementById('progress-stats-container');
+        if (logs.length < 2) return container.innerHTML = '<p class="text-text-dark-secondary">Adicione mais pesagens para ver suas estatísticas.</p>';
+
+        const lastLog = logs[logs.length - 1];
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const logs7d = logs.filter(l => new Date(l.timestamp.seconds * 1000) >= sevenDaysAgo);
+
+        let change7d = 0;
+        if (logs7d.length > 1) change7d = logs7d[logs7d.length - 1].peso_kg - logs7d[0].peso_kg;
+
+        let timeToGoal = 'N/A';
+        if (vitals.meta_peso_kg && change7d !== 0) {
+            const weightToChange = lastLog.peso_kg - vitals.meta_peso_kg;
+            if ((weightToChange > 0 && change7d < 0) || (weightToChange < 0 && change7d > 0)) {
+                const weeks = Math.abs(weightToChange / change7d);
+                timeToGoal = `${Math.ceil(weeks)} semanas`;
+            }
+        }
+
+        container.innerHTML = `
+            <div class="space-y-4">
+                <div>
+                    <p class="text-text-dark-secondary">Variação (7d)</p>
+                    <p class="text-2xl font-bold ${change7d > 0 ? 'text-debuff' : 'text-primary'}">${change7d > 0 ? 'Ganhou' : 'Perdeu'} ${Math.abs(change7d).toFixed(1)} kg</p>
+                </div>
+                <div>
+                    <p class="text-text-dark-secondary">Ritmo para Meta</p>
+                    <p class="text-2xl font-bold">${timeToGoal}</p>
+                </div>
+            </div>
+        `;
+    }
 
   </script>
 
