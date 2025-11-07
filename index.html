@@ -480,32 +480,6 @@
           <span class="material-symbols-outlined text-4xl">add</span>
         </button>
       </div>
-
-      <!-- Navegação Principal -->
-      <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
-        <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
-          <a id="btn-goto-home" class="flex flex-col items-center gap-1 text-primary cursor-pointer">
-            <span class="material-symbols-outlined">home</span>
-            <span class="text-xs font-bold">Início</span>
-          </a>
-          <a id="btn-goto-character" class="flex flex-col items-center gap-1 text-text-dark-secondary cursor-pointer">
-            <span class="material-symbols-outlined">shield_person</span>
-            <span class="text-xs">Personagem</span>
-          </a>
-          <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
-            <span class="material-symbols-outlined">swords</span>
-            <span class="text-xs">Guilda</span>
-          </a>
-          <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
-            <span class="material-symbols-outlined">store</span>
-            <span class="text-xs">Mercado</span>
-          </a>
-          <a id="hub-logout-btn" class="flex flex-col items-center gap-1 text-text-dark-secondary cursor-pointer" href="#">
-            <span class="material-symbols-outlined">settings</span>
-            <span class="text-xs">Opções</span>
-          </a>
-        </div>
-      </nav>
     </div>
 
     <!-- Tela 6: Criar Nova Tarefa (IA) -->
@@ -860,6 +834,32 @@
 
 
   </div>
+
+  <!-- Navegação Principal Movida -->
+  <nav id="main-nav" class="hidden fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
+    <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
+      <a id="btn-goto-home" class="flex flex-col items-center gap-1 text-primary cursor-pointer">
+        <span class="material-symbols-outlined">home</span>
+        <span class="text-xs font-bold">Início</span>
+      </a>
+      <a id="btn-goto-character" class="flex flex-col items-center gap-1 text-text-dark-secondary cursor-pointer">
+        <span class="material-symbols-outlined">shield_person</span>
+        <span class="text-xs">Personagem</span>
+      </a>
+      <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+        <span class="material-symbols-outlined">swords</span>
+        <span class="text-xs">Guilda</span>
+      </a>
+      <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+        <span class="material-symbols-outlined">store</span>
+        <span class="text-xs">Mercado</span>
+      </a>
+      <a id="hub-logout-btn" class="flex flex-col items-center gap-1 text-text-dark-secondary cursor-pointer" href="#">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="text-xs">Opções</span>
+      </a>
+    </div>
+  </nav>
 
   <!-- Modal de Mensagem/Erro -->
   <div id="modal-message" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
@@ -1223,17 +1223,28 @@
       console.log(`Navegando para: ${screenId}`, data ? `com dados: ${JSON.stringify(data)}` : '');
       Object.values(screens).forEach(screen => screen.classList.add('hidden'));
 
+      // Gerencia a visibilidade da navegação principal
+      const nav = document.getElementById('main-nav');
+      const screensWithNav = ['dashboard', 'character', 'calendar'];
+      if (screensWithNav.includes(screenId)) {
+        nav.classList.remove('hidden');
+      } else {
+        nav.classList.add('hidden');
+      }
+
       if (screens[screenId]) {
         screens[screenId].classList.remove('hidden');
       }
 
-      // Pré-processamento para a tela de detalhes da missão
+      // Pré-processamento para telas específicas
       if (screenId === 'missionDetails' && data) {
         loadMissionDetails(data); // O 'data' aqui é o taskId
       }
       if (screenId === 'character') {
         loadCharacterData(currentUserId);
       }
+      // Atualiza a UI da navegação
+      updateNavUI(screenId);
     }
 
     function showMessage(title, message) {
