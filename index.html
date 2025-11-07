@@ -200,7 +200,7 @@
     </div>
 
     <!-- Tela 2: Cadastro (Criação de Personagem) -->
-    <div id="screen-register" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden">
+    <div id="screen-register" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden pb-24">
       <!-- Top App Bar -->
       <div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10">
         <button id="reg-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
@@ -483,36 +483,10 @@
           <span class="material-symbols-outlined text-4xl">add</span>
         </button>
       </div>
-
-      <!-- Navegação Principal -->
-      <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
-        <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
-          <a id="btn-goto-hub" class="nav-btn flex flex-col items-center gap-1 text-primary" href="#">
-            <span class="material-symbols-outlined">home</span>
-            <span class="text-xs font-bold">Início</span>
-          </a>
-          <a id="btn-goto-character" class="nav-btn flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
-            <span class="material-symbols-outlined">shield_person</span>
-            <span class="text-xs">Personagem</span>
-          </a>
-          <a class="nav-btn flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
-            <span class="material-symbols-outlined">swords</span>
-            <span class="text-xs">Guilda</span>
-          </a>
-          <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
-            <span class="material-symbols-outlined">store</span>
-            <span class="text-xs">Mercado</span>
-          </a>
-          <a id="hub-logout-btn" class="flex flex-col items-center gap-1 text-text-dark-secondary cursor-pointer" href="#">
-            <span class="material-symbols-outlined">settings</span>
-            <span class="text-xs">Opções</span>
-          </a>
-        </div>
-      </nav>
     </div>
 
     <!-- Tela 6: Criar Nova Tarefa (IA) -->
-    <div id="screen-add-task" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark">
+    <div id="screen-add-task" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark pb-24">
       <!-- Header -->
       <div class="flex items-center bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10">
         <button id="task-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
@@ -664,7 +638,7 @@
     </div>
 
     <!-- Tela 7: Detalhes da Missão (Layout Baseado na Inspiração) -->
-    <div id="screen-mission-details" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-dark">
+    <div id="screen-mission-details" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-dark pb-24">
         <header class="flex items-center p-4 pb-2 justify-between">
             <div id="mission-details-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
                 <span class="material-symbols-outlined">arrow_back</span>
@@ -874,6 +848,32 @@
     </div>
 
   </div>
+
+  <!-- Navegação Principal Persistente -->
+  <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
+    <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
+      <a id="btn-goto-hub" class="nav-btn flex flex-col items-center gap-1 text-primary" href="#">
+        <span class="material-symbols-outlined">home</span>
+        <span class="text-xs font-bold">Início</span>
+      </a>
+      <a id="btn-goto-character" class="nav-btn flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+        <span class="material-symbols-outlined">shield_person</span>
+        <span class="text-xs">Personagem</span>
+      </a>
+      <a class="nav-btn flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+        <span class="material-symbols-outlined">swords</span>
+        <span class="text-xs">Guilda</span>
+      </a>
+      <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="#">
+        <span class="material-symbols-outlined">store</span>
+        <span class="text-xs">Mercado</span>
+      </a>
+      <a id="hub-logout-btn" class="flex flex-col items-center gap-1 text-text-dark-secondary cursor-pointer" href="#">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="text-xs">Opções</span>
+      </a>
+    </div>
+  </nav>
 
   <!-- Modal de Mensagem/Erro -->
   <div id="modal-message" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
