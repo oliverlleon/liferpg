@@ -13,6 +13,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <!-- Configuração do Tailwind -->
   <script>
     tailwind.config = {
@@ -116,6 +119,13 @@
         background: #13ec6d;
         border-radius: 50%;
         animation: particle-rise 3s infinite ease-out;
+    }
+    .equipment-slot {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .equipment-slot:hover {
+        background-color: #28392f;
     }
   </style>
 </head>
@@ -474,11 +484,11 @@
       <!-- Navegação Principal -->
       <nav class="fixed bottom-0 left-0 right-0 z-20 border-t border-border-dark bg-surface-dark/80 backdrop-blur-lg">
         <div class="mx-auto flex h-20 max-w-md items-center justify-around px-4">
-          <a classa="flex flex-col items-center gap-1 text-primary" href="#">
+          <a id="btn-goto-home" class="flex flex-col items-center gap-1 text-primary cursor-pointer">
             <span class="material-symbols-outlined">home</span>
             <span class="text-xs font-bold">Início</span>
           </a>
-          <a class="flex flex-col items-center gap-1 text-text-dark-secondary" href="character.html">
+          <a id="btn-goto-character" class="flex flex-col items-center gap-1 text-text-dark-secondary cursor-pointer">
             <span class="material-symbols-outlined">shield_person</span>
             <span class="text-xs">Personagem</span>
           </a>
@@ -762,6 +772,92 @@
         </div>
     </div>
 
+    <!-- Tela 9: Personagem (Ficha e Inventário) -->
+    <div id="screen-character" class="hidden relative flex min-h-screen w-full flex-col pb-24">
+      <header class="flex flex-col items-center p-4 pt-8">
+        <div class="relative w-full max-w-sm mx-auto h-72">
+        <div class="absolute z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <img alt="Avatar do Aventureiro" id="avatar-img" class="w-32 h-32 rounded-full border-4 border-primary object-cover shadow-lg" src="https://placehold.co/128x128/1a241e/13ec6d?text=?"/>
+        </div>
+        <div id="slot-cabeca" data-slot="cabeca" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 0; left: 50%; transform: translateX(-50%);"><span class="material-symbols-outlined">skull</span></div>
+        <div id="slot-peitoral" data-slot="peitoral" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 50%; left: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">shield</span></div>
+        <div id="slot-mao_direita" data-slot="mao_direita" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="top: 50%; right: 0; transform: translateY(-50%);"><span class="material-symbols-outlined">swords</span></div>
+        <div id="slot-amuleto" data-slot="amuleto" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="bottom: 0; left: 25%; transform: translateX(-50%);"><span class="material-symbols-outlined">diamond</span></div>
+        <div id="slot-botas" data-slot="botas" class="equipment-slot absolute w-16 h-16 rounded-lg bg-surface border-2 border-border-dark flex items-center justify-center text-text-dark-secondary" style="bottom: 0; right: 25%; transform: translateX(50%);"><span class="material-symbols-outlined">foot_bones</span></div>
+        </div>
+        <h1 id="character-level-title" class="text-2xl font-bold mt-4">Carregando...</h1>
+        <p id="character-name" class="text-text-dark-secondary">...</p>
+      </header>
+      <main class="flex-1 px-4 space-y-8">
+        <section>
+          <div class="bg-surface-dark/50 rounded-lg p-4 border border-border-dark">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <p class="text-text-dark-secondary text-sm">Peso Atual</p>
+                <p id="current-weight" class="text-xl font-bold">- kg</p>
+              </div>
+              <div>
+                <p class="text-text-dark-secondary text-sm text-right">IMC</p>
+                <p id="current-imc" class="text-xl font-bold text-right">-</p>
+              </div>
+              <button id="add-daily-log-btn" class="flex items-center justify-center gap-2 rounded-full h-10 px-4 bg-surface-dark text-primary text-sm font-bold">
+                <span class="material-symbols-outlined !text-base">add_circle</span>
+                <span>Adicionar Log Diário</span>
+              </button>
+            </div>
+            <div id="status-effects-container" class="border-t border-border-dark pt-4">
+              <h3 class="font-bold mb-2 text-primary">Efeitos Ativos</h3>
+            </div>
+          </div>
+        </section>
+        <section id="health-carousel" class="relative w-full max-w-lg mx-auto overflow-hidden bg-surface-dark/50 rounded-lg p-4 border border-border-dark">
+          <div id="health-slides" class="flex transition-transform duration-300 ease-in-out">
+            <!-- Slide 1: Gráfico Principal -->
+            <div class="w-full flex-shrink-0">
+              <canvas id="healthChart"></canvas>
+            </div>
+            <!-- Slide 2: Oscilação de Peso -->
+            <div class="w-full flex-shrink-0">
+              <h3 class="text-center font-bold text-primary mb-2">Oscilação de Peso</h3>
+              <div id="oscillation-period-btns" class="flex justify-center gap-2 mb-3">
+                <button data-period="day" class="oscillation-btn px-3 py-1 text-xs rounded-full bg-primary text-background-dark">7 Dias</button>
+                <button data-period="month" class="oscillation-btn px-3 py-1 text-xs rounded-full text-text-dark-secondary">Mês</button>
+                <button data-period="year" class="oscillation-btn px-3 py-1 text-xs rounded-full text-text-dark-secondary">Ano</button>
+              </div>
+              <canvas id="weight-oscillation-chart" height="250"></canvas>
+            </div>
+            <!-- Slide 3: Estatísticas de Progresso -->
+            <div class="w-full flex-shrink-0 flex items-center justify-center h-full min-h-[300px]">
+              <div id="progress-stats-container" class="text-center">
+                <p class="text-text-dark-secondary">Carregando estatísticas...</p>
+              </div>
+            </div>
+          </div>
+          <!-- Bolinhas de Navegação -->
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            <button data-slide-to="0" class="carousel-dot h-2 w-2 rounded-full bg-primary"></button>
+            <button data-slide-to="1" class="carousel-dot h-2 w-2 rounded-full bg-surface-dark"></button>
+            <button data-slide-to="2" class="carousel-dot h-2 w-2 rounded-full bg-surface-dark"></button>
+          </div>
+        </section>
+        <section>
+          <h2 class="text-xl font-bold mb-4">Atributos</h2>
+          <div id="attributes-list" class="bg-surface-dark/50 rounded-lg p-4 space-y-4 border border-border-dark">
+          </div>
+        </section>
+        <section>
+          <h2 class="text-xl font-bold mb-4">Inventário</h2>
+          <div id="inventory-grid" class="grid grid-cols-4 sm:grid-cols-5 gap-4">
+          </div>
+        </section>
+        <section>
+          <h2 class="text-xl font-bold mb-4">Conquistas</h2>
+          <div id="achievements-list" class="space-y-3">
+          </div>
+        </section>
+      </main>
+    </div>
+
 
   </div>
 
@@ -841,6 +937,55 @@
     </div>
 
 
+  <!-- Modal de Adicionar Log Diário -->
+  <div id="modal-daily-log" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm space-y-4">
+          <h3 class="text-primary text-xl font-bold text-center">Adicionar Log Diário</h3>
+
+          <div>
+              <label for="log-peso" class="block text-sm font-medium text-text-dark-secondary mb-1">Novo Peso (kg) <span class="text-red-500">*</span></label>
+              <input id="log-peso" type="number" placeholder="Obrigatório" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div class="border-t border-border-dark my-4"></div>
+
+          <p class="text-center text-sm text-text-dark-secondary">Opcional - Para cálculos mais precisos:</p>
+
+          <div>
+              <label for="log-gordura" class="block text-sm font-medium text-text-dark-secondary mb-1">Gordura Corporal (%)</label>
+              <input id="log-gordura" type="number" placeholder="Ex: 15.2" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div>
+              <label for="log-sono" class="block text-sm font-medium text-text-dark-secondary mb-1">Horas de Sono</label>
+              <input id="log-sono" type="number" placeholder="Ex: 8" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div>
+              <label for="log-estresse" class="block text-sm font-medium text-text-dark-secondary mb-1">Nível de Estresse (1-5)</label>
+              <input id="log-estresse" type="number" min="1" max="5" placeholder="1 (baixo) - 5 (alto)" class="form-input w-full bg-background-dark border-border-dark rounded-md text-center text-lg">
+          </div>
+
+          <div class="flex gap-4 pt-4">
+              <button id="cancel-daily-log" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Cancelar</button>
+              <button id="confirm-daily-log" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Salvar</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- Modal de Ação de Item -->
+  <div id="modal-item-action" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm text-center">
+      <h3 id="item-modal-title" class="text-primary text-xl font-bold mb-2">Nome do Item</h3>
+      <p id="item-modal-effect" class="text-text-dark-secondary mb-6">Efeito do item</p>
+      <div class="flex gap-4">
+        <button id="item-action-secondary-btn" class="flex-1 rounded-full h-12 bg-surface-dark/50 text-white font-bold">Descartar</button>
+        <button id="item-action-primary-btn" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Ação</button>
+      </div>
+      <button id="item-action-cancel-btn" class="w-full mt-3 rounded-full h-10 bg-transparent text-text-dark-secondary">Cancelar</button>
+    </div>
+  </div>
+
   <!-- Firebase SDKs -->
   <script type="module">
     // Importações do Firebase
@@ -869,9 +1014,13 @@
       collection,
       addDoc,
       writeBatch,
+      deleteField,
       setLogLevel,
       Timestamp,
-      runTransaction
+      runTransaction,
+      query,
+      orderBy,
+      limit
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import {
         getStorage,
@@ -948,6 +1097,15 @@
     // --- Variáveis da Tela do Calendário ---
     let currentCalendarDate = new Date();
 
+    // --- Variáveis da Tela de Personagem ---
+    let fullProfileData = null;
+    let characterDailyLogs = [];
+    let healthChart = null;
+
+    // --- Lógica do Carrossel de Saúde ---
+    let weightOscillationChart = null;
+    let currentSlide = 0;
+
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
     const REWARDS_DIFFICULTY = {
@@ -970,7 +1128,8 @@
       dashboard: document.getElementById('screen-dashboard'),
       addTask: document.getElementById('screen-add-task'),
       missionDetails: document.getElementById('screen-mission-details'),
-      calendar: document.getElementById('screen-calendar')
+      calendar: document.getElementById('screen-calendar'),
+      character: document.getElementById('screen-character')
     };
 
     const registerSteps = {
@@ -1071,6 +1230,9 @@
       // Pré-processamento para a tela de detalhes da missão
       if (screenId === 'missionDetails' && data) {
         loadMissionDetails(data); // O 'data' aqui é o taskId
+      }
+      if (screenId === 'character') {
+        loadCharacterData(currentUserId);
       }
     }
 
@@ -2948,6 +3110,583 @@ Sub-tarefas: ${subtasksString}`;
     });
 
     document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
+
+    // --- LÓGICA DE NAVEGAÇÃO DA BARRA INFERIOR ---
+    document.getElementById('btn-goto-home').addEventListener('click', () => {
+        showScreen('dashboard');
+        updateNavUI('home');
+    });
+
+    document.getElementById('btn-goto-character').addEventListener('click', () => {
+        showScreen('character');
+        updateNavUI('character');
+    });
+
+    function updateNavUI(activeScreen) {
+        const homeBtn = document.getElementById('btn-goto-home');
+        const charBtn = document.getElementById('btn-goto-character');
+
+        homeBtn.classList.remove('text-primary');
+        charBtn.classList.remove('text-primary');
+        homeBtn.classList.add('text-text-dark-secondary');
+        charBtn.classList.add('text-text-dark-secondary');
+
+        if (activeScreen === 'home') {
+            homeBtn.classList.add('text-primary');
+            homeBtn.classList.remove('text-text-dark-secondary');
+        } else if (activeScreen === 'character') {
+            charBtn.classList.add('text-primary');
+            charBtn.classList.remove('text-text-dark-secondary');
+        }
+    }
+
+    const goToSlide = (slideIndex) => {
+        const slidesContainer = document.getElementById('health-slides');
+        const dots = document.querySelectorAll('.carousel-dot');
+        if (!slidesContainer) return;
+        currentSlide = slideIndex;
+        slidesContainer.style.transform = `translateX(-${slideIndex * 100}%)`;
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('bg-primary', index === slideIndex);
+            dot.classList.toggle('bg-surface-dark', index !== slideIndex);
+        });
+    };
+
+    document.querySelectorAll('.carousel-dot').forEach(dot => {
+        dot.addEventListener('click', () => {
+            goToSlide(parseInt(dot.dataset.slideTo, 10));
+        });
+    });
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const carousel = document.getElementById('health-carousel');
+
+    if (carousel) {
+        carousel.addEventListener('touchstart', (event) => {
+            touchStartX = event.changedTouches[0].screenX;
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', (event) => {
+            touchEndX = event.changedTouches[0].screenX;
+            handleSwipe();
+        }, { passive: true });
+    }
+
+    const handleSwipe = () => {
+        const swipeThreshold = 50;
+        const swipeDistance = touchEndX - touchStartX;
+        if (swipeDistance > swipeThreshold) {
+            if (currentSlide > 0) goToSlide(currentSlide - 1);
+        } else if (swipeDistance < -swipeThreshold) {
+            if (currentSlide < 2) goToSlide(currentSlide + 1); // Assumes 3 slides
+        }
+    };
+
+    function renderWeightOscillationChart(logs, period = 'day') {
+        const ctx = document.getElementById('weight-oscillation-chart')?.getContext('2d');
+        if (!ctx || logs.length < 2) return;
+
+        let labels = [];
+        let data = [];
+
+        if (period === 'day') {
+            const last7Logs = logs.slice(-7);
+            labels = last7Logs.map(log => new Date(log.timestamp.seconds * 1000).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+            data = last7Logs.map((log, i) => {
+                if (i === 0) return 0;
+                const change = log.peso_kg - last7Logs[i-1].peso_kg;
+                return parseFloat(change.toFixed(2));
+            });
+        } else if (period === 'month') {
+            const monthlyChanges = logs.reduce((acc, log) => {
+                const date = new Date(log.timestamp.seconds * 1000);
+                const monthYear = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+                if (!acc[monthYear]) acc[monthYear] = { logs: [] };
+                acc[monthYear].logs.push(log.peso_kg);
+                return acc;
+            }, {});
+            labels = Object.keys(monthlyChanges);
+            data = labels.map(month => {
+                const monthLogs = monthlyChanges[month].logs;
+                const change = monthLogs[monthLogs.length - 1] - monthLogs[0];
+                return parseFloat(change.toFixed(2));
+            });
+        } else if (period === 'year') {
+                const yearlyChanges = logs.reduce((acc, log) => {
+                const date = new Date(log.timestamp.seconds * 1000);
+                const year = date.getFullYear().toString();
+                if (!acc[year]) acc[year] = { logs: [] };
+                acc[year].logs.push(log.peso_kg);
+                return acc;
+            }, {});
+            labels = Object.keys(yearlyChanges);
+            data = labels.map(year => {
+                const yearLogs = yearlyChanges[year].logs;
+                const change = yearLogs[yearLogs.length - 1] - yearLogs[0];
+                return parseFloat(change.toFixed(2));
+            });
+        }
+
+        if (weightOscillationChart) weightOscillationChart.destroy();
+
+        weightOscillationChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Oscilação (kg)', data, backgroundColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(19, 236, 109, 0.6)'), borderColor: data.map(d => d >= 0 ? 'rgba(239, 68, 68, 1)' : 'rgba(19, 236, 109, 1)'), borderWidth: 1 }] },
+            options: { scales: { y: { beginAtZero: false, ticks: { color: '#a0a0a0' }, grid: { color: '#3b5445' } }, x: { ticks: { color: '#a0a0a0' }, grid: { color: '#3b5445' } } }, plugins: { legend: { display: false } } }
+        });
+    }
+
+    const oscillationPeriodBtns = document.getElementById('oscillation-period-btns');
+    if(oscillationPeriodBtns) {
+        oscillationPeriodBtns.addEventListener('click', (e) => {
+            const button = e.target.closest('.oscillation-btn');
+            if (button) {
+                document.querySelectorAll('.oscillation-btn').forEach(btn => {
+                    btn.classList.remove('bg-primary', 'text-background-dark');
+                    btn.classList.add('text-text-dark-secondary');
+                });
+                button.classList.add('bg-primary', 'text-background-dark');
+                renderWeightOscillationChart(characterDailyLogs, button.dataset.period);
+            }
+        });
+    }
+
+    function renderProgressStats(logs, vitals) {
+        const container = document.getElementById('progress-stats-container');
+        if(!container || logs.length < 2) {
+            if(container) container.innerHTML = '<p class="text-text-dark-secondary">Adicione mais pesagens para ver suas estatísticas.</p>';
+            return;
+        }
+
+        const lastLog = logs[logs.length - 1];
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const logsLast7Days = logs.filter(log => new Date(log.timestamp.seconds * 1000) >= sevenDaysAgo);
+
+        let weightChange7Days = 0;
+        if (logsLast7Days.length > 1) {
+            weightChange7Days = logsLast7Days[logsLast7Days.length - 1].peso_kg - logsLast7Days[0].peso_kg;
+        }
+
+        let timeToGoal = 'N/A';
+        if (vitals.meta_peso_kg && weightChange7Days !== 0) {
+            const weightToLose = lastLog.peso_kg - vitals.meta_peso_kg;
+            if (weightToLose > 0 && weightChange7Days < 0) timeToGoal = `${Math.ceil(weightToLose / -weightChange7Days)} semanas`;
+            else if (weightToLose < 0 && weightChange7Days > 0) timeToGoal = `${Math.ceil(-weightToLose / weightChange7Days)} semanas`;
+        }
+
+        const weeklyChangeText = weightChange7Days > 0 ? `Ganhou ${weightChange7Days.toFixed(1)} kg` : `Perdeu ${(-weightChange7Days).toFixed(1)} kg`;
+        container.innerHTML = `<div class="space-y-4"><div><p class="text-text-dark-secondary">Variação (7d)</p><p class="text-2xl font-bold ${weightChange7Days > 0 ? 'text-red-500' : 'text-primary'}">${weeklyChangeText}</p></div><div><p class="text-text-dark-secondary">Ritmo para Meta</p><p class="text-2xl font-bold">${timeToGoal}</p></div></div>`;
+    }
+
+
+    // --- LÓGICA DA TELA DE PERSONAGEM ---
+    async function loadCharacterData(uid) {
+        if (!uid) return;
+        const profileRef = doc(db, 'artifacts', appId, 'users', uid, 'profile', 'details');
+        const inventoryRef = collection(db, 'artifacts', appId, 'users', uid, 'inventory');
+        const goalsRef = collection(db, 'artifacts', appId, 'users', uid, 'goals');
+        const dailyLogRef = collection(db, 'artifacts', appId, 'users', uid, 'daily_log');
+
+        try {
+            const [profileSnap, inventorySnap, goalsSnap, logSnap] = await Promise.all([
+                getDoc(profileRef),
+                getDocs(inventoryRef),
+                getDocs(goalsRef),
+                getDocs(dailyLogRef)
+            ]);
+
+            if (profileSnap.exists()) {
+                fullProfileData = profileSnap.data();
+                renderAdventurerPanel(fullProfileData.character, fullProfileData.nickname);
+                renderVitalsPanel(fullProfileData.vitals, fullProfileData.status_effects);
+                renderAttributesPanel(fullProfileData.stats);
+            }
+
+            const inventoryItems = inventorySnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderInventory(inventoryItems);
+
+            const goals = goalsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderAchievements(goals);
+
+            characterDailyLogs = logSnap.docs.map(d => d.data()).sort((a,b) => a.timestamp.seconds - b.timestamp.seconds);
+            renderHealthChart();
+            renderWeightOscillationChart(characterDailyLogs);
+            renderProgressStats(characterDailyLogs, fullProfileData.vitals);
+
+        } catch (error) {
+            console.error("Error loading character data:", error);
+        }
+    }
+
+    function renderAdventurerPanel(character, nickname) {
+        document.getElementById('avatar-img').src = character.avatar_url || 'https://placehold.co/128x128/1a241e/13ec6d?text=?';
+        document.getElementById('character-level-title').textContent = `Nível ${character.level || 1}`;
+        document.getElementById('character-name').textContent = nickname || 'Aventureiro';
+
+        const equipment = character.equipment || {};
+        const slots = ['cabeca', 'peitoral', 'mao_direita', 'amuleto', 'botas'];
+        const defaultIcons = {
+            cabeca: 'skull',
+            peitoral: 'shield',
+            mao_direita: 'swords',
+            amuleto: 'diamond',
+            botas: 'foot_bones'
+        };
+
+        slots.forEach(slot => {
+            const slotEl = document.getElementById(`slot-${slot}`);
+            if(!slotEl) return;
+            const item = equipment[slot];
+            if (item && item.icon) {
+                slotEl.innerHTML = `<span class="material-symbols-outlined !text-4xl text-primary">${item.icon}</span>`;
+                slotEl.dataset.equippedItem = JSON.stringify(item);
+            } else {
+                slotEl.innerHTML = `<span class="material-symbols-outlined">${defaultIcons[slot]}</span>`;
+                delete slotEl.dataset.equippedItem;
+            }
+        });
+    }
+
+    function renderVitalsPanel(vitals, statusEffects) {
+        document.getElementById('current-weight').textContent = `${vitals.peso_atual_kg || '-'} kg`;
+        document.getElementById('current-imc').textContent = vitals.imc_atual || vitals.imc || '-';
+
+        const effectsContainer = document.getElementById('status-effects-container');
+        effectsContainer.innerHTML = '<h3 class="font-bold mb-2 text-primary">Efeitos Ativos</h3>';
+
+        if (statusEffects && statusEffects.length > 0) {
+            const effectDisplayConfig = {
+                buff_composicao_saudavel: { icon: 'health_and_safety', color: 'text-primary' },
+                buff_descansado: { icon: 'bedtime', color: 'text-blue-400' },
+                buff_focado: { icon: 'psychology', color: 'text-purple-400' },
+                debuff_gordura_alta: { icon: 'sentiment_very_dissatisfied', color: 'text-red-500' },
+                debuff_gordura_baixa: { icon: 'sentiment_dissatisfied', color: 'text-red-500' },
+                debuff_imc_alto: { icon: 'sentiment_dissatisfied', color: 'text-red-500' },
+                debuff_imc_baixo: { icon: 'sentiment_dissatisfied', color: 'text-red-500' },
+                debuff_cansado: { icon: 'battery_alert', color: 'text-yellow-500' },
+                debuff_estressado: { icon: 'bolt', color: 'text-orange-500' },
+            };
+
+            const effectNameMap = {
+                energia_max: "Energia Máx",
+                hp_max: "HP Máx",
+                regeneracao_mana_energia: "Regen. Energia",
+                custo_mana: "Custo de Habilidade"
+            };
+
+            statusEffects.forEach(effect => {
+                const config = effectDisplayConfig[effect.id] || { icon: 'help', color: 'text-text-dark-secondary' };
+                const effectText = effectNameMap[effect.effect] || effect.effect;
+                let valuePrefix = (effect.value > 0) ? '+' : '';
+                if (effect.id === 'debuff_estressado') valuePrefix = '+';
+                else if (effect.id === 'buff_focado') valuePrefix = '';
+
+                effectsContainer.innerHTML += `
+                    <div class="flex items-center gap-3 ${config.color}">
+                        <span class="material-symbols-outlined">${config.icon}</span>
+                        <p class="text-sm">"${effect.label}": ${valuePrefix}${effect.value}% ${effectText}</p>
+                    </div>
+                `;
+            });
+
+        } else {
+            effectsContainer.innerHTML += `<p class="text-sm text-text-dark-secondary">Nenhum efeito ativo.</p>`;
+        }
+    }
+
+    function renderAttributesPanel(stats) {
+        const attributesList = document.getElementById('attributes-list');
+        attributesList.innerHTML = '';
+        const attributeConfig = {
+            forca: { icon: 'fitness_center', name: 'FORÇA' },
+            inteligencia: { icon: 'school', name: 'INTELIGÊNCIA' },
+            velocidade: { icon: 'sprint', name: 'VELOCIDADE' },
+            vitalidade: { icon: 'favorite', name: 'VITALIDADE' },
+            carisma: { icon: 'star', name: 'CARISMA' }
+        };
+
+        for (const key in attributeConfig) {
+            const stat = stats[key] || { level: 1, xp_atual: 0, xp_para_upar: 100 };
+            const config = attributeConfig[key];
+            const xpPercent = (stat.xp_atual / stat.xp_para_upar) * 100;
+
+            attributesList.innerHTML += `
+                <div class="flex items-center gap-4">
+                    <div class="flex size-10 items-center justify-center rounded-full bg-surface-dark text-primary"><span class="material-symbols-outlined">${config.icon}</span></div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-baseline">
+                            <p class="font-bold">${config.name}</p>
+                            <p class="text-text-dark-secondary text-xs">Nível: ${stat.level}</p>
+                        </div>
+                        <div class="w-full bg-surface-dark rounded-full h-2 mt-1">
+                            <div class="bg-primary h-2 rounded-full" style="width: ${xpPercent}%"></div>
+                        </div>
+                        <p class="text-text-dark-secondary text-xs text-right mt-1">${stat.xp_atual} / ${stat.xp_para_upar} XP</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function renderInventory(items) {
+        const inventoryGrid = document.getElementById('inventory-grid');
+        inventoryGrid.innerHTML = '';
+        const unequippedItems = items.filter(item => !item.equipado);
+
+        unequippedItems.forEach(item => {
+            inventoryGrid.innerHTML += `
+                <div class="inventory-item aspect-square bg-surface-dark border-2 border-border-dark rounded-lg flex items-center justify-center cursor-pointer" data-item='${JSON.stringify(item)}'>
+                    <span class="material-symbols-outlined !text-4xl text-primary">${item.icon || 'help'}</span>
+                </div>
+            `;
+        });
+    }
+
+    function renderAchievements(goals) {
+        const achievementsList = document.getElementById('achievements-list');
+        achievementsList.innerHTML = '';
+        if (!goals || goals.length === 0) {
+            achievementsList.innerHTML = `<p class="text-text-dark-secondary text-center">Nenhuma conquista ainda.</p>`;
+            return;
+        }
+
+        goals.forEach(goal => {
+            const progressPercent = (goal.progresso_atual / goal.progresso_total) * 100;
+            achievementsList.innerHTML += `
+                <div class="bg-surface-dark/50 border border-border-dark rounded-lg p-4 flex items-center gap-4 ${goal.concluido ? 'opacity-70' : ''}">
+                    <span class="material-symbols-outlined !text-4xl text-yellow-400">emoji_events</span>
+                    <div class="flex-1">
+                        <p class="font-bold">${goal.titulo}</p>
+                        <p class="text-text-dark-secondary text-sm">${goal.descricao}</p>
+                        ${!goal.concluido ? `
+                        <div class="w-full bg-surface-dark rounded-full h-2 my-1">
+                            <div class="bg-yellow-400 h-2 rounded-full" style="width: ${progressPercent}%;"></div>
+                        </div>
+                        <p class="text-text-dark-secondary text-xs">${goal.progresso_atual} / ${goal.progresso_total}</p>
+                        ` : `<p class="text-primary text-sm font-semibold mt-1">Recompensa: ${goal.recompensa || '[Item Raro]'}</p>`}
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    async function renderHealthChart() {
+        if (characterDailyLogs.length === 0) return;
+        const labels = characterDailyLogs.map(log => log.timestamp.toDate().toLocaleDateString('pt-BR'));
+        const weightData = characterDailyLogs.map(log => log.peso_kg);
+        const fatData = characterDailyLogs.map(log => log.gordura_perc);
+        const ctx = document.getElementById('healthChart').getContext('2d');
+
+        if (healthChart) {
+            healthChart.destroy();
+        }
+
+        healthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Peso (kg)',
+                        data: weightData,
+                        borderColor: '#13ec6d',
+                        backgroundColor: 'rgba(19, 236, 109, 0.1)',
+                        fill: true,
+                        yAxisID: 'y',
+                    },
+                    {
+                        label: '% Gordura Corporal',
+                        data: fatData,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: true,
+                        yAxisID: 'y1',
+                        hidden: !fatData.some(d => d)
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { type: 'linear', display: true, position: 'left', ticks: { color: '#9db9a8' } },
+                    y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#9db9a8' } },
+                    x: { ticks: { color: '#9db9a8' } }
+                },
+                plugins: { legend: { labels: { color: '#9db9a8' } } }
+            }
+        });
+    }
+
+    document.getElementById('add-daily-log-btn').addEventListener('click', () => document.getElementById('modal-daily-log').classList.remove('hidden'));
+    document.getElementById('cancel-daily-log').addEventListener('click', () => document.getElementById('modal-daily-log').classList.add('hidden'));
+    document.getElementById('confirm-daily-log').addEventListener('click', handleDailyLogUpdate);
+    document.getElementById('item-action-cancel-btn').addEventListener('click', () => document.getElementById('modal-item-action').classList.add('hidden'));
+
+    function calcularNovosStatus(imc, gordura_perc, sono, estresse) {
+        let status_array = [];
+
+        if (gordura_perc && gordura_perc > 0) {
+            if (gordura_perc > 30) {
+                status_array.push({ id: "debuff_gordura_alta", label: "Gordura Elevada", effect: "energia_max", value: -15 });
+            } else if (gordura_perc < 10) {
+                status_array.push({ id: "debuff_gordura_baixa", label: "Gordura Baixa", effect: "hp_max", value: -10 });
+            } else {
+                status_array.push({ id: "buff_composicao_saudavel", label: "Composição Saudável", effect: "energia_max", value: 5 });
+            }
+        } else {
+            if (imc > 25) {
+                status_array.push({ id: "debuff_imc_alto", label: "Sobrepeso", effect: "energia_max", value: -10 });
+            } else if (imc < 18.5) {
+                status_array.push({ id: "debuff_imc_baixo", label: "Abaixo do Peso", effect: "hp_max", value: -10 });
+            }
+        }
+
+        if (sono && sono >= 8) {
+            status_array.push({ id: "buff_descansado", label: "Descansado", effect: "regeneracao_mana_energia", value: 10 });
+        } else if (sono && sono < 5) {
+            status_array.push({ id: "debuff_cansado", label: "Cansado", effect: "regeneracao_mana_energia", value: -10 });
+        }
+
+        if (estresse && estresse === 1) {
+            status_array.push({ id: "buff_focado", label: "Focado", effect: "custo_mana", value: -5 });
+        } else if (estresse && estresse === 5) {
+            status_array.push({ id: "debuff_estressado", label: "Estressado", effect: "custo_mana", value: 10 });
+        }
+
+        return status_array;
+    }
+
+    function recalcularAtributosDerivados(status, stats) {
+        let hp_max = 100 + (stats.vitalidade.level * 10) + (stats.forca.level * 2);
+        let energia_max = 100 + (stats.forca.level * 5) + (stats.velocidade.level * 5);
+
+        status.forEach(effect => {
+            if (effect.id === "debuff_gordura_alta" || effect.id === "debuff_imc_alto") {
+                energia_max += (energia_max * (effect.value / 100));
+            } else if (effect.id === "debuff_gordura_baixa" || effect.id === "debuff_imc_baixo") {
+                hp_max += (hp_max * (effect.value / 100));
+            } else if (effect.id === "buff_composicao_saudavel") {
+                energia_max += (energia_max * (effect.value / 100));
+            }
+        });
+
+        return { hp_max: Math.round(hp_max), energia_max: Math.round(energia_max) };
+    }
+
+    async function handleDailyLogUpdate() {
+        const inputs = {
+            novo_peso: parseFloat(document.getElementById('log-peso').value),
+            nova_gordura_perc: parseFloat(document.getElementById('log-gordura').value) || null,
+            horas_sono_hoje: parseInt(document.getElementById('log-sono').value) || null,
+            estresse_hoje: parseInt(document.getElementById('log-estresse').value) || null
+        };
+
+        if (isNaN(inputs.novo_peso) || inputs.novo_peso <= 0) {
+            showMessage("Dados Inválidos", "O peso é obrigatório e deve ser um número válido.");
+            return;
+        }
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+                const dailyLogCollectionRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'daily_log');
+                const newLogRef = doc(dailyLogCollectionRef);
+
+                const profileSnap = await transaction.get(profileRef);
+                if (!profileSnap.exists()) throw "Perfil não encontrado!";
+
+                const profileData = profileSnap.data();
+
+                const novo_imc = parseFloat((inputs.novo_peso / ((profileData.vitals.altura_cm / 100) ** 2)).toFixed(1));
+                const novos_status = calcularNovosStatus(novo_imc, inputs.nova_gordura_perc, inputs.horas_sono_hoje, inputs.estresse_hoje);
+                const { hp_max, energia_max } = recalcularAtributosDerivados(novos_status, profileData.stats);
+
+                transaction.set(newLogRef, {
+                    timestamp: Timestamp.now(),
+                    peso_kg: inputs.novo_peso,
+                    gordura_perc: inputs.nova_gordura_perc,
+                    horas_sono: inputs.horas_sono_hoje,
+                    nivel_estresse: inputs.estresse_hoje
+                });
+
+                profileData.vitals.peso_atual_kg = inputs.novo_peso;
+                profileData.vitals.imc_atual = novo_imc;
+                if(inputs.nova_gordura_perc) profileData.vitals.gordura_corporal_perc = inputs.nova_gordura_perc;
+                profileData.status_effects = novos_status;
+                profileData.character.hp_max = hp_max;
+                profileData.character.energia_max = energia_max;
+
+                transaction.update(profileRef, profileData);
+            });
+
+            document.getElementById('modal-daily-log').classList.add('hidden');
+            ['log-peso', 'log-gordura', 'log-sono', 'log-estresse'].forEach(id => document.getElementById(id).value = '');
+            loadCharacterData(currentUserId);
+            showMessage("Log Salvo!", "Seus dados diários foram registrados com sucesso.");
+
+        } catch (e) {
+            console.error("Transação de log diário falhou: ", e);
+            showMessage("Erro", "Falha ao salvar o log diário. Tente novamente.");
+        }
+    }
+
+    document.getElementById('inventory-grid').addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.inventory-item');
+        if (itemEl) {
+            const item = JSON.parse(itemEl.dataset.item);
+            showItemActionModal(item, 'equip');
+        }
+    });
+
+    document.querySelectorAll('.equipment-slot').forEach(slot => {
+        slot.addEventListener('click', (e) => {
+            const itemJson = e.currentTarget.dataset.equippedItem;
+            if (itemJson) {
+                const item = JSON.parse(itemJson);
+                showItemActionModal(item, 'unequip');
+            }
+        });
+    });
+
+    function showItemActionModal(item, actionType) {
+        document.getElementById('item-modal-title').textContent = item.nome;
+        document.getElementById('item-modal-effect').textContent = `Efeito: ${item.efeito}`;
+        const primaryBtn = document.getElementById('item-action-primary-btn');
+        if (actionType === 'equip') {
+            primaryBtn.textContent = 'Equipar';
+            primaryBtn.onclick = () => { equipItem(item.id, item.slot); document.getElementById('modal-item-action').classList.add('hidden'); };
+        } else {
+            primaryBtn.textContent = 'Desequipar';
+            primaryBtn.onclick = () => { unequipItem(item.id, item.slot); document.getElementById('modal-item-action').classList.add('hidden'); };
+        }
+        document.getElementById('modal-item-action').classList.remove('hidden');
+    }
+
+    async function equipItem(itemId, slot) {
+        if (!slot) { alert("Este item não pode ser equipado."); return; }
+        if (fullProfileData.character.equipment[slot]) { alert("Slot já ocupado. Desequipe o item atual primeiro."); return; }
+        const batch = writeBatch(db);
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
+        const itemSnap = await getDoc(itemRef);
+        batch.update(itemRef, { equipado: true });
+        batch.update(profileRef, { [`character.equipment.${slot}`]: itemSnap.data() });
+        await batch.commit();
+        loadCharacterData(currentUserId);
+    }
+
+    async function unequipItem(itemId, slot) {
+        const batch = writeBatch(db);
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'profile', 'details');
+        const itemRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'inventory', itemId);
+        batch.update(itemRef, { equipado: false });
+        batch.update(profileRef, { [`character.equipment.${slot}`]: deleteField() });
+        await batch.commit();
+        loadCharacterData(currentUserId);
+    }
+
 
   </script>
 
