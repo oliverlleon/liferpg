@@ -900,6 +900,50 @@
       </div>
     </div>
 
+    <!-- Tela 11: Resumo da Atividade Concluída -->
+    <div id="screen-activity-summary" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark pb-24">
+      <!-- Header -->
+      <header class="flex items-center p-4 pb-2 justify-between sticky top-0 bg-background-dark z-10">
+          <button id="summary-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
+              <span class="material-symbols-outlined text-3xl">arrow_back</span>
+          </button>
+          <h1 id="summary-title" class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12 truncate">Resumo da Atividade</h1>
+      </header>
+
+      <!-- Mapa com Trajeto -->
+      <div class="px-4 py-2">
+        <div id="summary-mapa" class="w-full h-64 rounded-lg bg-surface-dark/50 border border-border-dark flex items-center justify-center text-text-dark-secondary">
+          <p>Carregando mapa...</p>
+        </div>
+      </div>
+
+      <!-- Métricas Finais -->
+      <div class="grid grid-cols-2 gap-4 px-4 py-4">
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">TEMPO TOTAL</p>
+          <p id="summary-metric-time" class="text-white text-3xl font-bold">00:00:00</p>
+        </div>
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">DISTÂNCIA TOTAL</p>
+          <p class="text-white text-3xl font-bold"><span id="summary-metric-distance">0.00</span> km</p>
+        </div>
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">VELOCIDADE MÉDIA</p>
+          <p class="text-white text-3xl font-bold"><span id="summary-metric-avg-speed">0.0</span> km/h</p>
+        </div>
+        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
+          <p class="text-text-dark-secondary text-sm">CALORIAS</p>
+          <p class="text-white text-3xl font-bold"><span id="summary-metric-calories">0</span> kcal</p>
+        </div>
+      </div>
+
+      <!-- Recompensas Ganhass -->
+      <div id="summary-rewards-container" class="px-4 py-2">
+          <!-- Conteúdo inserido via JS -->
+      </div>
+    </div>
+
+
   </div>
 
   <!-- Modal de Ação Rápida (+) -->
@@ -1223,7 +1267,8 @@
       missionDetails: document.getElementById('screen-mission-details'),
       calendar: document.getElementById('screen-calendar'),
       character: document.getElementById('screen-character'),
-      activityTracker: document.getElementById('screen-activity-tracker')
+      activityTracker: document.getElementById('screen-activity-tracker'),
+      activitySummary: document.getElementById('screen-activity-summary')
     };
 
     const registerSteps = {
@@ -1876,21 +1921,30 @@
         });
     }
 
-    // Event Listener atualizado para lidar com cliques nos cards de missão
+    // Event Listener INTELIGENTE para lidar com cliques nos cards de missão
     document.getElementById('hub-mission-list').addEventListener('click', async (e) => {
         const missionCard = e.target.closest('.mission-card');
-        if (!missionCard) return;
+        if (!missionCard || !missionCard.dataset.taskId) return;
 
         const taskId = missionCard.dataset.taskId;
-        const startActivityBtn = e.target.closest('.start-activity-btn');
+        const task = allUserTasks.find(t => t.id === taskId);
 
-        if (startActivityBtn) {
-            // O usuário clicou no botão [Iniciar Atividade ▶]
-            e.stopPropagation(); // Impede que o clique se propague para o card
-            startGpsActivity(taskId);
+        if (!task) {
+            console.error("Tarefa não encontrada na lista local:", taskId);
+            return;
+        }
+
+        // NOVA LÓGICA DE DIRECIONAMENTO
+        if (task.status === 'CONCLUIDA' && task.activity_id_associada) {
+            // 1. Se a tarefa está concluída E tem uma atividade, mostra o resumo
+            loadActivitySummary(task.activity_id_associada, task.titulo);
         } else {
-            // O usuário clicou no card normal
-            if (taskId) {
+            const physicalAttributes = ['VELOCIDADE', 'FORCA', 'VITALIDADE'];
+            if (physicalAttributes.includes(task.atributo_associado)) {
+                // 2. Se for uma tarefa de atividade física PENDENTE, vai para a tela de GPS
+                startGpsActivity(taskId);
+            } else {
+                // 3. Senão, vai para a tela de detalhes normal
                 showScreen('missionDetails', taskId);
             }
         }
@@ -1936,19 +1990,6 @@
         if (task.status === 'EM_ANDAMENTO') statusColor = "text-primary animate-pulse";
         else if (task.status === 'PAUSADA') statusColor = "text-yellow-400";
 
-        let actionControlHTML = '';
-        if (isCompleted) {
-             actionControlHTML = `<div class="text-text-dark-secondary"><span class="material-symbols-outlined text-3xl text-primary">check_circle</span></div>`;
-        } else if (physicalAttributes.includes(task.atributo_associado)) {
-            actionControlHTML = `
-                <button class="start-activity-btn flex items-center justify-center gap-2 rounded-full h-10 px-4 bg-primary/20 text-primary text-sm font-bold hover:bg-primary/40 transition-colors">
-                    <span class="material-symbols-outlined !text-base">play_arrow</span>
-                    <span>Iniciar</span>
-                </button>`;
-        } else {
-            actionControlHTML = `<div class="text-text-dark-secondary"><span class="material-symbols-outlined text-3xl">chevron_right</span></div>`;
-        }
-
         return `
             <div class="mission-card flex flex-col rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border-l-4 ${priorityClass} ${isCompleted ? 'opacity-60' : ''} cursor-pointer hover:bg-surface-dark/80 transition-colors" data-task-id="${task.id}">
                 <div class="flex items-center gap-3">
@@ -1959,7 +2000,9 @@
                       <p class="font-bold ${isCompleted ? 'line-through' : ''}">${task.titulo || 'Missão sem título'}</p>
                       <p class="text-sm ${statusColor} ${isCompleted ? 'line-through' : ''} capitalize">${statusText}</p>
                     </div>
-                    ${actionControlHTML}
+                    <div class="text-text-dark-secondary">
+                        <span class="material-symbols-outlined text-3xl">${isCompleted ? 'check_circle' : 'chevron_right'}</span>
+                    </div>
                 </div>
             </div>
         `;
@@ -2689,6 +2732,81 @@
 
     // --- LÓGICA DO MÓDULO DE ATIVIDADE (GPS) ---
 
+    let summaryMap; // Variável para o mapa da tela de resumo
+
+    async function loadActivitySummary(activityId, taskTitle) {
+        if (!currentUserId || !activityId) return;
+
+        showScreen('activitySummary');
+        document.getElementById('summary-title').textContent = taskTitle || 'Resumo da Atividade';
+
+        try {
+            const activityRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'activities', activityId);
+            const activitySnap = await getDoc(activityRef);
+
+            if (!activitySnap.exists()) {
+                throw new Error("Registro de atividade não encontrado.");
+            }
+
+            const data = activitySnap.data();
+
+            // Popula as métricas
+            document.getElementById('summary-metric-time').textContent = formatTime(data.duracao_total_segundos);
+            document.getElementById('summary-metric-distance').textContent = data.distancia_total_km.toFixed(2);
+            document.getElementById('summary-metric-avg-speed').textContent = data.velocidade_media_kmh.toFixed(1);
+            document.getElementById('summary-metric-calories').textContent = data.calorias_queimadas;
+
+            // Popula as recompensas
+            const rewards = data.recompensa_ganha;
+            const rewardsContainer = document.getElementById('summary-rewards-container');
+            rewardsContainer.innerHTML = `
+                <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+                    <h3 class="text-lg font-bold text-primary mb-3 text-center">Recompensas Ganhass</h3>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-primary text-4xl">sprint</span>
+                            <span class="text-xl font-bold text-white">+${rewards.XP_VEL}</span>
+                            <span class="text-sm text-text-dark-secondary">XP de VEL</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-green-400 text-4xl">shield</span>
+                            <span class="text-xl font-bold text-white">+${rewards.XP_VIT}</span>
+                            <span class="text-sm text-text-dark-secondary">XP de VIT</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-yellow-400 text-4xl">monetization_on</span>
+                            <span class="text-xl font-bold text-white">+${rewards.MOEDAS}</span>
+                            <span class="text-sm text-text-dark-secondary">Moedas</span>
+                        </div>
+                    </div>
+                </div>`;
+
+            // Renderiza o mapa
+            const trajeto = JSON.parse(data.trajeto_polyline_json);
+            if (summaryMap) summaryMap.remove();
+
+            if (trajeto && trajeto.length > 0) {
+                summaryMap = L.map('summary-mapa').setView([trajeto[0].lat, trajeto[0].lng], 16);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(summaryMap);
+                const polyline = L.polyline(trajeto, { color: '#13ec6d' }).addTo(summaryMap);
+                summaryMap.fitBounds(polyline.getBounds()); // Ajusta o zoom para mostrar o trajeto todo
+
+                // Marcadores de início e fim
+                L.marker(trajeto[0]).addTo(summaryMap).bindPopup("Início");
+                L.marker(trajeto[trajeto.length - 1]).addTo(summaryMap).bindPopup("Fim");
+            } else {
+                 document.getElementById('summary-mapa').innerHTML = '<p>Nenhum trajeto registrado.</p>';
+            }
+
+
+        } catch (error) {
+            console.error("Erro ao carregar resumo da atividade:", error);
+            showMessage('Erro', 'Não foi possível carregar o resumo da sua atividade.');
+            showScreen('dashboard');
+        }
+    }
+
+
     // Chamado DEPOIS que o usuário dá permissão
     function iniciarTelaDeRastreamento(coordsIniciais) {
         // 1. Inicia o mapa
@@ -2941,6 +3059,7 @@
                         titulo: `Corrida Rápida de ${distanciaKm.toFixed(2)} km`,
                         tipo: 'diaria', // Classifica como 'diaria' para fins de histórico
                         prioridade: 'secundaria',
+                        atributo_associado: 'VELOCIDADE', // Define o atributo para o ícone correto
                         status: 'CONCLUIDA',
                         recompensa_real: activityData.recompensa_ganha,
                         activity_id_associada: newActivityRef.id,
@@ -3548,6 +3667,7 @@ Sub-tarefas: ${subtasksString}`;
     });
 
     document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
+    document.getElementById('summary-back-btn').addEventListener('click', () => showScreen('dashboard'));
 
 
     // --- LÓGICA DA TELA DE PERSONAGEM ---
