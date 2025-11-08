@@ -3280,7 +3280,15 @@
         currentSegment.duration = (currentSegment.endTime - currentSegment.startTime) / 1000;
         activitySegments.push(currentSegment);
         currentSegment = null; // Limpa o segmento atual
+
+        // Limpa o salvamento automático ao pausar, pois vamos salvar manualmente
+        if (activityStateSaveInterval) {
+            clearInterval(activityStateSaveInterval);
+            activityStateSaveInterval = null;
+        }
+
         renderLiveSegmentHistory(); // ATUALIZA A TELA COM O NOVO SEGMENTO
+        saveLiveActivityState(); // *** SALVAMENTO IMEDIATO AO PAUSAR ***
 
         document.getElementById('btn-pause-activity').classList.add('hidden');
         document.getElementById('btn-resume-activity').classList.remove('hidden');
@@ -3312,6 +3320,10 @@
 
         // Adiciona uma nova camada de polyline para o novo segmento
         linhaDoTrajeto = L.polyline([], { color: currentSegment.color }).addTo(mapa);
+
+        // Reativa o salvamento automático
+        if (activityStateSaveInterval) clearInterval(activityStateSaveInterval);
+        activityStateSaveInterval = setInterval(saveLiveActivityState, 10000);
 
 
         document.getElementById('btn-pause-activity').classList.remove('hidden');
