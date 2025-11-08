@@ -1265,6 +1265,9 @@
     let userWeightKg = 75; // Default, será atualizado com os dados do perfil
     let activityAssociatedTaskId = null; // Para saber qual tarefa originou a atividade
     let activityType = "corrida"; // "corrida" ou "caminhada"
+    let activityTotalCalories = 0; // Vai acumular as calorias "queimadas" em tempo real.
+    let activityLastTimestamp = 0; // Vai nos ajudar a calcular o tempo exato entre cada atualização do GPS.
+
 
     // Novas variáveis para o sistema de Pausa/Resumo
     let activityPaused = false; // Controla o estado de pausa
@@ -1468,6 +1471,18 @@
         const [year, month, day] = dateString.split('-').map(Number);
         // Cria a data na zona horária local do usuário
         return new Date(year, month - 1, day);
+    }
+
+    function getDynamicMET(speedKph) {
+        if (speedKph < 2) return 1.8; // Caminhada muito lenta
+        if (speedKph < 4) return 2.8; // Caminhada lenta
+        if (speedKph < 5.5) return 3.5; // Caminhada moderada
+        if (speedKph < 6.5) return 4.3; // Caminhada rápida
+        if (speedKph < 8) return 7.0; // Trote leve
+        if (speedKph < 10) return 9.8; // Corrida padrão
+        if (speedKph < 12) return 11.0; // Corrida rápida
+        if (speedKph < 14) return 12.8; // Corrida muito rápida
+        return 14.5; // Ritmo de elite
     }
 
     // --- Lógica de Navegação ---
@@ -2914,6 +2929,9 @@
         activityPolyline = [];
         activityTotalDistanceKm = 0;
         activityStartTime = 0;
+        activityTotalCalories = 0;
+        activityLastTimestamp = 0;
+
 
         // Resetar estado de pausa/segmento
         activityPaused = false;
@@ -2965,7 +2983,8 @@
             startTime: activityStartTime,
             points: [startPoint],
             distance: 0,
-            color: segmentColors[0]
+            color: segmentColors[0],
+            calories: 0
         };
         activityPolyline.push(startPoint);
 
@@ -2980,16 +2999,31 @@
             (posicao) => {
                 if (activityPaused) return; // Se estiver pausado, ignora a atualização
 
+                const now = Date.now();
                 const coords = posicao.coords;
                 const novoPonto = { lat: coords.latitude, lng: coords.longitude };
                 const ultimoPonto = activityPolyline[activityPolyline.length - 1];
-
                 const distanciaParcialKm = calcularDistanciaHaversine(ultimoPonto, novoPonto);
 
-                // FILTRO ANTI-DRIFT
-                if (distanciaParcialKm * 1000 < 3) {
+                if (distanciaParcialKm * 1000 < 3) { // Filtro Anti-Drift
                     return;
                 }
+
+                // Lógica de cálculo de calorias em tempo real
+                if (activityLastTimestamp > 0) {
+                    const deltaTimeSeconds = (now - activityLastTimestamp) / 1000;
+                    if (deltaTimeSeconds > 0) {
+                        const speedKph = (distanciaParcialKm / deltaTimeSeconds) * 3600;
+                        const MET = getDynamicMET(speedKph);
+                        const caloriasParciais = (MET * 3.5 * userWeightKg) / 200 * (deltaTimeSeconds / 60);
+                        activityTotalCalories += caloriasParciais;
+                        if (currentSegment) {
+                            currentSegment.calories += caloriasParciais;
+                        }
+                    }
+                }
+                activityLastTimestamp = now;
+
 
                 activityTotalDistanceKm += distanciaParcialKm;
                 activityPolyline.push(novoPonto);
@@ -3022,12 +3056,11 @@
         const duracaoSegundos = duracaoAtivaMs / 1000;
 
         const velocidadeMedia = (activityTotalDistanceKm / (duracaoSegundos / 3600)) || 0;
-        const calorias = calcularCalorias(duracaoSegundos, activityType);
 
         document.getElementById('metric-time').textContent = formatTime(duracaoSegundos);
         document.getElementById('metric-distance').textContent = activityTotalDistanceKm.toFixed(2);
         document.getElementById('metric-avg-speed').textContent = velocidadeMedia.toFixed(1);
-        document.getElementById('metric-calories').textContent = Math.round(calorias);
+        document.getElementById('metric-calories').textContent = Math.round(activityTotalCalories);
     }
 
     // --- Funções de Cálculo (Haversine e MET) ---
@@ -3041,16 +3074,6 @@
                   Math.sin(dLon / 2) * Math.sin(dLon / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c; // Distância em KM
-    }
-
-    function calcularCalorias(duracaoSegundos, tipoAtividade) {
-        let MET = 1; // Repouso
-        if (tipoAtividade === "corrida") MET = 9.8;
-        else if (tipoAtividade === "caminhada") MET = 3.5;
-
-        const caloriasPorMinuto = (MET * 3.5 * userWeightKg) / 200;
-        const duracaoMinutos = duracaoSegundos / 60;
-        return caloriasPorMinuto * duracaoMinutos;
     }
 
     // --- Lógica dos Novos Botões de Controle ---
@@ -3076,7 +3099,7 @@
             const duration = segment.duration || 0;
             const distance = segment.distance || 0;
             const speed = (distance / (duration / 3600)) || 0;
-            const calories = calcularCalorias(duration, activityType);
+            const calories = segment.calories || 0;
 
             const segmentEl = document.createElement('div');
             segmentEl.className = 'rounded-lg bg-surface-dark/50 p-3 border-l-4';
@@ -3134,7 +3157,8 @@
             startTime: resumeTime,
             points: [lastPoint],
             distance: 0,
-            color: segmentColors[activitySegments.length % segmentColors.length]
+            color: segmentColors[activitySegments.length % segmentColors.length],
+            calories: 0
         };
 
         // Adiciona uma nova camada de polyline para o novo segmento
@@ -3155,6 +3179,7 @@
         if (currentSegment && currentSegment.points.length > 1) {
             currentSegment.endTime = fimTimestamp;
             currentSegment.duration = (currentSegment.endTime - currentSegment.startTime) / 1000;
+            // A caloria já foi acumulada em tempo real, então não precisa de cálculo final
             activitySegments.push(currentSegment);
         }
 
@@ -3165,7 +3190,7 @@
             const duration = segment.duration > 0 ? segment.duration : 0;
             const distance = segment.distance > 0 ? segment.distance : 0;
             const speed = (distance / (duration / 3600)) || 0;
-            const calories = calcularCalorias(duration, activityType);
+            const calories = segment.calories || 0;
 
             totalDistance += distance;
             totalActiveTime += duration;
@@ -3181,7 +3206,7 @@
 
 
         const velocidadeMedia = (totalDistance / (totalActiveTime / 3600)) || 0;
-        const caloriasTotais = calcularCalorias(totalActiveTime, activityType);
+        const caloriasTotais = activityTotalCalories;
 
         // 4. Serializar o trajeto
         const trajetoString = JSON.stringify(activityPolyline);
