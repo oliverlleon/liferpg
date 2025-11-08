@@ -16,10 +16,6 @@
   <!-- Chart.js for Character Screen -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Leaflet.js for GPS Map -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <!-- Configuração do Tailwind -->
   <script>
     tailwind.config = {
@@ -133,13 +129,6 @@
     }
     .equipment-slot:hover {
         background-color: #28392f;
-    }
-    @keyframes slide-up {
-        from { transform: translateY(100%); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-    .animate-slide-up {
-        animation: slide-up 0.3s ease-out forwards;
     }
   </style>
 </head>
@@ -760,6 +749,43 @@
         </div>
     </div>
 
+    <!-- Tela 10: Rastreador de Atividade GPS -->
+    <div id="screen-activity-tracker" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark pb-24">
+        <header class="flex items-center p-4 justify-between sticky top-0 bg-background-dark z-10">
+            <h1 class="text-white text-lg font-bold flex-1 text-center">Rastreando Atividade</h1>
+        </header>
+        <main class="flex-grow p-4 space-y-4">
+            <div id="mapa-corrida" class="w-full h-64 rounded-lg bg-surface-dark border border-border-dark"></div>
+            <div class="grid grid-cols-2 gap-4 text-center">
+                <div class="bg-surface-dark/50 p-3 rounded-lg"><p class="text-text-dark-secondary text-sm">TEMPO</p><p id="tracker-time" class="text-2xl font-bold">00:00:00</p></div>
+                <div class="bg-surface-dark/50 p-3 rounded-lg"><p class="text-text-dark-secondary text-sm">DISTÂNCIA</p><p id="tracker-distance" class="text-2xl font-bold">0.00 km</p></div>
+                <div class="bg-surface-dark/50 p-3 rounded-lg"><p class="text-text-dark-secondary text-sm">VELOCIDADE MÉDIA</p><p id="tracker-avg-speed" class="text-2xl font-bold">0 km/h</p></div>
+                <div class="bg-surface-dark/50 p-3 rounded-lg"><p class="text-text-dark-secondary text-sm">CALORIAS</p><p id="tracker-calories" class="text-2xl font-bold">0 kcal</p></div>
+            </div>
+        </main>
+        <footer id="activity-controls" class="sticky bottom-0 bg-background-dark p-4 pt-6 flex gap-4"></footer>
+    </div>
+
+    <!-- Tela 11: Resumo da Atividade -->
+    <div id="screen-activity-summary" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark pb-24">
+        <header class="flex items-center p-4 justify-between">
+            <button id="summary-back-btn" class="text-white flex size-12 items-center justify-center"><span class="material-symbols-outlined text-3xl">arrow_back</span></button>
+            <h1 class="text-white text-lg font-bold flex-1 text-center pr-12">Resumo da Atividade</h1>
+        </header>
+        <main class="flex-grow p-4 space-y-4">
+            <div id="summary-map" class="w-full h-64 rounded-lg bg-surface-dark border border-border-dark"></div>
+            <div id="summary-stats-container" class="grid grid-cols-2 gap-4 text-center"></div>
+            <div>
+                <h2 class="text-lg font-bold text-primary mb-2">Recompensas Ganhas</h2>
+                <div id="summary-rewards" class="bg-surface-dark/50 p-4 rounded-lg space-y-2"></div>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-primary mb-2">Detalhes por Segmento</h2>
+                <div id="summary-segments" class="space-y-2"></div>
+            </div>
+        </main>
+    </div>
+
     <!-- Tela 9: Ficha de Personagem -->
     <div id="screen-character" class="hidden relative flex h-auto min-h-screen w-full flex-col bg-background-dark pb-20">
       <header class="flex flex-col items-center p-4 pt-8">
@@ -858,110 +884,6 @@
       </main>
     </div>
 
-    <!-- Tela 10: Rastreamento de Atividade (GPS) -->
-    <div id="screen-activity-tracker" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark pb-24">
-      <!-- Header -->
-      <header class="flex items-center p-4 pb-2 justify-between">
-          <h1 class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Atividade em Andamento</h1>
-      </header>
-
-      <!-- Mapa -->
-      <div class="px-4 py-2">
-        <div id="mapa-corrida" class="w-full h-64 rounded-lg bg-surface-dark/50 border border-border-dark flex items-center justify-center text-text-dark-secondary">
-          <p>Carregando mapa...</p>
-        </div>
-      </div>
-
-      <!-- Métricas em Tempo Real -->
-      <div class="grid grid-cols-2 gap-4 px-4 py-4">
-        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
-          <p class="text-text-dark-secondary text-sm">TEMPO</p>
-          <p id="metric-time" class="text-white text-3xl font-bold">00:00:00</p>
-        </div>
-        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
-          <p class="text-text-dark-secondary text-sm">DISTÂNCIA</p>
-          <p class="text-white text-3xl font-bold"><span id="metric-distance">0.00</span> km</p>
-        </div>
-        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
-          <p class="text-text-dark-secondary text-sm">VELOCIDADE MÉDIA</p>
-          <p class="text-white text-3xl font-bold"><span id="metric-avg-speed">0.0</span> km/h</p>
-        </div>
-        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
-          <p class="text-text-dark-secondary text-sm">CALORIAS</p>
-          <p class="text-white text-3xl font-bold"><span id="metric-calories">0</span> kcal</p>
-        </div>
-      </div>
-
-      <!-- Botão de Controle -->
-      <div class="flex-grow flex items-center justify-center px-4">
-        <button id="btn-stop-activity" class="w-full max-w-xs rounded-full bg-red-600 h-16 text-white text-xl font-bold shadow-lg hover:bg-red-700 transition-colors">
-          PARAR E SALVAR
-        </button>
-      </div>
-    </div>
-
-    <!-- Tela 11: Resumo da Atividade Concluída -->
-    <div id="screen-activity-summary" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark pb-24">
-      <!-- Header -->
-      <header class="flex items-center p-4 pb-2 justify-between sticky top-0 bg-background-dark z-10">
-          <button id="summary-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer">
-              <span class="material-symbols-outlined text-3xl">arrow_back</span>
-          </button>
-          <h1 id="summary-title" class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12 truncate">Resumo da Atividade</h1>
-      </header>
-
-      <!-- Mapa com Trajeto -->
-      <div class="px-4 py-2">
-        <div id="summary-mapa" class="w-full h-64 rounded-lg bg-surface-dark/50 border border-border-dark flex items-center justify-center text-text-dark-secondary">
-          <p>Carregando mapa...</p>
-        </div>
-      </div>
-
-      <!-- Métricas Finais -->
-      <div class="grid grid-cols-2 gap-4 px-4 py-4">
-        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
-          <p class="text-text-dark-secondary text-sm">TEMPO TOTAL</p>
-          <p id="summary-metric-time" class="text-white text-3xl font-bold">00:00:00</p>
-        </div>
-        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
-          <p class="text-text-dark-secondary text-sm">DISTÂNCIA TOTAL</p>
-          <p class="text-white text-3xl font-bold"><span id="summary-metric-distance">0.00</span> km</p>
-        </div>
-        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
-          <p class="text-text-dark-secondary text-sm">VELOCIDADE MÉDIA</p>
-          <p class="text-white text-3xl font-bold"><span id="summary-metric-avg-speed">0.0</span> km/h</p>
-        </div>
-        <div class="text-center rounded-lg bg-surface-dark/50 p-4 border border-border-dark">
-          <p class="text-text-dark-secondary text-sm">CALORIAS</p>
-          <p class="text-white text-3xl font-bold"><span id="summary-metric-calories">0</span> kcal</p>
-        </div>
-      </div>
-
-      <!-- Recompensas Ganhass -->
-      <div id="summary-rewards-container" class="px-4 py-2">
-          <!-- Conteúdo inserido via JS -->
-      </div>
-    </div>
-
-
-  </div>
-
-  <!-- Modal de Ação Rápida (+) -->
-  <div id="modal-quick-start" class="hidden fixed inset-0 bg-black/70 z-50 flex items-end justify-center p-4">
-    <div class="bg-surface-dark border border-border-dark rounded-lg p-6 w-full max-w-sm mb-24 animate-slide-up">
-      <h3 class="text-primary text-xl font-bold mb-6 text-center">O que deseja fazer?</h3>
-      <div class="space-y-4">
-        <button id="quick-start-new-task" class="flex w-full items-center justify-center gap-3 rounded-xl h-14 bg-surface-secondary text-white font-bold text-lg">
-          <span class="material-symbols-outlined">add_task</span>
-          <span>Criar Nova Missão</span>
-        </button>
-        <button id="quick-start-run" class="flex w-full items-center justify-center gap-3 rounded-xl h-14 bg-surface-secondary text-white font-bold text-lg">
-          <span class="material-symbols-outlined">sprint</span>
-          <span>Iniciar Corrida Rápida</span>
-        </button>
-      </div>
-      <button id="quick-start-cancel" class="w-full mt-6 rounded-full h-10 bg-transparent text-text-dark-secondary">Cancelar</button>
-    </div>
   </div>
 
   <!-- Navegação Principal Persistente -->
@@ -1232,16 +1154,22 @@
     let healthChart = null; // Variável para manter a instância do gráfico
     let weightOscillationChart = null; // Variável para o gráfico de oscilação
 
-    // --- Variáveis do Módulo de Atividade (GPS) ---
-    let mapa;
-    let linhaDoTrajeto;
-    let activityWatchId = null;
-    let activityPolyline = []; // Array de {lat, lng}
-    let activityTotalDistanceKm = 0;
-    let activityStartTime = 0;
-    let userWeightKg = 75; // Default, será atualizado com os dados do perfil
-    let activityAssociatedTaskId = null; // Para saber qual tarefa originou a atividade
-    let activityType = "corrida"; // "corrida" ou "caminhada"
+    // --- Variáveis do Módulo de Atividade GPS ---
+    let activeActivity = {
+        status: 'stopped', // 'running', 'paused', 'stopped'
+        watchId: null,
+        startTime: null,
+        pauseTime: null,
+        totalPausedSeconds: 0,
+        segments: [], // [{ points: [{lat,lng}], startTime, endTime, color }]
+        currentSegmentIndex: -1,
+        distanciaTotalKm: 0,
+        pesoUsuarioKg: 75, // Placeholder, será pego do perfil
+        associatingTaskId: null,
+        isQuickRun: false,
+    };
+    const segmentColors = ['#13ec6d', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7'];
+    let activityMap = null;
 
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
@@ -1268,7 +1196,7 @@
       calendar: document.getElementById('screen-calendar'),
       character: document.getElementById('screen-character'),
       activityTracker: document.getElementById('screen-activity-tracker'),
-      activitySummary: document.getElementById('screen-activity-summary')
+      activitySummary: document.getElementById('screen-activity-summary'),
     };
 
     const registerSteps = {
@@ -1378,6 +1306,9 @@
       if (screenId === 'missionDetails' && data) {
         loadMissionDetails(data); // O 'data' aqui é o taskId
       }
+      if (screenId === 'activityTracker' && data) {
+        startGpsActivity(data.taskId, data.isQuickRun);
+      }
       updateNavUI(screenId);
     }
 
@@ -1450,25 +1381,15 @@
     document.getElementById('forgot-back-btn').addEventListener('click', () => showScreen('login'));
     document.getElementById('forgot-cancel-btn').addEventListener('click', () => showScreen('login'));
     document.getElementById('btn-show-add-task').addEventListener('click', () => {
-        // Abre o novo modal de escolha em vez de ir direto para a tela de tarefa
-        document.getElementById('modal-quick-start').classList.remove('hidden');
-    });
-
-    // --- Lógica do Modal de Ação Rápida (+) ---
-    document.getElementById('quick-start-cancel').addEventListener('click', () => {
-        document.getElementById('modal-quick-start').classList.add('hidden');
-    });
-
-    document.getElementById('quick-start-new-task').addEventListener('click', () => {
-        document.getElementById('modal-quick-start').classList.add('hidden');
-        editingTaskId = null;
-        resetTaskForm();
-        showScreen('addTask');
-    });
-
-    document.getElementById('quick-start-run').addEventListener('click', () => {
-        document.getElementById('modal-quick-start').classList.add('hidden');
-        startGpsActivity(null); // Inicia uma corrida sem ID de tarefa associada
+        // Simulação de um modal de escolha
+        const choice = confirm("Escolha uma ação:\n[OK] para 'Iniciar Corrida Rápida'\n[Cancelar] para 'Criar Nova Tarefa'");
+        if (choice) {
+            showScreen('activityTracker', { isQuickRun: true, taskId: null });
+        } else {
+            editingTaskId = null;
+            resetTaskForm();
+            showScreen('addTask');
+        }
     });
 
     // Função para popular o formulário com dados da missão para edição
@@ -1921,32 +1842,21 @@
         });
     }
 
-    // Event Listener INTELIGENTE para lidar com cliques nos cards de missão
+    // Event Listener atualizado para lidar com cliques nos cards de missão
     document.getElementById('hub-mission-list').addEventListener('click', async (e) => {
         const missionCard = e.target.closest('.mission-card');
-        if (!missionCard || !missionCard.dataset.taskId) return;
-
+        if (!missionCard) return;
         const taskId = missionCard.dataset.taskId;
+        if (!taskId) return;
+
         const task = allUserTasks.find(t => t.id === taskId);
+        if (!task) return;
 
-        if (!task) {
-            console.error("Tarefa não encontrada na lista local:", taskId);
-            return;
-        }
-
-        // NOVA LÓGICA DE DIRECIONAMENTO
-        if (task.status === 'CONCLUIDA' && task.activity_id_associada) {
-            // 1. Se a tarefa está concluída E tem uma atividade, mostra o resumo
-            loadActivitySummary(task.activity_id_associada, task.titulo);
+        const physicalAttrs = ['VELOCIDADE', 'FORCA', 'VITALIDADE'];
+        if (physicalAttrs.includes(task.atributo_associado) && task.status !== 'CONCLUIDA') {
+            showScreen('activityTracker', { taskId: task.id, isQuickRun: false });
         } else {
-            const physicalAttributes = ['VELOCIDADE', 'FORCA', 'VITALIDADE'];
-            if (physicalAttributes.includes(task.atributo_associado)) {
-                // 2. Se for uma tarefa de atividade física PENDENTE, vai para a tela de GPS
-                startGpsActivity(taskId);
-            } else {
-                // 3. Senão, vai para a tela de detalhes normal
-                showScreen('missionDetails', taskId);
-            }
+            showScreen('missionDetails', taskId);
         }
     });
 
@@ -1969,7 +1879,6 @@
     // Função unificada para criar o card de uma missão
     function createMissionCardHTML(task) {
         const isCompleted = task.status === 'CONCLUIDA';
-        const physicalAttributes = ['VELOCIDADE', 'FORCA', 'VITALIDADE'];
 
         const priorityClasses = {
             principal: 'border-red-500/80',
@@ -1983,7 +1892,7 @@
             FORCA: 'swords', INTELIGENCIA: 'school', VELOCIDADE: 'sprint',
             VITALIDADE: 'shield', CARISMA: 'sentiment_satisfied', default: 'task'
         };
-        const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
+        const icon = iconMap[task.atributo_associado] || iconMap[task.tipo] || iconMap.default;
 
         let statusText = (task.status || 'PENDENTE').replace('_', ' ');
         let statusColor = "text-text-dark-secondary";
@@ -2001,11 +1910,261 @@
                       <p class="text-sm ${statusColor} ${isCompleted ? 'line-through' : ''} capitalize">${statusText}</p>
                     </div>
                     <div class="text-text-dark-secondary">
-                        <span class="material-symbols-outlined text-3xl">${isCompleted ? 'check_circle' : 'chevron_right'}</span>
+                        <span class="material-symbols-outlined text-3xl">chevron_right</span>
                     </div>
                 </div>
             </div>
         `;
+    }
+
+    // --- Lógica do Módulo de Atividade GPS ---
+    function startGpsActivity(taskId, isQuickRun) {
+        // Resetar estado anterior
+        // resetActivityState();
+        activeActivity.associatingTaskId = taskId;
+        activeActivity.isQuickRun = isQuickRun;
+        // activeActivity.pesoUsuarioKg = fullProfileData?.vitals?.peso_atual_kg || 75;
+
+        if (!("geolocation" in navigator)) {
+            showMessage("Erro", "Seu navegador não suporta geolocalização.");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const coords = position.coords;
+                console.log(`Localização inicial obtida: ${coords.latitude}, ${coords.longitude}`);
+                initializeTrackerScreen(coords);
+            },
+            (error) => {
+                if (error.code === error.PERMISSION_DENIED) {
+                    showMessage("Permissão Negada", "Você precisa permitir o acesso à localização para rastrear sua corrida.");
+                } else {
+                    showMessage("Erro de GPS", "Não foi possível obter sua localização. Tente novamente.");
+                }
+                showScreen('dashboard');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    }
+
+    function initializeTrackerScreen(initialCoords) {
+        if (activityMap) {
+            activityMap.remove();
+        }
+        activityMap = L.map('mapa-corrida').setView([initialCoords.latitude, initialCoords.longitude], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(activityMap);
+
+        startTracking(initialCoords);
+    }
+
+    function startTracking(initialCoords) {
+        activeActivity.status = 'running';
+        activeActivity.startTime = Date.now();
+
+        startNewSegment(initialCoords);
+
+        activeActivity.watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                if (activeActivity.status !== 'running') return;
+
+                const newPoint = { lat: position.coords.latitude, lng: position.coords.longitude };
+                const lastPoint = activeActivity.segments[activeActivity.currentSegmentIndex].points.slice(-1)[0];
+
+                const distanceIncrement = calcularDistanciaHaversine(lastPoint, newPoint);
+                if (distanceIncrement * 1000 > 3) { // Filtro anti-drift
+                    activeActivity.distanciaTotalKm += distanceIncrement;
+                    activeActivity.segments[activeActivity.currentSegmentIndex].points.push(newPoint);
+                    updateTrackerUI();
+                    drawOnMap(newPoint);
+                }
+            },
+            (error) => console.warn("GPS perdido durante a corrida:", error.message),
+            { enableHighAccuracy: true }
+        );
+        updateActivityControls();
+    }
+
+    function startNewSegment(initialCoords) {
+        activeActivity.currentSegmentIndex++;
+        const newSegment = {
+            points: [{ lat: initialCoords.latitude, lng: initialCoords.longitude }],
+            startTime: Date.now(),
+            endTime: null,
+            color: segmentColors[activeActivity.currentSegmentIndex % segmentColors.length],
+        };
+        activeActivity.segments.push(newSegment);
+    }
+
+    function drawOnMap(newPoint) {
+        if (!activityMap) return;
+        const segment = activeActivity.segments[activeActivity.currentSegmentIndex];
+        if (segment.points.length > 1) {
+            const lastTwoPoints = segment.points.slice(-2);
+            L.polyline(lastTwoPoints, { color: segment.color }).addTo(activityMap);
+        }
+        activityMap.panTo([newPoint.lat, newPoint.lng]);
+    }
+
+    function pauseTracking() {
+        activeActivity.status = 'paused';
+        activeActivity.pauseTime = Date.now();
+        activeActivity.segments[activeActivity.currentSegmentIndex].endTime = Date.now();
+        updateActivityControls();
+    }
+
+    function resumeTracking() {
+        activeActivity.status = 'running';
+        activeActivity.totalPausedSeconds += (Date.now() - activeActivity.pauseTime) / 1000;
+        activeActivity.pauseTime = null;
+        navigator.geolocation.getCurrentPosition(pos => startNewSegment(pos.coords));
+        updateActivityControls();
+    }
+
+    function updateTrackerUI() {
+        const elapsedSeconds = (Date.now() - activeActivity.startTime) / 1000 - activeActivity.totalPausedSeconds;
+        document.getElementById('tracker-time').textContent = formatTime(elapsedSeconds);
+        document.getElementById('tracker-distance').textContent = `${activeActivity.distanciaTotalKm.toFixed(2)} km`;
+        const avgSpeed = (activeActivity.distanciaTotalKm / (elapsedSeconds / 3600)) || 0;
+        document.getElementById('tracker-avg-speed').textContent = `${avgSpeed.toFixed(1)} km/h`;
+        const calories = calcularCalorias(elapsedSeconds, "corrida");
+        document.getElementById('tracker-calories').textContent = `${calories} kcal`;
+    }
+
+    function updateActivityControls() {
+        const controlsContainer = document.getElementById('activity-controls');
+        controlsContainer.innerHTML = '';
+        if (activeActivity.status === 'running') {
+            controlsContainer.innerHTML = `
+                <button id="pause-activity-btn" class="flex-1 rounded-full h-12 bg-yellow-500 text-background-dark font-bold">Pausar</button>
+                <button id="stop-activity-btn" class="flex-1 rounded-full h-12 bg-red-500 text-white font-bold">Parar e Salvar</button>
+            `;
+            document.getElementById('pause-activity-btn').onclick = pauseTracking;
+            document.getElementById('stop-activity-btn').onclick = () => stopAndSaveTracking();
+        } else if (activeActivity.status === 'paused') {
+            controlsContainer.innerHTML = `
+                <button id="resume-activity-btn" class="flex-1 rounded-full h-12 bg-primary text-background-dark font-bold">Retomar</button>
+                <button id="stop-activity-btn" class="flex-1 rounded-full h-12 bg-red-500 text-white font-bold">Parar e Salvar</button>
+            `;
+            document.getElementById('resume-activity-btn').onclick = resumeTracking;
+            document.getElementById('stop-activity-btn').onclick = () => stopAndSaveTracking();
+        }
+    }
+
+    function calcularDistanciaHaversine(ponto1, ponto2) {
+      const R = 6371;
+      const dLat = (ponto2.lat - ponto1.lat) * (Math.PI / 180);
+      const dLon = (ponto2.lng - ponto1.lng) * (Math.PI / 180);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(ponto1.lat * (Math.PI / 180)) * Math.cos(ponto2.lat * (Math.PI / 180)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function calcularCalorias(duracaoSegundos, tipoAtividade) {
+      let MET = tipoAtividade === "corrida" ? 9.8 : 3.5;
+      const caloriasPorMinuto = (MET * 3.5 * activeActivity.pesoUsuarioKg) / 200;
+      return Math.round(caloriasPorMinuto * (duracaoSegundos / 60));
+    }
+
+    async function stopAndSaveTracking() {
+        if (activeActivity.watchId) navigator.geolocation.clearWatch(activeActivity.watchId);
+        activeActivity.status = 'stopped';
+        activeActivity.segments[activeActivity.currentSegmentIndex].endTime = Date.now();
+
+        const finalData = calculateFinalActivityData();
+
+        try {
+            const userRef = doc(db, 'artifacts', appId, 'users', currentUserId);
+            const profileRef = doc(userRef, 'profile', 'details');
+            const activityRef = doc(collection(userRef, 'activities'));
+
+            await runTransaction(db, async (transaction) => {
+                // 1. Save the new activity
+                transaction.set(activityRef, finalData);
+
+                // 2. Update user's profile with rewards
+                const rewards = finalData.recompensa_ganha;
+                transaction.update(profileRef, {
+                    [`stats.velocidade.xp_atual`]: firebase.firestore.FieldValue.increment(rewards.XP_VEL),
+                    [`stats.vitalidade.xp_atual`]: firebase.firestore.FieldValue.increment(rewards.XP_VIT),
+                    [`character.moedas`]: firebase.firestore.FieldValue.increment(rewards.MOEDAS)
+                });
+
+                // 3. If it's a planned task, mark it as complete
+                if (finalData.task_id_associada) {
+                    const taskRef = doc(userRef, 'tasks', finalData.task_id_associada);
+                    transaction.update(taskRef, {
+                        concluida: true,
+                        status: 'CONCLUIDA',
+                        recompensa_real: finalData.recompensa_ganha,
+                        activity_id_associada: activityRef.id
+                    });
+                }
+            });
+
+            showMessage("Atividade Salva!", `Você ganhou +${finalData.recompensa_ganha.XP_VEL} XP de VEL, +${finalData.recompensa_ganha.XP_VIT} XP de VIT e +${finalData.recompensa_ganha.MOEDAS} Moedas!`);
+            showScreen('activitySummary', { activityId: activityRef.id });
+
+        } catch (error) {
+            console.error("Erro ao salvar atividade e dar recompensas:", error);
+            showMessage("Erro", "Não foi possível salvar sua atividade e aplicar as recompensas.");
+            showScreen('dashboard');
+        }
+    }
+
+    function calculateFinalActivityData() {
+        const duracaoTotalSegundos = (activeActivity.startTime && activeActivity.segments.length > 0)
+            ? (activeActivity.segments.slice(-1)[0].endTime - activeActivity.startTime) / 1000 - activeActivity.totalPausedSeconds
+            : 0;
+
+        const segmentDetails = activeActivity.segments.map(segment => {
+            let segmentDistanceKm = 0;
+            for (let i = 1; i < segment.points.length; i++) {
+                segmentDistanceKm += calcularDistanciaHaversine(segment.points[i-1], segment.points[i]);
+            }
+            const segmentDurationSeconds = (segment.endTime - segment.startTime) / 1000;
+            const segmentAvgSpeedKmh = (segmentDistanceKm / (segmentDurationSeconds / 3600)) || 0;
+            const segmentCalories = calcularCalorias(segmentDurationSeconds, "corrida");
+
+            return {
+                distance_km: segmentDistanceKm,
+                duration_seconds: segmentDurationSeconds,
+                avg_speed_kmh: segmentAvgSpeedKmh,
+                calories: segmentCalories,
+                color: segment.color,
+                points: segment.points
+            };
+        });
+
+        const distanciaTotalKm = segmentDetails.reduce((acc, seg) => acc + seg.distance_km, 0);
+        const velocidadeMediaKmh = (distanciaTotalKm / (duracaoTotalSegundos / 3600)) || 0;
+        const caloriasTotais = segmentDetails.reduce((acc, seg) => acc + seg.calories, 0);
+
+        const XP_VEL = Math.round(distanciaTotalKm * 20);
+        const XP_VIT = Math.round((duracaoTotalSegundos / 60) * 2);
+        const MOEDAS = Math.round(distanciaTotalKm * 5);
+
+        return {
+            task_id_associada: activeActivity.associatingTaskId,
+            tipo_atividade: "corrida",
+            data_inicio: Timestamp.fromMillis(activeActivity.startTime),
+            data_fim: Timestamp.fromMillis(activeActivity.segments.slice(-1)[0].endTime),
+            duracao_total_segundos: duracaoTotalSegundos,
+            distancia_total_km: distanciaTotalKm,
+            velocidade_media_kmh: velocidadeMediaKmh,
+            calorias_queimadas: Math.round(caloriasTotais),
+            recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS },
+            segment_details: segmentDetails
+        };
     }
 
 
@@ -2730,355 +2889,6 @@
         }
     });
 
-    // --- LÓGICA DO MÓDULO DE ATIVIDADE (GPS) ---
-
-    let summaryMap; // Variável para o mapa da tela de resumo
-
-    async function loadActivitySummary(activityId, taskTitle) {
-        if (!currentUserId || !activityId) return;
-
-        showScreen('activitySummary');
-        document.getElementById('summary-title').textContent = taskTitle || 'Resumo da Atividade';
-
-        try {
-            const activityRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'activities', activityId);
-            const activitySnap = await getDoc(activityRef);
-
-            if (!activitySnap.exists()) {
-                throw new Error("Registro de atividade não encontrado.");
-            }
-
-            const data = activitySnap.data();
-
-            // Popula as métricas
-            document.getElementById('summary-metric-time').textContent = formatTime(data.duracao_total_segundos);
-            document.getElementById('summary-metric-distance').textContent = data.distancia_total_km.toFixed(2);
-            document.getElementById('summary-metric-avg-speed').textContent = data.velocidade_media_kmh.toFixed(1);
-            document.getElementById('summary-metric-calories').textContent = data.calorias_queimadas;
-
-            // Popula as recompensas
-            const rewards = data.recompensa_ganha;
-            const rewardsContainer = document.getElementById('summary-rewards-container');
-            rewardsContainer.innerHTML = `
-                <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
-                    <h3 class="text-lg font-bold text-primary mb-3 text-center">Recompensas Ganhass</h3>
-                    <div class="grid grid-cols-3 gap-4 text-center">
-                        <div class="flex flex-col items-center">
-                            <span class="material-symbols-outlined text-primary text-4xl">sprint</span>
-                            <span class="text-xl font-bold text-white">+${rewards.XP_VEL}</span>
-                            <span class="text-sm text-text-dark-secondary">XP de VEL</span>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <span class="material-symbols-outlined text-green-400 text-4xl">shield</span>
-                            <span class="text-xl font-bold text-white">+${rewards.XP_VIT}</span>
-                            <span class="text-sm text-text-dark-secondary">XP de VIT</span>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <span class="material-symbols-outlined text-yellow-400 text-4xl">monetization_on</span>
-                            <span class="text-xl font-bold text-white">+${rewards.MOEDAS}</span>
-                            <span class="text-sm text-text-dark-secondary">Moedas</span>
-                        </div>
-                    </div>
-                </div>`;
-
-            // Renderiza o mapa
-            const trajeto = JSON.parse(data.trajeto_polyline_json);
-            if (summaryMap) summaryMap.remove();
-
-            if (trajeto && trajeto.length > 0) {
-                summaryMap = L.map('summary-mapa').setView([trajeto[0].lat, trajeto[0].lng], 16);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(summaryMap);
-                const polyline = L.polyline(trajeto, { color: '#13ec6d' }).addTo(summaryMap);
-                summaryMap.fitBounds(polyline.getBounds()); // Ajusta o zoom para mostrar o trajeto todo
-
-                // Marcadores de início e fim
-                L.marker(trajeto[0]).addTo(summaryMap).bindPopup("Início");
-                L.marker(trajeto[trajeto.length - 1]).addTo(summaryMap).bindPopup("Fim");
-            } else {
-                 document.getElementById('summary-mapa').innerHTML = '<p>Nenhum trajeto registrado.</p>';
-            }
-
-
-        } catch (error) {
-            console.error("Erro ao carregar resumo da atividade:", error);
-            showMessage('Erro', 'Não foi possível carregar o resumo da sua atividade.');
-            showScreen('dashboard');
-        }
-    }
-
-
-    // Chamado DEPOIS que o usuário dá permissão
-    function iniciarTelaDeRastreamento(coordsIniciais) {
-        // 1. Inicia o mapa
-        if(mapa) mapa.remove(); // Remove o mapa anterior se existir
-        mapa = L.map('mapa-corrida').setView([coordsIniciais.latitude, coordsIniciais.longitude], 16);
-
-        // 2. Adiciona o "fundo" do mapa (OpenStreetMap)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(mapa);
-
-        // 3. Adiciona o marcador de "Início"
-        L.marker([coordsIniciais.latitude, coordsIniciais.longitude]).addTo(mapa).bindPopup("Início!");
-
-        // 4. Cria a linha (polyline) que vamos desenhar
-        linhaDoTrajeto = L.polyline([], { color: '#13ec6d' }).addTo(mapa);
-
-        // 5. Inicia o rastreamento (da Seção 5.3 da spec)
-        iniciarRastreamento(coordsIniciais);
-    }
-
-    // Chamado DENTRO do watchPosition
-    function desenharLinhaNoMapa(novoPonto) {
-        const latLng = [novoPonto.lat, novoPonto.lng];
-        // 1. Adiciona o novo ponto à linha
-        if(linhaDoTrajeto) linhaDoTrajeto.addLatLng(latLng);
-        // 2. Centraliza o mapa no novo ponto
-        if(mapa) mapa.panTo(latLng);
-    }
-
-    function startGpsActivity(taskId) {
-        activityAssociatedTaskId = taskId;
-        // Resetar estado anterior
-        activityPolyline = [];
-        activityTotalDistanceKm = 0;
-        activityStartTime = 0;
-
-        showScreen('activityTracker');
-
-        // 1. Verifica se o navegador suporta GPS
-        if (!("geolocation" in navigator)) {
-            showMessage("Erro", "Seu navegador não suporta geolocalização. Não é possível iniciar a atividade.");
-            showScreen('dashboard');
-            return;
-        }
-
-        // 2. Solicita a permissão
-        navigator.geolocation.getCurrentPosition(
-            // 3. (Callback de SUCESSO)
-            (posicao) => {
-                const coords = posicao.coords;
-                console.log(`Localização inicial obtida: ${coords.latitude}, ${coords.longitude}`);
-                // Inicia o mapa e o rastreamento
-                iniciarTelaDeRastreamento(coords);
-            },
-            // 4. (Callback de ERRO)
-            (erro) => {
-                if (erro.code === erro.PERMISSION_DENIED) {
-                    showMessage("Permissão Negada", "Você precisa permitir o acesso à localização para rastrear sua corrida.");
-                } else {
-                    showMessage("Erro de GPS", "Não foi possível obter sua localização. Tente novamente.");
-                }
-                showScreen('dashboard');
-            },
-            // 5. (Opções)
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-    }
-
-    function iniciarRastreamento(coordsIniciais) {
-        // 1. Adiciona o primeiro ponto e define o tempo de início
-        activityPolyline.push({ lat: coordsIniciais.latitude, lng: coordsIniciais.longitude });
-        activityStartTime = Date.now();
-
-        // Atualiza o peso do usuário a partir dos dados do perfil, se disponíveis
-        if(fullProfileData && fullProfileData.vitals) {
-            userWeightKg = fullProfileData.vitals.peso_atual_kg || 75;
-        }
-
-        // 2. Inicia o "observador"
-        activityWatchId = navigator.geolocation.watchPosition(
-            (posicao) => {
-                const coords = posicao.coords;
-                const novoPonto = { lat: coords.latitude, lng: coords.longitude };
-                const ultimoPonto = activityPolyline[activityPolyline.length - 1];
-
-                const distanciaParcialKm = calcularDistanciaHaversine(ultimoPonto, novoPonto);
-
-                // FILTRO ANTI-DRIFT
-                if (distanciaParcialKm * 1000 < 3) {
-                    return;
-                }
-
-                activityTotalDistanceKm += distanciaParcialKm;
-                activityPolyline.push(novoPonto);
-
-                atualizarMetricasNaTela();
-                desenharLinhaNoMapa(novoPonto);
-            },
-            (erro) => {
-                console.warn("GPS perdido durante a corrida:", erro.message);
-            },
-            { enableHighAccuracy: true, maximumAge: 0 }
-        );
-    }
-
-    function pararRastreamento() {
-        if (activityWatchId) {
-            navigator.geolocation.clearWatch(activityWatchId);
-            activityWatchId = null;
-        }
-        // A função salvarAtividade será chamada a partir do botão
-    }
-
-    function atualizarMetricasNaTela() {
-        const duracaoSegundos = (Date.now() - activityStartTime) / 1000;
-        const velocidadeMedia = (activityTotalDistanceKm / (duracaoSegundos / 3600)) || 0;
-        const calorias = calcularCalorias(duracaoSegundos, activityType);
-
-        document.getElementById('metric-time').textContent = formatTime(duracaoSegundos);
-        document.getElementById('metric-distance').textContent = activityTotalDistanceKm.toFixed(2);
-        document.getElementById('metric-avg-speed').textContent = velocidadeMedia.toFixed(1);
-        document.getElementById('metric-calories').textContent = Math.round(calorias);
-    }
-
-    // --- Funções de Cálculo (Haversine e MET) ---
-
-    function calcularDistanciaHaversine(ponto1, ponto2) {
-        const R = 6371; // Raio da Terra em KM
-        const dLat = (ponto2.lat - ponto1.lat) * (Math.PI / 180);
-        const dLon = (ponto2.lng - ponto1.lng) * (Math.PI / 180);
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                  Math.cos(ponto1.lat * (Math.PI / 180)) * Math.cos(ponto2.lat * (Math.PI / 180)) *
-                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c; // Distância em KM
-    }
-
-    function calcularCalorias(duracaoSegundos, tipoAtividade) {
-        let MET = 1; // Repouso
-        if (tipoAtividade === "corrida") MET = 9.8;
-        else if (tipoAtividade === "caminhada") MET = 3.5;
-
-        const caloriasPorMinuto = (MET * 3.5 * userWeightKg) / 200;
-        const duracaoMinutos = duracaoSegundos / 60;
-        return caloriasPorMinuto * duracaoMinutos;
-    }
-
-    document.getElementById('btn-stop-activity').addEventListener('click', () => {
-        pararRastreamento();
-        // A função salvarAtividade() será implementada no próximo passo
-        salvarAtividade();
-    });
-
-    async function salvarAtividade() {
-        // 1. Parar o rastreador (garantia extra)
-        pararRastreamento();
-
-        // 2. Obter dados finais
-        const fimTimestamp = Date.now();
-        const duracaoSegundos = (fimTimestamp - activityStartTime) / 1000;
-        const distanciaKm = activityTotalDistanceKm;
-        const velocidadeMedia = (distanciaKm / (duracaoSegundos / 3600)) || 0;
-        const calorias = calcularCalorias(duracaoSegundos, activityType);
-
-        // 3. Serializar o trajeto
-        const trajetoString = JSON.stringify(activityPolyline);
-
-        // 4. Calcular Recompensas (Conforme GDD 4.0)
-        const XP_VEL = Math.round(distanciaKm * 20);
-        const XP_VIT = Math.round((duracaoSegundos / 60) * 2);
-        const MOEDAS = Math.round(distanciaKm * 5);
-
-        // 5. Preparar dados para o Firebase
-        const activityData = {
-            task_id_associada: activityAssociatedTaskId || null,
-            tipo_atividade: activityType,
-            data_inicio: Timestamp.fromMillis(activityStartTime),
-            data_fim: Timestamp.fromMillis(fimTimestamp),
-            duracao_total_segundos: duracaoSegundos,
-            distancia_total_km: distanciaKm,
-            velocidade_media_kmh: velocidadeMedia,
-            calorias_queimadas: Math.round(calorias),
-            trajeto_polyline_json: trajetoString,
-            recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS }
-        };
-
-        // 6. Executar a Transação
-        try {
-            const userRef = doc(db, 'artifacts', appId, 'users', currentUserId);
-            const profileRef = doc(userRef, 'profile', 'details');
-
-            await runTransaction(db, async (transaction) => {
-                // É necessário ler o perfil dentro da transação para evitar race conditions
-                const profileSnap = await transaction.get(profileRef);
-                if (!profileSnap.exists()) {
-                    throw "Perfil do usuário não encontrado!";
-                }
-
-                const newActivityRef = doc(collection(userRef, 'activities'));
-                // Write 1: Salva a nova atividade
-                transaction.set(newActivityRef, activityData);
-
-                // Write 2: Atualiza o perfil do usuário (stats e moedas) com lógica de level-up
-                const profileData = profileSnap.data();
-
-                // Garante que a estrutura de stats exista
-                if (!profileData.stats) profileData.stats = {};
-                const defaultStat = { level: 1, xp_atual: 0, xp_para_upar: 100 };
-                if (!profileData.stats.velocidade) profileData.stats.velocidade = { ...defaultStat };
-                if (!profileData.stats.vitalidade) profileData.stats.vitalidade = { ...defaultStat };
-
-                // Lógica de Level Up para Velocidade
-                profileData.stats.velocidade.xp_atual += XP_VEL;
-                while (profileData.stats.velocidade.xp_atual >= profileData.stats.velocidade.xp_para_upar) {
-                    profileData.stats.velocidade.level += 1;
-                    profileData.stats.velocidade.xp_atual -= profileData.stats.velocidade.xp_para_upar;
-                    profileData.stats.velocidade.xp_para_upar = Math.floor(profileData.stats.velocidade.xp_para_upar * 1.15);
-                }
-
-                // Lógica de Level Up para Vitalidade
-                profileData.stats.vitalidade.xp_atual += XP_VIT;
-                while (profileData.stats.vitalidade.xp_atual >= profileData.stats.vitalidade.xp_para_upar) {
-                    profileData.stats.vitalidade.level += 1;
-                    profileData.stats.vitalidade.xp_atual -= profileData.stats.vitalidade.xp_para_upar;
-                    profileData.stats.vitalidade.xp_para_upar = Math.floor(profileData.stats.vitalidade.xp_para_upar * 1.15);
-                }
-
-                // Atualiza moedas
-                profileData.character.moedas = (profileData.character.moedas || 0) + MOEDAS;
-
-                // Salva o objeto de perfil atualizado
-                transaction.update(profileRef, {
-                    stats: profileData.stats,
-                    character: profileData.character
-                });
-
-                // Write 3 (Opcional): Se veio de uma tarefa planejada, marca ela como concluída
-                if (activityAssociatedTaskId) {
-                    const taskRef = doc(userRef, 'tasks', activityAssociatedTaskId);
-                    transaction.update(taskRef, {
-                        status: 'CONCLUIDA', // Usando 'status' em vez de 'concluida'
-                        recompensa_real: activityData.recompensa_ganha,
-                        activity_id_associada: newActivityRef.id
-                    });
-                } else {
-                    // Write 3 (Alternativo): Se for uma "Corrida Rápida", cria uma nova tarefa concluída para o histórico
-                    const newTaskRef = doc(collection(userRef, 'tasks'));
-                    transaction.set(newTaskRef, {
-                        titulo: `Corrida Rápida de ${distanciaKm.toFixed(2)} km`,
-                        tipo: 'diaria', // Classifica como 'diaria' para fins de histórico
-                        prioridade: 'secundaria',
-                        atributo_associado: 'VELOCIDADE', // Define o atributo para o ícone correto
-                        status: 'CONCLUIDA',
-                        recompensa_real: activityData.recompensa_ganha,
-                        activity_id_associada: newActivityRef.id,
-                        createdAt: Timestamp.fromMillis(activityStartTime),
-                        isGenerated: true // Flag para indicar que foi gerada pelo sistema
-                    });
-                }
-            });
-
-            showMessage("Atividade Salva!", `Você ganhou +${XP_VEL} XP de VEL, +${XP_VIT} XP de VIT e +${MOEDAS} Moedas!`);
-            showScreen('dashboard');
-
-        } catch (error) {
-            console.error("Erro ao salvar atividade:", error);
-            showMessage("Erro", "Não foi possível salvar sua atividade. Tente novamente.");
-        }
-    }
-
-
     document.getElementById('sub-task-list').addEventListener('click', (e) => {
         const editButton = e.target.closest('.edit-subtask-btn');
         if (editButton && currentMissionId) {
@@ -3667,7 +3477,79 @@ Sub-tarefas: ${subtasksString}`;
     });
 
     document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
+
+    // --- Lógica do Resumo da Atividade ---
+    async function loadActivitySummary(activityId) {
+        const summaryMapEl = document.getElementById('summary-map');
+        if (!summaryMapEl) return;
+
+        try {
+            const activityRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'activities', activityId);
+            const activitySnap = await getDoc(activityRef);
+            if (!activitySnap.exists()) throw new Error("Atividade não encontrada");
+
+            const data = activitySnap.data();
+
+            // Renderizar Mapa
+            let summaryMap = L.map(summaryMapEl);
+            if (summaryMap) summaryMap.remove();
+            summaryMap = L.map(summaryMapEl).setView([data.segment_details[0].points[0].lat, data.segment_details[0].points[0].lng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(summaryMap);
+            data.segment_details.forEach(segment => {
+                const latLngs = segment.points.map(p => [p.lat, p.lng]);
+                L.polyline(latLngs, { color: segment.color }).addTo(summaryMap);
+            });
+
+            // Renderizar Estatísticas, Recompensas e Segmentos
+            renderSummaryStats(data);
+            renderSummaryRewards(data.recompensa_ganha);
+            renderActivitySegments(data.segment_details);
+
+        } catch (error) {
+            console.error("Erro ao carregar resumo:", error);
+            showMessage("Erro", "Não foi possível carregar o resumo da atividade.");
+        }
+    }
     document.getElementById('summary-back-btn').addEventListener('click', () => showScreen('dashboard'));
+
+    function renderSummaryStats(data) {
+        const container = document.getElementById('summary-stats-container');
+        container.innerHTML = `
+            <div class="bg-surface-dark/50 p-3 rounded-lg"><p class="text-text-dark-secondary text-sm">DURAÇÃO TOTAL</p><p class="text-xl font-bold">${formatTime(data.duracao_total_segundos)}</p></div>
+            <div class="bg-surface-dark/50 p-3 rounded-lg"><p class="text-text-dark-secondary text-sm">DISTÂNCIA TOTAL</p><p class="text-xl font-bold">${data.distancia_total_km.toFixed(2)} km</p></div>
+            <div class="bg-surface-dark/50 p-3 rounded-lg"><p class="text-text-dark-secondary text-sm">VELOCIDADE MÉDIA</p><p class="text-xl font-bold">${data.velocidade_media_kmh.toFixed(1)} km/h</p></div>
+            <div class="bg-surface-dark/50 p-3 rounded-lg"><p class="text-text-dark-secondary text-sm">CALORIAS TOTAIS</p><p class="text-xl font-bold">${data.calorias_queimadas} kcal</p></div>
+        `;
+    }
+
+    function renderSummaryRewards(rewards) {
+        const container = document.getElementById('summary-rewards');
+        container.innerHTML = `
+            <div class="flex justify-around text-center">
+                <div><p class="font-bold text-lg text-yellow-400">+${rewards.MOEDAS}</p><p class="text-sm text-text-dark-secondary">Moedas</p></div>
+                <div><p class="font-bold text-lg text-primary">+${rewards.XP_VEL}</p><p class="text-sm text-text-dark-secondary">XP VEL</p></div>
+                <div><p class="font-bold text-lg text-green-400">+${rewards.XP_VIT}</p><p class="text-sm text-text-dark-secondary">XP VIT</p></div>
+            </div>
+        `;
+    }
+
+    function renderActivitySegments(segments) {
+        const container = document.getElementById('summary-segments');
+        container.innerHTML = '';
+        segments.forEach((segment, index) => {
+            container.innerHTML += `
+            <div class="bg-surface-dark/50 p-3 rounded-lg border-l-4" style="border-color: ${segment.color};">
+                <p class="font-bold text-white mb-2">Segmento ${index + 1}</p>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <p><span class="text-text-dark-secondary">Duração:</span> ${formatTime(segment.duration_seconds)}</p>
+                    <p><span class="text-text-dark-secondary">Distância:</span> ${segment.distance_km.toFixed(2)} km</p>
+                    <p><span class="text-text-dark-secondary">Vel. Média:</span> ${segment.avg_speed_kmh.toFixed(1)} km/h</p>
+                    <p><span class="text-text-dark-secondary">Calorias:</span> ${Math.round(segment.calories)} kcal</p>
+                </div>
+            </div>
+            `;
+        });
+    }
 
 
     // --- LÓGICA DA TELA DE PERSONAGEM ---
