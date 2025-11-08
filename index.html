@@ -892,11 +892,17 @@
         </div>
       </div>
 
-      <!-- Botão de Controle -->
-      <div class="flex-grow flex items-center justify-center px-4">
-        <button id="btn-stop-activity" class="w-full max-w-xs rounded-full bg-red-600 h-16 text-white text-xl font-bold shadow-lg hover:bg-red-700 transition-colors">
-          PARAR E SALVAR
-        </button>
+      <!-- Botões de Controle -->
+      <div class="flex items-center justify-center gap-4 px-4 py-6">
+          <button id="btn-pause-activity" class="flex-1 rounded-full bg-yellow-500 h-16 text-white text-lg font-bold shadow-lg hover:bg-yellow-600 transition-colors">
+              PAUSAR
+          </button>
+          <button id="btn-resume-activity" class="hidden flex-1 rounded-full bg-primary h-16 text-background-dark text-lg font-bold shadow-lg hover:bg-primary/80 transition-colors">
+              RETOMAR
+          </button>
+          <button id="btn-finish-activity" class="flex-1 rounded-full bg-red-600 h-16 text-white text-lg font-bold shadow-lg hover:bg-red-700 transition-colors">
+              FINALIZAR
+          </button>
       </div>
     </div>
 
@@ -940,6 +946,15 @@
       <!-- Recompensas Ganhass -->
       <div id="summary-rewards-container" class="px-4 py-2">
           <!-- Conteúdo inserido via JS -->
+      </div>
+
+      <!-- Histórico de Segmentos -->
+      <div class="px-4 py-2">
+          <h3 class="text-lg font-bold text-primary mb-3">Histórico de Etapas</h3>
+          <div id="summary-segment-history" class="space-y-3">
+              <!-- O histórico de cada etapa será inserido aqui via JS -->
+              <p class="text-sm text-text-dark-secondary text-center">Nenhum histórico de etapas encontrado.</p>
+          </div>
       </div>
     </div>
 
@@ -1242,6 +1257,14 @@
     let userWeightKg = 75; // Default, será atualizado com os dados do perfil
     let activityAssociatedTaskId = null; // Para saber qual tarefa originou a atividade
     let activityType = "corrida"; // "corrida" ou "caminhada"
+
+    // Novas variáveis para o sistema de Pausa/Resumo
+    let activityPaused = false; // Controla o estado de pausa
+    let activitySegments = []; // Armazena os objetos de segmento detalhados
+    let currentSegment = null; // O objeto do segmento que está sendo gravado atualmente
+    let segmentColors = ['#13ec6d', '#3b82f6', '#f59e0b', '#ef4444', '#9333ea']; // Cores para os segmentos
+    let lastPauseTime = 0; // Armazena o timestamp de quando a pausa começou
+    let totalPausedTime = 0; // Armazena o tempo total que a atividade ficou pausada
 
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
@@ -1983,7 +2006,7 @@
             FORCA: 'swords', INTELIGENCIA: 'school', VELOCIDADE: 'sprint',
             VITALIDADE: 'shield', CARISMA: 'sentiment_satisfied', default: 'task'
         };
-        const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
+        const icon = iconMap[task.atributo_associado] || iconMap[task.tipo] || iconMap.default;
 
         let statusText = (task.status || 'PENDENTE').replace('_', ' ');
         let statusColor = "text-text-dark-secondary";
@@ -2781,21 +2804,61 @@
                     </div>
                 </div>`;
 
-            // Renderiza o mapa
-            const trajeto = JSON.parse(data.trajeto_polyline_json);
+            // Renderiza o mapa com segmentos coloridos e o histórico
+            const fullTrajeto = data.trajeto_polyline_json ? JSON.parse(data.trajeto_polyline_json) : [];
+            const segments = data.trajeto_segmentos_json ? JSON.parse(data.trajeto_segmentos_json) : [];
+            const segmentHistory = data.historico_segmentos || [];
+
             if (summaryMap) summaryMap.remove();
 
-            if (trajeto && trajeto.length > 0) {
-                summaryMap = L.map('summary-mapa').setView([trajeto[0].lat, trajeto[0].lng], 16);
+            if (fullTrajeto.length > 0) {
+                summaryMap = L.map('summary-mapa').setView([fullTrajeto[0].lat, fullTrajeto[0].lng], 16);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(summaryMap);
-                const polyline = L.polyline(trajeto, { color: '#13ec6d' }).addTo(summaryMap);
-                summaryMap.fitBounds(polyline.getBounds()); // Ajusta o zoom para mostrar o trajeto todo
+
+                // Adiciona cada segmento como uma polyline colorida
+                segments.forEach(segment => {
+                    if (segment.points && segment.points.length > 1) {
+                        L.polyline(segment.points, { color: segment.color || '#13ec6d' }).addTo(summaryMap);
+                    }
+                });
+
+                // Ajusta o mapa para mostrar todo o trajeto
+                const bounds = L.latLngBounds(fullTrajeto);
+                summaryMap.fitBounds(bounds);
 
                 // Marcadores de início e fim
-                L.marker(trajeto[0]).addTo(summaryMap).bindPopup("Início");
-                L.marker(trajeto[trajeto.length - 1]).addTo(summaryMap).bindPopup("Fim");
+                L.marker(fullTrajeto[0]).addTo(summaryMap).bindPopup("Início");
+                L.marker(fullTrajeto[fullTrajeto.length - 1]).addTo(summaryMap).bindPopup("Fim");
+
             } else {
                  document.getElementById('summary-mapa').innerHTML = '<p>Nenhum trajeto registrado.</p>';
+            }
+
+            // Popula o histórico de segmentos
+            const historyContainer = document.getElementById('summary-segment-history');
+            historyContainer.innerHTML = '';
+            if (segmentHistory.length > 0) {
+                segmentHistory.forEach((segment, index) => {
+                    const segmentEl = document.createElement('div');
+                    segmentEl.className = 'rounded-lg bg-surface-dark/50 p-3 border-l-4';
+                    segmentEl.style.borderColor = segment.cor_segmento;
+
+                    segmentEl.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-white">Etapa ${index + 1}</h4>
+                            <div class="w-4 h-4 rounded-full" style="background-color: ${segment.cor_segmento};"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                            <p><span class="text-text-dark-secondary">Tempo:</span> <span class="font-semibold">${formatTime(segment.tempo_total_segundos)}</span></p>
+                            <p><span class="text-text-dark-secondary">Distância:</span> <span class="font-semibold">${segment.distancia_km} km</span></p>
+                            <p><span class="text-text-dark-secondary">Vel. Média:</span> <span class="font-semibold">${segment.velocidade_media_kmh} km/h</span></p>
+                            <p><span class="text-text-dark-secondary">Calorias:</span> <span class="font-semibold">${segment.calorias_queimadas} kcal</span></p>
+                        </div>
+                    `;
+                    historyContainer.appendChild(segmentEl);
+                });
+            } else {
+                historyContainer.innerHTML = '<p class="text-sm text-text-dark-secondary text-center">Nenhum histórico de etapas encontrado.</p>';
             }
 
 
@@ -2877,9 +2940,18 @@
     }
 
     function iniciarRastreamento(coordsIniciais) {
-        // 1. Adiciona o primeiro ponto e define o tempo de início
-        activityPolyline.push({ lat: coordsIniciais.latitude, lng: coordsIniciais.longitude });
+        // 1. Define o tempo de início e cria o primeiro segmento
         activityStartTime = Date.now();
+        const startPoint = { lat: coordsIniciais.latitude, lng: coordsIniciais.longitude };
+
+        currentSegment = {
+            startTime: activityStartTime,
+            points: [startPoint],
+            distance: 0,
+            color: segmentColors[0]
+        };
+        activityPolyline.push(startPoint);
+
 
         // Atualiza o peso do usuário a partir dos dados do perfil, se disponíveis
         if(fullProfileData && fullProfileData.vitals) {
@@ -2889,6 +2961,8 @@
         // 2. Inicia o "observador"
         activityWatchId = navigator.geolocation.watchPosition(
             (posicao) => {
+                if (activityPaused) return; // Se estiver pausado, ignora a atualização
+
                 const coords = posicao.coords;
                 const novoPonto = { lat: coords.latitude, lng: coords.longitude };
                 const ultimoPonto = activityPolyline[activityPolyline.length - 1];
@@ -2902,6 +2976,10 @@
 
                 activityTotalDistanceKm += distanciaParcialKm;
                 activityPolyline.push(novoPonto);
+                if (currentSegment) {
+                    currentSegment.points.push(novoPonto);
+                    currentSegment.distance += distanciaParcialKm;
+                }
 
                 atualizarMetricasNaTela();
                 desenharLinhaNoMapa(novoPonto);
@@ -2922,7 +3000,10 @@
     }
 
     function atualizarMetricasNaTela() {
-        const duracaoSegundos = (Date.now() - activityStartTime) / 1000;
+        const tempoCorrente = activityPaused ? lastPauseTime : Date.now();
+        const duracaoAtivaMs = (tempoCorrente - activityStartTime) - totalPausedTime;
+        const duracaoSegundos = duracaoAtivaMs / 1000;
+
         const velocidadeMedia = (activityTotalDistanceKm / (duracaoSegundos / 3600)) || 0;
         const calorias = calcularCalorias(duracaoSegundos, activityType);
 
@@ -2955,46 +3036,125 @@
         return caloriasPorMinuto * duracaoMinutos;
     }
 
-    document.getElementById('btn-stop-activity').addEventListener('click', () => {
+    // --- Lógica dos Novos Botões de Controle ---
+    document.getElementById('btn-pause-activity').addEventListener('click', pauseActivity);
+    document.getElementById('btn-resume-activity').addEventListener('click', resumeActivity);
+    document.getElementById('btn-finish-activity').addEventListener('click', () => {
         pararRastreamento();
-        // A função salvarAtividade() será implementada no próximo passo
         salvarAtividade();
     });
+
+
+    function pauseActivity() {
+        if (activityPaused || !currentSegment) return;
+        activityPaused = true;
+        lastPauseTime = Date.now(); // Registra o momento em que a pausa começou
+
+        // Finaliza o segmento atual
+        currentSegment.endTime = lastPauseTime;
+        currentSegment.duration = (currentSegment.endTime - currentSegment.startTime) / 1000;
+        activitySegments.push(currentSegment);
+        currentSegment = null; // Limpa o segmento atual
+
+        document.getElementById('btn-pause-activity').classList.add('hidden');
+        document.getElementById('btn-resume-activity').classList.remove('hidden');
+    }
+
+    function resumeActivity() {
+        if (!activityPaused) return;
+
+        const resumeTime = Date.now();
+        const pauseDuration = resumeTime - lastPauseTime;
+        totalPausedTime += pauseDuration;
+        activityPaused = false;
+        lastPauseTime = 0;
+
+        const lastPoint = activityPolyline.length > 0 ? activityPolyline[activityPolyline.length - 1] : null;
+        if (!lastPoint) {
+            console.error("Não foi possível retomar, nenhum ponto anterior encontrado.");
+            return;
+        }
+
+        // Cria um novo segmento
+        currentSegment = {
+            startTime: resumeTime,
+            points: [lastPoint],
+            distance: 0,
+            color: segmentColors[activitySegments.length % segmentColors.length]
+        };
+
+        // Adiciona uma nova camada de polyline para o novo segmento
+        linhaDoTrajeto = L.polyline([], { color: currentSegment.color }).addTo(mapa);
+
+
+        document.getElementById('btn-pause-activity').classList.remove('hidden');
+        document.getElementById('btn-resume-activity').classList.add('hidden');
+    }
+
 
     async function salvarAtividade() {
         // 1. Parar o rastreador (garantia extra)
         pararRastreamento();
-
-        // 2. Obter dados finais
         const fimTimestamp = Date.now();
-        const duracaoSegundos = (fimTimestamp - activityStartTime) / 1000;
-        const distanciaKm = activityTotalDistanceKm;
-        const velocidadeMedia = (distanciaKm / (duracaoSegundos / 3600)) || 0;
-        const calorias = calcularCalorias(duracaoSegundos, activityType);
 
-        // 3. Serializar o trajeto
+        // 2. Finaliza o último segmento, se houver um ativo
+        if (currentSegment && currentSegment.points.length > 1) {
+            currentSegment.endTime = fimTimestamp;
+            currentSegment.duration = (currentSegment.endTime - currentSegment.startTime) / 1000;
+            activitySegments.push(currentSegment);
+        }
+
+        // 3. Calcular métricas finais e processar segmentos para salvar
+        let totalDistance = 0;
+        let totalActiveTime = 0;
+        const segmentHistory = activitySegments.map(segment => {
+            const duration = segment.duration > 0 ? segment.duration : 0;
+            const distance = segment.distance > 0 ? segment.distance : 0;
+            const speed = (distance / (duration / 3600)) || 0;
+            const calories = calcularCalorias(duration, activityType);
+
+            totalDistance += distance;
+            totalActiveTime += duration;
+
+            return {
+                distancia_km: parseFloat(distance.toFixed(2)),
+                tempo_total_segundos: Math.round(duration),
+                velocidade_media_kmh: parseFloat(speed.toFixed(1)),
+                calorias_queimadas: Math.round(calories),
+                cor_segmento: segment.color
+            };
+        });
+
+
+        const velocidadeMedia = (totalDistance / (totalActiveTime / 3600)) || 0;
+        const caloriasTotais = calcularCalorias(totalActiveTime, activityType);
+
+        // 4. Serializar o trajeto
         const trajetoString = JSON.stringify(activityPolyline);
+        const segmentosString = JSON.stringify(activitySegments.map(s => ({ points: s.points, color: s.color })));
 
-        // 4. Calcular Recompensas (Conforme GDD 4.0)
-        const XP_VEL = Math.round(distanciaKm * 20);
-        const XP_VIT = Math.round((duracaoSegundos / 60) * 2);
-        const MOEDAS = Math.round(distanciaKm * 5);
+        // 5. Calcular Recompensas (Conforme GDD 4.0)
+        const XP_VEL = Math.round(totalDistance * 20);
+        const XP_VIT = Math.round((totalActiveTime / 60) * 2);
+        const MOEDAS = Math.round(totalDistance * 5);
 
-        // 5. Preparar dados para o Firebase
+        // 6. Preparar dados para o Firebase
         const activityData = {
             task_id_associada: activityAssociatedTaskId || null,
             tipo_atividade: activityType,
             data_inicio: Timestamp.fromMillis(activityStartTime),
             data_fim: Timestamp.fromMillis(fimTimestamp),
-            duracao_total_segundos: duracaoSegundos,
-            distancia_total_km: distanciaKm,
+            duracao_total_segundos: totalActiveTime,
+            distancia_total_km: totalDistance,
             velocidade_media_kmh: velocidadeMedia,
-            calorias_queimadas: Math.round(calorias),
+            calorias_queimadas: Math.round(caloriasTotais),
             trajeto_polyline_json: trajetoString,
+            trajeto_segmentos_json: segmentosString, // Salva os segmentos com pontos e cor
+            historico_segmentos: segmentHistory, // Salva o histórico com estatísticas
             recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS }
         };
 
-        // 6. Executar a Transação
+        // 7. Executar a Transação
         try {
             const userRef = doc(db, 'artifacts', appId, 'users', currentUserId);
             const profileRef = doc(userRef, 'profile', 'details');
@@ -3056,7 +3216,7 @@
                     // Write 3 (Alternativo): Se for uma "Corrida Rápida", cria uma nova tarefa concluída para o histórico
                     const newTaskRef = doc(collection(userRef, 'tasks'));
                     transaction.set(newTaskRef, {
-                        titulo: `Corrida Rápida de ${distanciaKm.toFixed(2)} km`,
+                        titulo: `Corrida Rápida de ${totalDistance.toFixed(2)} km`,
                         tipo: 'diaria', // Classifica como 'diaria' para fins de histórico
                         prioridade: 'secundaria',
                         atributo_associado: 'VELOCIDADE', // Define o atributo para o ícone correto
