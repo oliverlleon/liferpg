@@ -1273,6 +1273,8 @@
     let segmentColors = ['#13ec6d', '#3b82f6', '#f59e0b', '#ef4444', '#9333ea']; // Cores para os segmentos
     let lastPauseTime = 0; // Armazena o timestamp de quando a pausa começou
     let totalPausedTime = 0; // Armazena o tempo total que a atividade ficou pausada
+    let totalCaloriasQueimadas = 0; // Acumulador para o novo cálculo de calorias
+    let ultimoTimestamp = 0; // Timestamp da última atualização do GPS
 
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
@@ -2975,10 +2977,17 @@
             userWeightKg = fullProfileData.vitals.peso_atual_kg || 75;
         }
 
+        ultimoTimestamp = Date.now(); // Inicia o timestamp aqui
+        totalCaloriasQueimadas = 0; // Reseta as calorias no início
+
         // 2. Inicia o "observador"
         activityWatchId = navigator.geolocation.watchPosition(
             (posicao) => {
                 if (activityPaused) return; // Se estiver pausado, ignora a atualização
+
+                const agora = Date.now();
+                const tempoParcialSegundos = (agora - ultimoTimestamp) / 1000;
+                if (tempoParcialSegundos < 1) return; // Evita cálculos excessivos
 
                 const coords = posicao.coords;
                 const novoPonto = { lat: coords.latitude, lng: coords.longitude };
@@ -2990,6 +2999,15 @@
                 if (distanciaParcialKm * 1000 < 3) {
                     return;
                 }
+
+                // Cálculo de calorias dinâmico
+                const velocidadeInstantaneaKmh = (distanciaParcialKm / tempoParcialSegundos) * 3600;
+                const metInstantaneo = getMETFromSpeed(velocidadeInstantaneaKmh);
+                const caloriasPorMinuto = (metInstantaneo * 3.5 * userWeightKg) / 200;
+                const caloriasNesteIntervalo = (caloriasPorMinuto / 60) * tempoParcialSegundos;
+                totalCaloriasQueimadas += caloriasNesteIntervalo;
+
+                ultimoTimestamp = agora; // Atualiza o timestamp para o próximo ciclo
 
                 activityTotalDistanceKm += distanciaParcialKm;
                 activityPolyline.push(novoPonto);
@@ -3022,12 +3040,11 @@
         const duracaoSegundos = duracaoAtivaMs / 1000;
 
         const velocidadeMedia = (activityTotalDistanceKm / (duracaoSegundos / 3600)) || 0;
-        const calorias = calcularCalorias(duracaoSegundos, activityType);
 
         document.getElementById('metric-time').textContent = formatTime(duracaoSegundos);
         document.getElementById('metric-distance').textContent = activityTotalDistanceKm.toFixed(2);
         document.getElementById('metric-avg-speed').textContent = velocidadeMedia.toFixed(1);
-        document.getElementById('metric-calories').textContent = Math.round(calorias);
+        document.getElementById('metric-calories').textContent = Math.round(totalCaloriasQueimadas);
     }
 
     // --- Funções de Cálculo (Haversine e MET) ---
@@ -3051,6 +3068,16 @@
         const caloriasPorMinuto = (MET * 3.5 * userWeightKg) / 200;
         const duracaoMinutos = duracaoSegundos / 60;
         return caloriasPorMinuto * duracaoMinutos;
+    }
+
+    function getMETFromSpeed(velocidadeKmh) {
+        if (velocidadeKmh < 5) {
+            return 3.5; // Caminhada
+        } else if (velocidadeKmh >= 5 && velocidadeKmh <= 8) {
+            return 7.0; // Trote
+        } else {
+            return 9.8; // Corrida
+        }
     }
 
     // --- Lógica dos Novos Botões de Controle ---
