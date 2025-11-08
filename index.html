@@ -1271,6 +1271,7 @@
     let activityType = "corrida"; // "corrida" ou "caminhada"
     let activityTotalCalories = 0; // Vai acumular as calorias "queimadas" em tempo real.
     let activityLastTimestamp = 0; // Vai nos ajudar a calcular o tempo exato entre cada atualização do GPS.
+    let activityStateSaveInterval = null; // Para o salvamento periódico
 
 
     // Novas variáveis para o sistema de Pausa/Resumo
@@ -1487,6 +1488,29 @@
         if (speedKph < 12) return 11.0; // Corrida rápida
         if (speedKph < 14) return 12.8; // Corrida muito rápida
         return 14.5; // Ritmo de elite
+    }
+
+    async function saveLiveActivityState() {
+        if (!activityAssociatedTaskId || !currentUserId || activityPaused) return;
+
+        const duracaoAtivaMs = (Date.now() - activityStartTime) - totalPausedTime;
+        const liveState = {
+            activityStartTime: activityStartTime,
+            totalPausedTime: totalPausedTime,
+            activityTotalDistanceKm: activityTotalDistanceKm,
+            activityTotalCalories: activityTotalCalories,
+            activityPolyline: JSON.stringify(activityPolyline),
+            activitySegments: JSON.stringify(activitySegments),
+            currentSegment: JSON.stringify(currentSegment),
+        };
+
+        try {
+            const taskRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'tasks', activityAssociatedTaskId);
+            await updateDoc(taskRef, { liveActivityState: liveState });
+            console.log('Live activity state saved.');
+        } catch (error) {
+            console.error("Failed to save live activity state:", error);
+        }
     }
 
     // --- Lógica de Navegação ---
@@ -2957,30 +2981,86 @@
         if(mapa) mapa.panTo(latLng);
     }
 
-    function startGpsActivity(taskId) {
+    async function startGpsActivity(taskId) {
+        const task = allUserTasks.find(t => t.id === taskId);
+        const liveState = task ? task.liveActivityState : null;
+
         activityAssociatedTaskId = taskId;
-        // Resetar estado anterior
-        activityPolyline = [];
-        activityTotalDistanceKm = 0;
-        activityStartTime = 0;
-        activityTotalCalories = 0;
-        activityLastTimestamp = 0;
 
-        // Resetar estado de pausa/segmento
-        activityPaused = false;
-        activitySegments = [];
-        totalPausedTime = 0;
-        lastPauseTime = 0;
-        currentSegment = null;
+        if (liveState) {
+            // Carrega o estado salvo
+            activityStartTime = liveState.activityStartTime || Date.now();
+            totalPausedTime = liveState.totalPausedTime || 0;
+            activityTotalDistanceKm = liveState.activityTotalDistanceKm || 0;
+            activityTotalCalories = liveState.activityTotalCalories || 0;
+            activityPolyline = liveState.activityPolyline ? JSON.parse(liveState.activityPolyline) : [];
+            activitySegments = liveState.activitySegments ? JSON.parse(liveState.activitySegments) : [];
+            currentSegment = liveState.currentSegment ? JSON.parse(liveState.currentSegment) : null;
+            activityPaused = true; // Força o estado de pausa para que o usuário retome manualmente
 
-        showScreen('activityTracker');
-        renderLiveSegmentHistory(); // Garante que o histórico está limpo no início
+            showScreen('activityTracker');
+            renderLiveSegmentHistory();
+            atualizarMetricasNaTela();
 
-        // Mostra o botão Iniciar e esconde os outros
-        document.getElementById('btn-start-activity').classList.remove('hidden');
-        document.getElementById('btn-pause-activity').classList.add('hidden');
-        document.getElementById('btn-resume-activity').classList.add('hidden');
-        document.getElementById('btn-finish-activity').classList.add('hidden');
+            document.getElementById('btn-start-activity').classList.add('hidden');
+            document.getElementById('btn-pause-activity').classList.add('hidden');
+            document.getElementById('btn-resume-activity').classList.remove('hidden');
+            document.getElementById('btn-finish-activity').classList.remove('hidden');
+
+            // Redesenha o mapa com os dados salvos
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (posicao) => {
+                        const coords = posicao.coords;
+                        if(mapa) mapa.remove();
+                        document.getElementById('mapa-corrida').innerHTML = '';
+                        mapa = L.map('mapa-corrida').setView([coords.latitude, coords.longitude], 16);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
+
+                        // Redesenha os segmentos salvos
+                        activitySegments.forEach(segment => {
+                            if (segment.points && segment.points.length > 1) {
+                                L.polyline(segment.points, { color: segment.color || '#13ec6d' }).addTo(mapa);
+                            }
+                        });
+
+                        // Se houver um segmento atual (não pausado antes de fechar), desenha-o
+                        if (currentSegment && currentSegment.points && currentSegment.points.length > 1) {
+                            linhaDoTrajeto = L.polyline(currentSegment.points, { color: currentSegment.color || '#13ec6d' }).addTo(mapa);
+                        }
+
+                        if(activityPolyline.length > 0) {
+                            mapa.fitBounds(L.latLngBounds(activityPolyline));
+                        }
+                    },
+                    (erro) => {
+                         document.getElementById('mapa-corrida').innerHTML = '<p class="text-red-500">Não foi possível obter a localização para o mapa.</p>';
+                    },
+                    { enableHighAccuracy: true }
+                );
+            }
+
+        } else {
+            // Inicia uma nova atividade do zero
+            activityPolyline = [];
+            activityTotalDistanceKm = 0;
+            activityStartTime = 0;
+            activityTotalCalories = 0;
+            activityLastTimestamp = 0;
+            activityPaused = false;
+            activitySegments = [];
+            totalPausedTime = 0;
+            lastPauseTime = 0;
+            currentSegment = null;
+
+            showScreen('activityTracker');
+            renderLiveSegmentHistory(); // Garante que o histórico está limpo no início
+
+            document.getElementById('btn-start-activity').classList.remove('hidden');
+            document.getElementById('btn-pause-activity').classList.add('hidden');
+            document.getElementById('btn-resume-activity').classList.add('hidden');
+            document.getElementById('btn-finish-activity').classList.add('hidden');
+        }
 
         // Pré-carrega o mapa com a localização atual, mas não inicia o rastreamento
         if ("geolocation" in navigator) {
@@ -3025,6 +3105,9 @@
         }
 
         // 2. Inicia o "observador"
+        if (activityStateSaveInterval) clearInterval(activityStateSaveInterval);
+        activityStateSaveInterval = setInterval(saveLiveActivityState, 10000); // Salva a cada 10 segundos
+
         activityWatchId = navigator.geolocation.watchPosition(
             (posicao) => {
                 if (activityPaused) return; // Se estiver pausado, ignora a atualização
@@ -3076,6 +3159,10 @@
         if (activityWatchId) {
             navigator.geolocation.clearWatch(activityWatchId);
             activityWatchId = null;
+        }
+        if (activityStateSaveInterval) {
+            clearInterval(activityStateSaveInterval);
+            activityStateSaveInterval = null;
         }
         // A função salvarAtividade será chamada a partir do botão
     }
@@ -3351,7 +3438,8 @@
                         transaction.update(taskRef, {
                             status: 'CONCLUIDA',
                             recompensa_real: activityData.recompensa_ganha,
-                            activity_id_associada: newActivityRef.id
+                            activity_id_associada: newActivityRef.id,
+                            liveActivityState: deleteField() // Limpa o estado ao vivo
                         });
                     }
                 }
