@@ -904,6 +904,14 @@
               FINALIZAR
           </button>
       </div>
+
+      <!-- Histórico de Etapas (Live) -->
+      <div class="px-4 py-2">
+          <h3 class="text-lg font-bold text-primary mb-3">Histórico de Etapas</h3>
+          <div id="live-segment-history" class="space-y-3">
+              <p class="text-sm text-text-dark-secondary text-center">Pause a atividade para registrar a primeira etapa.</p>
+          </div>
+      </div>
     </div>
 
     <!-- Tela 11: Resumo da Atividade Concluída -->
@@ -2907,7 +2915,16 @@
         activityTotalDistanceKm = 0;
         activityStartTime = 0;
 
+        // Resetar estado de pausa/segmento
+        activityPaused = false;
+        activitySegments = [];
+        totalPausedTime = 0;
+        lastPauseTime = 0;
+        currentSegment = null;
+
+
         showScreen('activityTracker');
+        renderLiveSegmentHistory(); // Garante que o histórico está limpo no início
 
         // 1. Verifica se o navegador suporta GPS
         if (!("geolocation" in navigator)) {
@@ -3044,6 +3061,42 @@
         salvarAtividade();
     });
 
+    function renderLiveSegmentHistory() {
+        const historyContainer = document.getElementById('live-segment-history');
+        if (!historyContainer) return;
+
+        historyContainer.innerHTML = '';
+
+        if (activitySegments.length === 0) {
+            historyContainer.innerHTML = '<p class="text-sm text-text-dark-secondary text-center">Pause a atividade para registrar a primeira etapa.</p>';
+            return;
+        }
+
+        activitySegments.forEach((segment, index) => {
+            const duration = segment.duration || 0;
+            const distance = segment.distance || 0;
+            const speed = (distance / (duration / 3600)) || 0;
+            const calories = calcularCalorias(duration, activityType);
+
+            const segmentEl = document.createElement('div');
+            segmentEl.className = 'rounded-lg bg-surface-dark/50 p-3 border-l-4';
+            segmentEl.style.borderColor = segment.color;
+
+            segmentEl.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="font-bold text-white">Etapa ${index + 1}</h4>
+                    <div class="w-4 h-4 rounded-full" style="background-color: ${segment.color};"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <p><span class="text-text-dark-secondary">Tempo:</span> <span class="font-semibold">${formatTime(duration)}</span></p>
+                    <p><span class="text-text-dark-secondary">Distância:</span> <span class="font-semibold">${distance.toFixed(2)} km</span></p>
+                    <p><span class="text-text-dark-secondary">Vel. Média:</span> <span class="font-semibold">${speed.toFixed(1)} km/h</span></p>
+                    <p><span class="text-text-dark-secondary">Calorias:</span> <span class="font-semibold">${Math.round(calories)} kcal</span></p>
+                </div>
+            `;
+            historyContainer.appendChild(segmentEl);
+        });
+    }
 
     function pauseActivity() {
         if (activityPaused || !currentSegment) return;
@@ -3055,6 +3108,7 @@
         currentSegment.duration = (currentSegment.endTime - currentSegment.startTime) / 1000;
         activitySegments.push(currentSegment);
         currentSegment = null; // Limpa o segmento atual
+        renderLiveSegmentHistory(); // ATUALIZA A TELA COM O NOVO SEGMENTO
 
         document.getElementById('btn-pause-activity').classList.add('hidden');
         document.getElementById('btn-resume-activity').classList.remove('hidden');
