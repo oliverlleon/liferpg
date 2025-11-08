@@ -2996,11 +2996,16 @@
             activityPolyline = liveState.activityPolyline ? JSON.parse(liveState.activityPolyline) : [];
             activitySegments = liveState.activitySegments ? JSON.parse(liveState.activitySegments) : [];
             currentSegment = liveState.currentSegment ? JSON.parse(liveState.currentSegment) : null;
-            activityPaused = true; // Força o estado de pausa para que o usuário retome manualmente
+
+            // *** A CORREÇÃO PRINCIPAL ***
+            // Força o estado de pausa e define o tempo da pausa para AGORA.
+            // Isso garante que o cálculo do tempo em `atualizarMetricasNaTela` funcione corretamente.
+            activityPaused = true;
+            lastPauseTime = Date.now();
 
             showScreen('activityTracker');
             renderLiveSegmentHistory();
-            atualizarMetricasNaTela();
+            atualizarMetricasNaTela(); // Agora esta chamada é segura.
 
             document.getElementById('btn-start-activity').classList.add('hidden');
             document.getElementById('btn-pause-activity').classList.add('hidden');
@@ -3030,6 +3035,9 @@
                         }
 
                         if(activityPolyline.length > 0) {
+                            // Adiciona um marcador na última posição conhecida para clareza.
+                            const lastPoint = activityPolyline[activityPolyline.length - 1];
+                            L.marker(lastPoint).addTo(mapa).bindPopup("Última Posição");
                             mapa.fitBounds(L.latLngBounds(activityPolyline));
                         }
                     },
