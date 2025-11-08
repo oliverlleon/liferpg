@@ -3384,26 +3384,27 @@
             const profileRef = doc(userRef, 'profile', 'details');
 
             await runTransaction(db, async (transaction) => {
-                // É necessário ler o perfil dentro da transação para evitar race conditions
+                // --- ETAPA 1: LEITURA ---
+                // Todas as leituras devem acontecer antes de qualquer escrita.
                 const profileSnap = await transaction.get(profileRef);
                 if (!profileSnap.exists()) {
                     throw "Perfil do usuário não encontrado!";
                 }
 
-                const newActivityRef = doc(collection(userRef, 'activities'));
-                // Write 1: Salva a nova atividade
-                transaction.set(newActivityRef, activityData);
+                let taskSnap = null;
+                let taskRef = null;
+                if (activityAssociatedTaskId) {
+                    taskRef = doc(userRef, 'tasks', activityAssociatedTaskId);
+                    taskSnap = await transaction.get(taskRef);
+                }
 
-                // Write 2: Atualiza o perfil do usuário (stats e moedas) com lógica de level-up
+                // --- ETAPA 2: LÓGICA DE NEGÓCIO (sem escrita no BD) ---
                 const profileData = profileSnap.data();
-
-                // Garante que a estrutura de stats exista
                 if (!profileData.stats) profileData.stats = {};
                 const defaultStat = { level: 1, xp_atual: 0, xp_para_upar: 100 };
                 if (!profileData.stats.velocidade) profileData.stats.velocidade = { ...defaultStat };
                 if (!profileData.stats.vitalidade) profileData.stats.vitalidade = { ...defaultStat };
 
-                // Lógica de Level Up para Velocidade
                 profileData.stats.velocidade.xp_atual += XP_VEL;
                 while (profileData.stats.velocidade.xp_atual >= profileData.stats.velocidade.xp_para_upar) {
                     profileData.stats.velocidade.level += 1;
@@ -3411,7 +3412,6 @@
                     profileData.stats.velocidade.xp_para_upar = Math.floor(profileData.stats.velocidade.xp_para_upar * 1.15);
                 }
 
-                // Lógica de Level Up para Vitalidade
                 profileData.stats.vitalidade.xp_atual += XP_VIT;
                 while (profileData.stats.vitalidade.xp_atual >= profileData.stats.vitalidade.xp_para_upar) {
                     profileData.stats.vitalidade.level += 1;
@@ -3419,35 +3419,37 @@
                     profileData.stats.vitalidade.xp_para_upar = Math.floor(profileData.stats.vitalidade.xp_para_upar * 1.15);
                 }
 
-                // Atualiza moedas
                 profileData.character.moedas = (profileData.character.moedas || 0) + MOEDAS;
 
-                // Salva o objeto de perfil atualizado
+                // --- ETAPA 3: ESCRITA ---
+                // Agora que todas as leituras e cálculos foram feitos, podemos escrever.
+                const newActivityRef = doc(collection(userRef, 'activities'));
+
+                // ESCRITA 1: Salva a nova atividade
+                transaction.set(newActivityRef, activityData);
+
+                // ESCRITA 2: Salva o objeto de perfil atualizado
                 transaction.update(profileRef, {
                     stats: profileData.stats,
                     character: profileData.character
                 });
 
-                // Lógica de Tarefa Unificada
-                if (activityAssociatedTaskId) {
-                    const taskRef = doc(userRef, 'tasks', activityAssociatedTaskId);
-                    const taskSnap = await transaction.get(taskRef);
-
-                    if (taskSnap.exists() && taskSnap.data().isGenerated) {
-                        // Se é uma "Corrida Rápida" (isGenerated), atualiza o título
+                // ESCRITA 3: Atualiza a tarefa associada
+                if (taskRef && taskSnap && taskSnap.exists()) {
+                    if (taskSnap.data().isGenerated) {
                         transaction.update(taskRef, {
                             titulo: `Corrida Rápida de ${totalDistance.toFixed(2)} km`,
                             status: 'CONCLUIDA',
                             recompensa_real: activityData.recompensa_ganha,
-                            activity_id_associada: newActivityRef.id
+                            activity_id_associada: newActivityRef.id,
+                            liveActivityState: deleteField()
                         });
                     } else {
-                        // Se é uma tarefa normal, apenas a conclui
                         transaction.update(taskRef, {
                             status: 'CONCLUIDA',
                             recompensa_real: activityData.recompensa_ganha,
                             activity_id_associada: newActivityRef.id,
-                            liveActivityState: deleteField() // Limpa o estado ao vivo
+                            liveActivityState: deleteField()
                         });
                     }
                 }
