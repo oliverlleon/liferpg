@@ -894,13 +894,17 @@
 
       <!-- Botões de Controle -->
       <div class="flex items-center justify-center gap-4 px-4 py-6">
-          <button id="btn-pause-activity" class="flex-1 rounded-full bg-yellow-500 h-16 text-white text-lg font-bold shadow-lg hover:bg-yellow-600 transition-colors">
+          <button id="btn-start-activity" class="flex-1 rounded-full bg-primary h-16 text-background-dark text-lg font-bold shadow-lg hover:bg-primary/80 transition-colors">
+              INICIAR
+          </button>
+
+          <button id="btn-pause-activity" class="hidden flex-1 rounded-full bg-yellow-500 h-16 text-white text-lg font-bold shadow-lg hover:bg-yellow-600 transition-colors">
               PAUSAR
           </button>
           <button id="btn-resume-activity" class="hidden flex-1 rounded-full bg-primary h-16 text-background-dark text-lg font-bold shadow-lg hover:bg-primary/80 transition-colors">
               RETOMAR
           </button>
-          <button id="btn-finish-activity" class="flex-1 rounded-full bg-red-600 h-16 text-white text-lg font-bold shadow-lg hover:bg-red-700 transition-colors">
+          <button id="btn-finish-activity" class="hidden flex-1 rounded-full bg-red-600 h-16 text-white text-lg font-bold shadow-lg hover:bg-red-700 transition-colors">
               FINALIZAR
           </button>
       </div>
@@ -2932,7 +2936,6 @@
         activityTotalCalories = 0;
         activityLastTimestamp = 0;
 
-
         // Resetar estado de pausa/segmento
         activityPaused = false;
         activitySegments = [];
@@ -2940,38 +2943,35 @@
         lastPauseTime = 0;
         currentSegment = null;
 
-
         showScreen('activityTracker');
         renderLiveSegmentHistory(); // Garante que o histórico está limpo no início
 
-        // 1. Verifica se o navegador suporta GPS
-        if (!("geolocation" in navigator)) {
-            showMessage("Erro", "Seu navegador não suporta geolocalização. Não é possível iniciar a atividade.");
-            showScreen('dashboard');
-            return;
-        }
+        // Mostra o botão Iniciar e esconde os outros
+        document.getElementById('btn-start-activity').classList.remove('hidden');
+        document.getElementById('btn-pause-activity').classList.add('hidden');
+        document.getElementById('btn-resume-activity').classList.add('hidden');
+        document.getElementById('btn-finish-activity').classList.add('hidden');
 
-        // 2. Solicita a permissão
-        navigator.geolocation.getCurrentPosition(
-            // 3. (Callback de SUCESSO)
-            (posicao) => {
-                const coords = posicao.coords;
-                console.log(`Localização inicial obtida: ${coords.latitude}, ${coords.longitude}`);
-                // Inicia o mapa e o rastreamento
-                iniciarTelaDeRastreamento(coords);
-            },
-            // 4. (Callback de ERRO)
-            (erro) => {
-                if (erro.code === erro.PERMISSION_DENIED) {
-                    showMessage("Permissão Negada", "Você precisa permitir o acesso à localização para rastrear sua corrida.");
-                } else {
-                    showMessage("Erro de GPS", "Não foi possível obter sua localização. Tente novamente.");
-                }
-                showScreen('dashboard');
-            },
-            // 5. (Opções)
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
+        // Pré-carrega o mapa com a localização atual, mas não inicia o rastreamento
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (posicao) => {
+                    const coords = posicao.coords;
+                    if(mapa) mapa.remove();
+                    // Limpa o texto "Carregando..." para o mapa aparecer
+                    document.getElementById('mapa-corrida').innerHTML = '';
+                    mapa = L.map('mapa-corrida').setView([coords.latitude, coords.longitude], 16);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
+                    L.marker([coords.latitude, coords.longitude]).addTo(mapa);
+                },
+                (erro) => {
+                     document.getElementById('mapa-corrida').innerHTML = '<p class="text-red-500">Não foi possível obter a localização para o mapa.</p>';
+                },
+                { enableHighAccuracy: true }
+            );
+        } else {
+             document.getElementById('mapa-corrida').innerHTML = '<p class="text-red-500">Geolocalização não suportada.</p>';
+        }
     }
 
     function iniciarRastreamento(coordsIniciais) {
@@ -3077,6 +3077,26 @@
     }
 
     // --- Lógica dos Novos Botões de Controle ---
+    document.getElementById('btn-start-activity').addEventListener('click', () => {
+        // Esconde o botão Iniciar e mostra os de controle
+        document.getElementById('btn-start-activity').classList.add('hidden');
+        document.getElementById('btn-pause-activity').classList.remove('hidden');
+        document.getElementById('btn-finish-activity').classList.remove('hidden');
+
+        // Pega a localização EXATA do início e começa o rastreamento
+        navigator.geolocation.getCurrentPosition(
+            (posicao) => {
+                iniciarTelaDeRastreamento(posicao.coords);
+            },
+            (erro) => {
+                showMessage("Erro de GPS", "Não foi possível obter sua localização para iniciar. Tente novamente.");
+                // Reverte a UI para o estado inicial
+                showScreen('dashboard');
+            },
+            { enableHighAccuracy: true }
+        );
+    });
+
     document.getElementById('btn-pause-activity').addEventListener('click', pauseActivity);
     document.getElementById('btn-resume-activity').addEventListener('click', resumeActivity);
     document.getElementById('btn-finish-activity').addEventListener('click', () => {
@@ -3309,6 +3329,11 @@
             });
 
             showMessage("Atividade Salva!", `Você ganhou +${XP_VEL} XP de VEL, +${XP_VIT} XP de VIT e +${MOEDAS} Moedas!`);
+            // Limpa e reseta a UI da tela de atividade antes de mudar de tela
+            document.getElementById('btn-start-activity').classList.remove('hidden');
+            document.getElementById('btn-pause-activity').classList.add('hidden');
+            document.getElementById('btn-resume-activity').classList.add('hidden');
+            document.getElementById('btn-finish-activity').classList.add('hidden');
             showScreen('dashboard');
 
         } catch (error) {
@@ -3906,7 +3931,14 @@ Sub-tarefas: ${subtasksString}`;
     });
 
     document.getElementById('calendar-back-btn').addEventListener('click', () => showScreen('dashboard'));
-    document.getElementById('summary-back-btn').addEventListener('click', () => showScreen('dashboard'));
+    document.getElementById('summary-back-btn').addEventListener('click', () => {
+        // Reseta a UI da tela de atividade para o estado inicial
+        document.getElementById('btn-start-activity').classList.remove('hidden');
+        document.getElementById('btn-pause-activity').classList.add('hidden');
+        document.getElementById('btn-resume-activity').classList.add('hidden');
+        document.getElementById('btn-finish-activity').classList.add('hidden');
+        showScreen('dashboard');
+    });
 
 
     // --- LÓGICA DA TELA DE PERSONAGEM ---
