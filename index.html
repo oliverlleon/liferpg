@@ -892,11 +892,9 @@
         </div>
       </div>
 
-      <!-- Botão de Controle -->
-      <div class="flex-grow flex items-center justify-center px-4">
-        <button id="btn-stop-activity" class="w-full max-w-xs rounded-full bg-red-600 h-16 text-white text-xl font-bold shadow-lg hover:bg-red-700 transition-colors">
-          PARAR E SALVAR
-        </button>
+      <!-- Botões de Controle -->
+      <div id="activity-controls" class="flex-grow flex items-center justify-center px-4 gap-4">
+          <!-- Botões são inseridos dinamicamente via JS -->
       </div>
     </div>
 
@@ -940,6 +938,14 @@
       <!-- Recompensas Ganhass -->
       <div id="summary-rewards-container" class="px-4 py-2">
           <!-- Conteúdo inserido via JS -->
+      </div>
+
+      <!-- Histórico de Segmentos -->
+      <div class="px-4 py-2">
+        <h3 class="text-lg font-bold text-primary mb-3">Histórico por Etapa</h3>
+        <div id="summary-segment-history" class="space-y-2">
+          <!-- Detalhes dos segmentos inseridos via JS -->
+        </div>
       </div>
     </div>
 
@@ -1234,14 +1240,20 @@
 
     // --- Variáveis do Módulo de Atividade (GPS) ---
     let mapa;
-    let linhaDoTrajeto;
     let activityWatchId = null;
-    let activityPolyline = []; // Array de {lat, lng}
-    let activityTotalDistanceKm = 0;
-    let activityStartTime = 0;
-    let userWeightKg = 75; // Default, será atualizado com os dados do perfil
     let activityAssociatedTaskId = null; // Para saber qual tarefa originou a atividade
+    let userWeightKg = 75; // Default, será atualizado com os dados do perfil
     let activityType = "corrida"; // "corrida" ou "caminhada"
+
+    // Novas variáveis de estado para a funcionalidade de pausa
+    let activityState = 'stopped'; // 'running', 'paused', 'stopped'
+    let activitySegments = []; // Array de segmentos, cada um com sua polilinha, distância, tempo, etc.
+    let currentSegmentIndex = -1;
+    let activityPolylines = []; // Array de objetos L.polyline
+    let activityTimerInterval = null;
+    let totalPausedTime = 0;
+    let pauseStartTime = 0;
+    const segmentColors = ['#13ec6d', '#3b82f6', '#f59e0b', '#ef4444', '#9333ea'];
 
 
     // --- Tabelas Base de Recompensa (Conforme GDD) ---
@@ -1983,7 +1995,8 @@
             FORCA: 'swords', INTELIGENCIA: 'school', VELOCIDADE: 'sprint',
             VITALIDADE: 'shield', CARISMA: 'sentiment_satisfied', default: 'task'
         };
-        const icon = iconMap[task.tipo] || iconMap[task.atributo_associado] || iconMap.default;
+        // Lógica de ícone corrigida: prioriza o atributo e depois o tipo.
+        const icon = iconMap[task.atributo_associado] || iconMap[task.tipo] || iconMap.default;
 
         let statusText = (task.status || 'PENDENTE').replace('_', ' ');
         let statusColor = "text-text-dark-secondary";
@@ -2781,21 +2794,52 @@
                     </div>
                 </div>`;
 
-            // Renderiza o mapa
-            const trajeto = JSON.parse(data.trajeto_polyline_json);
+            // Renderiza o mapa com múltiplos segmentos
             if (summaryMap) summaryMap.remove();
 
-            if (trajeto && trajeto.length > 0) {
-                summaryMap = L.map('summary-mapa').setView([trajeto[0].lat, trajeto[0].lng], 16);
+            const segmentHistoryContainer = document.getElementById('summary-segment-history');
+            segmentHistoryContainer.innerHTML = '';
+
+            if (data.segmentos && data.segmentos.length > 0) {
+                const allPoints = data.segmentos.flatMap(seg => JSON.parse(seg.trajeto_json));
+                summaryMap = L.map('summary-mapa').setView([allPoints[0].lat, allPoints[0].lng], 16);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(summaryMap);
-                const polyline = L.polyline(trajeto, { color: '#13ec6d' }).addTo(summaryMap);
-                summaryMap.fitBounds(polyline.getBounds()); // Ajusta o zoom para mostrar o trajeto todo
+
+                const bounds = [];
+                data.segmentos.forEach((seg, index) => {
+                    const points = JSON.parse(seg.trajeto_json);
+                    if (points.length > 0) {
+                        L.polyline(points, { color: seg.cor || segmentColors[index % segmentColors.length] }).addTo(summaryMap);
+                        bounds.push(...points);
+
+                        // Adiciona o histórico do segmento
+                        const speed = (seg.distancia_km / (seg.duracao_segundos / 3600)) || 0;
+                        const calories = calcularCalorias(seg.duracao_segundos, data.tipo_atividade);
+                        segmentHistoryContainer.innerHTML += `
+                            <div class="flex items-center gap-3 rounded-lg bg-surface-dark/50 p-3">
+                                <div class="w-4 h-4 rounded-full" style="background-color: ${seg.cor};"></div>
+                                <div class="flex-1 grid grid-cols-4 gap-2 text-center text-sm">
+                                    <p><span class="font-bold">${formatTime(seg.duracao_segundos)}</span><br><span class="text-xs text-text-dark-secondary">Tempo</span></p>
+                                    <p><span class="font-bold">${seg.distancia_km.toFixed(2)}</span><br><span class="text-xs text-text-dark-secondary">km</span></p>
+                                    <p><span class="font-bold">${speed.toFixed(1)}</span><br><span class="text-xs text-text-dark-secondary">km/h</span></p>
+                                    <p><span class="font-bold">${Math.round(calories)}</span><br><span class="text-xs text-text-dark-secondary">kcal</span></p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+
+                if (bounds.length > 0) {
+                     summaryMap.fitBounds(L.latLngBounds(bounds));
+                }
 
                 // Marcadores de início e fim
-                L.marker(trajeto[0]).addTo(summaryMap).bindPopup("Início");
-                L.marker(trajeto[trajeto.length - 1]).addTo(summaryMap).bindPopup("Fim");
+                L.marker(allPoints[0]).addTo(summaryMap).bindPopup("Início");
+                L.marker(allPoints[allPoints.length - 1]).addTo(summaryMap).bindPopup("Fim");
+
             } else {
                  document.getElementById('summary-mapa').innerHTML = '<p>Nenhum trajeto registrado.</p>';
+                 segmentHistoryContainer.innerHTML = '<p class="text-text-dark-secondary text-center">Nenhum histórico para exibir.</p>';
             }
 
 
@@ -2809,40 +2853,60 @@
 
     // Chamado DEPOIS que o usuário dá permissão
     function iniciarTelaDeRastreamento(coordsIniciais) {
+        activityState = 'running';
+
         // 1. Inicia o mapa
-        if(mapa) mapa.remove(); // Remove o mapa anterior se existir
+        if(mapa) mapa.remove();
         mapa = L.map('mapa-corrida').setView([coordsIniciais.latitude, coordsIniciais.longitude], 16);
-
-        // 2. Adiciona o "fundo" do mapa (OpenStreetMap)
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(mapa);
-
-        // 3. Adiciona o marcador de "Início"
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(mapa);
         L.marker([coordsIniciais.latitude, coordsIniciais.longitude]).addTo(mapa).bindPopup("Início!");
 
-        // 4. Cria a linha (polyline) que vamos desenhar
-        linhaDoTrajeto = L.polyline([], { color: '#13ec6d' }).addTo(mapa);
+        // 2. Cria o primeiro segmento
+        currentSegmentIndex = 0;
+        const color = segmentColors[currentSegmentIndex % segmentColors.length];
+        const newPolyline = L.polyline([], { color: color }).addTo(mapa);
+        activityPolylines.push(newPolyline);
 
-        // 5. Inicia o rastreamento (da Seção 5.3 da spec)
+        activitySegments.push({
+            startTime: Date.now(),
+            points: [{ lat: coordsIniciais.latitude, lng: coordsIniciais.longitude }],
+            distanceKm: 0,
+            color: color
+        });
+
+        // 3. Inicia o rastreamento e o timer
         iniciarRastreamento(coordsIniciais);
+        startActivityTimer();
+        updateActivityControls();
     }
 
     // Chamado DENTRO do watchPosition
     function desenharLinhaNoMapa(novoPonto) {
         const latLng = [novoPonto.lat, novoPonto.lng];
-        // 1. Adiciona o novo ponto à linha
-        if(linhaDoTrajeto) linhaDoTrajeto.addLatLng(latLng);
-        // 2. Centraliza o mapa no novo ponto
+        // Adiciona o ponto à polilinha do segmento ATUAL
+        const currentPolyline = activityPolylines[currentSegmentIndex];
+        if (currentPolyline) {
+            currentPolyline.addLatLng(latLng);
+        }
         if(mapa) mapa.panTo(latLng);
     }
 
     function startGpsActivity(taskId) {
         activityAssociatedTaskId = taskId;
-        // Resetar estado anterior
-        activityPolyline = [];
-        activityTotalDistanceKm = 0;
-        activityStartTime = 0;
+
+        // Resetar o estado da atividade para uma nova corrida
+        activityState = 'stopped';
+        activitySegments = [];
+        currentSegmentIndex = -1;
+        activityPolylines = [];
+        if (activityTimerInterval) clearInterval(activityTimerInterval);
+        totalPausedTime = 0;
+        pauseStartTime = 0;
+        document.getElementById('metric-time').textContent = "00:00:00";
+        document.getElementById('metric-distance').textContent = "0.00";
+        document.getElementById('metric-avg-speed').textContent = "0.0";
+        document.getElementById('metric-calories').textContent = "0";
+
 
         showScreen('activityTracker');
 
@@ -2876,40 +2940,36 @@
         );
     }
 
-    function iniciarRastreamento(coordsIniciais) {
-        // 1. Adiciona o primeiro ponto e define o tempo de início
-        activityPolyline.push({ lat: coordsIniciais.latitude, lng: coordsIniciais.longitude });
-        activityStartTime = Date.now();
+    function iniciarRastreamento() {
+        if (activityWatchId) navigator.geolocation.clearWatch(activityWatchId);
 
-        // Atualiza o peso do usuário a partir dos dados do perfil, se disponíveis
+        // Atualiza o peso do usuário
         if(fullProfileData && fullProfileData.vitals) {
             userWeightKg = fullProfileData.vitals.peso_atual_kg || 75;
         }
 
-        // 2. Inicia o "observador"
         activityWatchId = navigator.geolocation.watchPosition(
             (posicao) => {
+                if (activityState !== 'running') return;
+
                 const coords = posicao.coords;
                 const novoPonto = { lat: coords.latitude, lng: coords.longitude };
-                const ultimoPonto = activityPolyline[activityPolyline.length - 1];
 
+                const currentSegment = activitySegments[currentSegmentIndex];
+                const ultimoPonto = currentSegment.points[currentSegment.points.length - 1];
                 const distanciaParcialKm = calcularDistanciaHaversine(ultimoPonto, novoPonto);
 
-                // FILTRO ANTI-DRIFT
-                if (distanciaParcialKm * 1000 < 3) {
-                    return;
-                }
+                if (distanciaParcialKm * 1000 < 3) return; // Filtro Anti-Drift
 
-                activityTotalDistanceKm += distanciaParcialKm;
-                activityPolyline.push(novoPonto);
+                currentSegment.distanceKm += distanciaParcialKm;
+                currentSegment.points.push(novoPonto);
 
-                atualizarMetricasNaTela();
                 desenharLinhaNoMapa(novoPonto);
             },
             (erro) => {
                 console.warn("GPS perdido durante a corrida:", erro.message);
             },
-            { enableHighAccuracy: true, maximumAge: 0 }
+            { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
         );
     }
 
@@ -2918,18 +2978,29 @@
             navigator.geolocation.clearWatch(activityWatchId);
             activityWatchId = null;
         }
-        // A função salvarAtividade será chamada a partir do botão
+        if (activityTimerInterval) {
+            clearInterval(activityTimerInterval);
+            activityTimerInterval = null;
+        }
+        activityState = 'stopped';
+        updateActivityControls();
     }
 
     function atualizarMetricasNaTela() {
-        const duracaoSegundos = (Date.now() - activityStartTime) / 1000;
-        const velocidadeMedia = (activityTotalDistanceKm / (duracaoSegundos / 3600)) || 0;
-        const calorias = calcularCalorias(duracaoSegundos, activityType);
+        // Calcula totais a partir dos segmentos
+        const totalDistance = activitySegments.reduce((acc, seg) => acc + seg.distanceKm, 0);
+        const totalActiveTime = activitySegments.reduce((acc, seg) => {
+            const endTime = seg.endTime || Date.now();
+            return acc + (endTime - seg.startTime);
+        }, 0) / 1000; // em segundos
 
-        document.getElementById('metric-time').textContent = formatTime(duracaoSegundos);
-        document.getElementById('metric-distance').textContent = activityTotalDistanceKm.toFixed(2);
-        document.getElementById('metric-avg-speed').textContent = velocidadeMedia.toFixed(1);
-        document.getElementById('metric-calories').textContent = Math.round(calorias);
+        const avgSpeed = (totalDistance / (totalActiveTime / 3600)) || 0;
+        const calories = calcularCalorias(totalActiveTime, activityType);
+
+        // Atualiza a UI
+        document.getElementById('metric-distance').textContent = totalDistance.toFixed(2);
+        document.getElementById('metric-avg-speed').textContent = avgSpeed.toFixed(1);
+        document.getElementById('metric-calories').textContent = Math.round(calories);
     }
 
     // --- Funções de Cálculo (Haversine e MET) ---
@@ -2955,46 +3026,153 @@
         return caloriasPorMinuto * duracaoMinutos;
     }
 
-    document.getElementById('btn-stop-activity').addEventListener('click', () => {
+    function updateActivityControls() {
+        const controlsContainer = document.getElementById('activity-controls');
+        controlsContainer.innerHTML = ''; // Limpa os botões existentes
+
+        if (activityState === 'running') {
+            const pauseButton = document.createElement('button');
+            pauseButton.className = 'w-20 h-20 rounded-full bg-yellow-500 text-white flex items-center justify-center shadow-lg';
+            pauseButton.innerHTML = `<span class="material-symbols-outlined text-4xl">pause</span>`;
+            pauseButton.addEventListener('click', pauseActivity);
+            controlsContainer.appendChild(pauseButton);
+        } else if (activityState === 'paused') {
+            const resumeButton = document.createElement('button');
+            resumeButton.className = 'w-20 h-20 rounded-full bg-primary text-background-dark flex items-center justify-center shadow-lg';
+            resumeButton.innerHTML = `<span class="material-symbols-outlined text-4xl">play_arrow</span>`;
+            resumeButton.addEventListener('click', resumeActivity);
+            controlsContainer.appendChild(resumeButton);
+
+            const stopButton = document.createElement('button');
+            stopButton.className = 'w-20 h-20 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg';
+            stopButton.innerHTML = `<span class="material-symbols-outlined text-4xl">stop</span>`;
+            stopButton.addEventListener('click', finishActivity);
+            controlsContainer.appendChild(stopButton);
+        }
+    }
+
+    function pauseActivity() {
+        if (activityState !== 'running') return;
+        activityState = 'paused';
+
+        // Para de rastrear a posição
+        if (activityWatchId) {
+            navigator.geolocation.clearWatch(activityWatchId);
+            activityWatchId = null;
+        }
+
+        // Para o cronômetro principal
+        if (activityTimerInterval) {
+            clearInterval(activityTimerInterval);
+            activityTimerInterval = null;
+        }
+
+        // Registra o tempo de término do segmento atual
+        const currentSegment = activitySegments[currentSegmentIndex];
+        currentSegment.endTime = Date.now();
+
+        // Registra quando a pausa começou para calcular o tempo pausado
+        pauseStartTime = Date.now();
+
+        updateActivityControls();
+    }
+
+    function resumeActivity() {
+        if (activityState !== 'paused') return;
+        activityState = 'running';
+
+        // Acumula o tempo que ficou pausado
+        totalPausedTime += Date.now() - pauseStartTime;
+
+        // Cria um novo segmento
+        currentSegmentIndex++;
+        const color = segmentColors[currentSegmentIndex % segmentColors.length];
+        const newPolyline = L.polyline([], { color: color }).addTo(mapa);
+        activityPolylines.push(newPolyline);
+
+        const lastPoint = activitySegments[currentSegmentIndex - 1].points.slice(-1)[0];
+
+        activitySegments.push({
+            startTime: Date.now(),
+            points: [lastPoint], // Começa do último ponto do segmento anterior
+            distanceKm: 0,
+            color: color
+        });
+
+        // Reinicia o rastreamento e o timer
+        iniciarRastreamento();
+        startActivityTimer();
+        updateActivityControls();
+    }
+
+    function finishActivity() {
         pararRastreamento();
-        // A função salvarAtividade() será implementada no próximo passo
         salvarAtividade();
-    });
+    }
+
+    function startActivityTimer() {
+        if(activityTimerInterval) clearInterval(activityTimerInterval);
+
+        activityTimerInterval = setInterval(() => {
+            const totalActiveTime = activitySegments.reduce((acc, seg) => {
+                const endTime = (activityState === 'running' && seg === activitySegments[currentSegmentIndex])
+                                ? Date.now()
+                                : (seg.endTime || seg.startTime);
+                return acc + (endTime - seg.startTime);
+            }, 0);
+
+            document.getElementById('metric-time').textContent = formatTime(totalActiveTime / 1000);
+            atualizarMetricasNaTela(); // Atualiza outras métricas que dependem do tempo
+        }, 1000);
+    }
 
     async function salvarAtividade() {
-        // 1. Parar o rastreador (garantia extra)
-        pararRastreamento();
+        if (activitySegments.length === 0) {
+            showMessage("Aviso", "Nenhuma atividade registrada para salvar.");
+            showScreen('dashboard');
+            return;
+        }
 
-        // 2. Obter dados finais
-        const fimTimestamp = Date.now();
-        const duracaoSegundos = (fimTimestamp - activityStartTime) / 1000;
-        const distanciaKm = activityTotalDistanceKm;
-        const velocidadeMedia = (distanciaKm / (duracaoSegundos / 3600)) || 0;
-        const calorias = calcularCalorias(duracaoSegundos, activityType);
+        // 1. Finaliza o último segmento, caso a atividade tenha sido parada sem pausar
+        if (activityState === 'running') {
+            activitySegments[currentSegmentIndex].endTime = Date.now();
+            activityState = 'stopped';
+        }
 
-        // 3. Serializar o trajeto
-        const trajetoString = JSON.stringify(activityPolyline);
+        // 2. Calcular totais agregados
+        const dataInicio = activitySegments[0].startTime;
+        const dataFim = activitySegments[activitySegments.length - 1].endTime;
+        const duracaoAtivaTotalSegundos = activitySegments.reduce((acc, seg) => acc + (seg.endTime - seg.startTime), 0) / 1000;
+        const distanciaTotalKm = activitySegments.reduce((acc, seg) => acc + seg.distanceKm, 0);
+        const velocidadeMediaKmh = (distanciaTotalKm / (duracaoAtivaTotalSegundos / 3600)) || 0;
+        const caloriasQueimadas = Math.round(calcularCalorias(duracaoAtivaTotalSegundos, activityType));
 
-        // 4. Calcular Recompensas (Conforme GDD 4.0)
-        const XP_VEL = Math.round(distanciaKm * 20);
-        const XP_VIT = Math.round((duracaoSegundos / 60) * 2);
-        const MOEDAS = Math.round(distanciaKm * 5);
+        // 3. Calcular Recompensas
+        const XP_VEL = Math.round(distanciaTotalKm * 20);
+        const XP_VIT = Math.round(duracaoAtivaTotalSegundos / 60 * 2);
+        const MOEDAS = Math.round(distanciaTotalKm * 5);
 
-        // 5. Preparar dados para o Firebase
+        // 4. Preparar dados para o Firebase
         const activityData = {
             task_id_associada: activityAssociatedTaskId || null,
             tipo_atividade: activityType,
-            data_inicio: Timestamp.fromMillis(activityStartTime),
-            data_fim: Timestamp.fromMillis(fimTimestamp),
-            duracao_total_segundos: duracaoSegundos,
-            distancia_total_km: distanciaKm,
-            velocidade_media_kmh: velocidadeMedia,
-            calorias_queimadas: Math.round(calorias),
-            trajeto_polyline_json: trajetoString,
-            recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS }
+            data_inicio: Timestamp.fromMillis(dataInicio),
+            data_fim: Timestamp.fromMillis(dataFim),
+            duracao_total_segundos: duracaoAtivaTotalSegundos,
+            distancia_total_km: distanciaTotalKm,
+            velocidade_media_kmh: velocidadeMediaKmh,
+            calorias_queimadas: caloriasQueimadas,
+            recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS },
+            // Salva os segmentos para o resumo detalhado
+            segmentos: activitySegments.map(seg => ({
+                distancia_km: seg.distanceKm,
+                duracao_segundos: (seg.endTime - seg.startTime) / 1000,
+                cor: seg.color,
+                trajeto_json: JSON.stringify(seg.points)
+            }))
         };
 
-        // 6. Executar a Transação
+        // 5. Executar a Transação
         try {
             const userRef = doc(db, 'artifacts', appId, 'users', currentUserId);
             const profileRef = doc(userRef, 'profile', 'details');
