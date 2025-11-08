@@ -1516,9 +1516,39 @@
         showScreen('addTask');
     });
 
-    document.getElementById('quick-start-run').addEventListener('click', () => {
+    document.getElementById('quick-start-run').addEventListener('click', async () => {
         document.getElementById('modal-quick-start').classList.add('hidden');
-        startGpsActivity(null); // Inicia uma corrida sem ID de tarefa associada
+
+        if (!currentUserId) {
+            showMessage('Erro', 'Você precisa estar logado para iniciar uma corrida.');
+            return;
+        }
+
+        const today = new Date();
+        const formattedDate = today.toLocaleDateString('pt-BR');
+
+        // 1. Criar a tarefa pendente primeiro
+        const newTask = {
+            titulo: `Corrida Rápida (${formattedDate})`,
+            tipo: 'diaria',
+            prioridade: 'secundaria',
+            atributo_associado: 'VELOCIDADE',
+            status: 'PENDENTE',
+            createdAt: Timestamp.now(),
+            isGenerated: true, // Flag para corridas rápidas
+        };
+
+        try {
+            const tasksRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'tasks');
+            const docRef = await addDoc(tasksRef, newTask);
+
+            // 2. Iniciar a atividade de GPS com o ID da nova tarefa
+            startGpsActivity(docRef.id);
+
+        } catch (error) {
+            console.error("Erro ao criar tarefa de corrida rápida:", error);
+            showMessage('Erro', 'Não foi possível iniciar a corrida rápida. Tente novamente.');
+        }
     });
 
     // Função para popular o formulário com dados da missão para edição
@@ -3303,28 +3333,27 @@
                     character: profileData.character
                 });
 
-                // Write 3 (Opcional): Se veio de uma tarefa planejada, marca ela como concluída
+                // Lógica de Tarefa Unificada
                 if (activityAssociatedTaskId) {
                     const taskRef = doc(userRef, 'tasks', activityAssociatedTaskId);
-                    transaction.update(taskRef, {
-                        status: 'CONCLUIDA', // Usando 'status' em vez de 'concluida'
-                        recompensa_real: activityData.recompensa_ganha,
-                        activity_id_associada: newActivityRef.id
-                    });
-                } else {
-                    // Write 3 (Alternativo): Se for uma "Corrida Rápida", cria uma nova tarefa concluída para o histórico
-                    const newTaskRef = doc(collection(userRef, 'tasks'));
-                    transaction.set(newTaskRef, {
-                        titulo: `Corrida Rápida de ${totalDistance.toFixed(2)} km`,
-                        tipo: 'diaria', // Classifica como 'diaria' para fins de histórico
-                        prioridade: 'secundaria',
-                        atributo_associado: 'VELOCIDADE', // Define o atributo para o ícone correto
-                        status: 'CONCLUIDA',
-                        recompensa_real: activityData.recompensa_ganha,
-                        activity_id_associada: newActivityRef.id,
-                        createdAt: Timestamp.fromMillis(activityStartTime),
-                        isGenerated: true // Flag para indicar que foi gerada pelo sistema
-                    });
+                    const taskSnap = await transaction.get(taskRef);
+
+                    if (taskSnap.exists() && taskSnap.data().isGenerated) {
+                        // Se é uma "Corrida Rápida" (isGenerated), atualiza o título
+                        transaction.update(taskRef, {
+                            titulo: `Corrida Rápida de ${totalDistance.toFixed(2)} km`,
+                            status: 'CONCLUIDA',
+                            recompensa_real: activityData.recompensa_ganha,
+                            activity_id_associada: newActivityRef.id
+                        });
+                    } else {
+                        // Se é uma tarefa normal, apenas a conclui
+                        transaction.update(taskRef, {
+                            status: 'CONCLUIDA',
+                            recompensa_real: activityData.recompensa_ganha,
+                            activity_id_associada: newActivityRef.id
+                        });
+                    }
                 }
             });
 
