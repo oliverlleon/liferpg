@@ -2814,6 +2814,45 @@
 
     let summaryMap; // Variável para o mapa da tela de resumo
 
+    function saveActivityStateToLocalStorage() {
+        if (!activityAssociatedTaskId) return;
+
+        const state = {
+            activityAssociatedTaskId,
+            activityPolyline,
+            activityTotalDistanceKm,
+            activityStartTime,
+            userWeightKg,
+            activityType,
+            activityTotalCalories,
+            activityLastTimestamp,
+            activityPaused,
+            activitySegments,
+            currentSegment,
+            lastPauseTime,
+            totalPausedTime,
+        };
+
+        try {
+            localStorage.setItem(`activityState_${activityAssociatedTaskId}`, JSON.stringify(state));
+        } catch (error) {
+            console.error("Erro ao salvar o estado da atividade no Local Storage:", error);
+        }
+    }
+
+    function loadActivityStateFromLocalStorage(taskId) {
+        try {
+            const savedState = localStorage.getItem(`activityState_${taskId}`);
+            if (savedState) {
+                return JSON.parse(savedState);
+            }
+            return null;
+        } catch (error) {
+            console.error("Erro ao carregar o estado da atividade do Local Storage:", error);
+            return null;
+        }
+    }
+
     async function loadActivitySummary(activityId, taskTitle) {
         if (!currentUserId || !activityId) return;
 
@@ -2958,50 +2997,146 @@
     }
 
     function startGpsActivity(taskId) {
-        activityAssociatedTaskId = taskId;
-        // Resetar estado anterior
-        activityPolyline = [];
-        activityTotalDistanceKm = 0;
-        activityStartTime = 0;
-        activityTotalCalories = 0;
-        activityLastTimestamp = 0;
+        const savedState = loadActivityStateFromLocalStorage(taskId);
 
-        // Resetar estado de pausa/segmento
-        activityPaused = false;
-        activitySegments = [];
-        totalPausedTime = 0;
-        lastPauseTime = 0;
-        currentSegment = null;
+        if (savedState) {
+            // RESTAURA O ESTADO
+            Object.assign(window, savedState); // Restaura as variáveis globais
 
-        showScreen('activityTracker');
-        renderLiveSegmentHistory(); // Garante que o histórico está limpo no início
+            showScreen('activityTracker');
+            document.getElementById('mapa-corrida').innerHTML = '';
 
-        // Mostra o botão Iniciar e esconde os outros
-        document.getElementById('btn-start-activity').classList.remove('hidden');
-        document.getElementById('btn-pause-activity').classList.add('hidden');
-        document.getElementById('btn-resume-activity').classList.add('hidden');
-        document.getElementById('btn-finish-activity').classList.add('hidden');
+            if (mapa) mapa.remove();
 
-        // Pré-carrega o mapa com a localização atual, mas não inicia o rastreamento
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (posicao) => {
-                    const coords = posicao.coords;
-                    if(mapa) mapa.remove();
-                    // Limpa o texto "Carregando..." para o mapa aparecer
-                    document.getElementById('mapa-corrida').innerHTML = '';
-                    mapa = L.map('mapa-corrida').setView([coords.latitude, coords.longitude], 16);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
-                    L.marker([coords.latitude, coords.longitude]).addTo(mapa);
-                },
-                (erro) => {
-                     document.getElementById('mapa-corrida').innerHTML = '<p class="text-red-500">Não foi possível obter a localização para o mapa.</p>';
-                },
-                { enableHighAccuracy: true }
-            );
+            const initialPoint = activityPolyline[0] || { lat: -23.5505, lng: -46.6333 };
+            mapa = L.map('mapa-corrida').setView([initialPoint.lat, initialPoint.lng], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
+
+            // Redesenha os segmentos
+            activitySegments.forEach(segment => {
+                if (segment.points && segment.points.length > 1) {
+                    L.polyline(segment.points, { color: segment.color || '#13ec6d' }).addTo(mapa);
+                }
+            });
+
+            // Recria a linha do trajeto atual se ele existir
+            if (currentSegment && currentSegment.points.length > 0) {
+                 linhaDoTrajeto = L.polyline(currentSegment.points, { color: currentSegment.color }).addTo(mapa);
+            }
+
+            if (activityPolyline.length > 0) {
+                 const bounds = L.latLngBounds(activityPolyline);
+                 mapa.fitBounds(bounds);
+            }
+
+            // Restaura a UI
+            renderLiveSegmentHistory();
+            atualizarMetricasNaTela();
+
+            document.getElementById('btn-start-activity').classList.add('hidden');
+            if (activityPaused) {
+                document.getElementById('btn-pause-activity').classList.add('hidden');
+                document.getElementById('btn-resume-activity').classList.remove('hidden');
+            } else {
+                document.getElementById('btn-pause-activity').classList.remove('hidden');
+                document.getElementById('btn-resume-activity').classList.add('hidden');
+            }
+            document.getElementById('btn-finish-activity').classList.remove('hidden');
+
+            // Reinicia o rastreamento
+            continuarRastreamento();
+
         } else {
-             document.getElementById('mapa-corrida').innerHTML = '<p class="text-red-500">Geolocalização não suportada.</p>';
+            // INICIA UMA NOVA ATIVIDADE
+            activityAssociatedTaskId = taskId;
+            activityPolyline = [];
+            activityTotalDistanceKm = 0;
+            activityStartTime = 0;
+            activityTotalCalories = 0;
+            activityLastTimestamp = 0;
+            activityPaused = false;
+            activitySegments = [];
+            totalPausedTime = 0;
+            lastPauseTime = 0;
+            currentSegment = null;
+
+            showScreen('activityTracker');
+            renderLiveSegmentHistory();
+
+            document.getElementById('btn-start-activity').classList.remove('hidden');
+            document.getElementById('btn-pause-activity').classList.add('hidden');
+            document.getElementById('btn-resume-activity').classList.add('hidden');
+            document.getElementById('btn-finish-activity').classList.add('hidden');
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (posicao) => {
+                        const coords = posicao.coords;
+                        if(mapa) mapa.remove();
+                        document.getElementById('mapa-corrida').innerHTML = '';
+                        mapa = L.map('mapa-corrida').setView([coords.latitude, coords.longitude], 16);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
+                        L.marker([coords.latitude, coords.longitude]).addTo(mapa);
+                    },
+                    (erro) => {
+                         document.getElementById('mapa-corrida').innerHTML = '<p class="text-red-500">Não foi possível obter a localização para o mapa.</p>';
+                    },
+                    { enableHighAccuracy: true }
+                );
+            } else {
+                 document.getElementById('mapa-corrida').innerHTML = '<p class="text-red-500">Geolocalização não suportada.</p>';
+            }
         }
+    }
+
+    function continuarRastreamento() {
+        if (activityWatchId) {
+            navigator.geolocation.clearWatch(activityWatchId);
+        }
+        activityWatchId = navigator.geolocation.watchPosition(
+            (posicao) => {
+                if (activityPaused) return;
+
+                const now = Date.now();
+                const coords = posicao.coords;
+                const novoPonto = { lat: coords.latitude, lng: coords.longitude };
+                const ultimoPonto = activityPolyline[activityPolyline.length - 1];
+                const distanciaParcialKm = calcularDistanciaHaversine(ultimoPonto, novoPonto);
+
+                if (distanciaParcialKm * 1000 < 3) {
+                    return;
+                }
+
+                if (activityLastTimestamp > 0) {
+                    const deltaTimeSeconds = (now - activityLastTimestamp) / 1000;
+                    if (deltaTimeSeconds > 0) {
+                        const speedKph = (distanciaParcialKm / deltaTimeSeconds) * 3600;
+                        const MET = getDynamicMET(speedKph);
+                        const caloriasParciais = (MET * 3.5 * userWeightKg) / 200 * (deltaTimeSeconds / 60);
+                        activityTotalCalories += caloriasParciais;
+                        if (currentSegment) {
+                            currentSegment.calories += caloriasParciais;
+                        }
+                    }
+                }
+                activityLastTimestamp = now;
+
+                activityTotalDistanceKm += distanciaParcialKm;
+                activityPolyline.push(novoPonto);
+                if (currentSegment) {
+                    currentSegment.points.push(novoPonto);
+                    currentSegment.distance += distanciaParcialKm;
+                }
+
+                atualizarMetricasNaTela();
+                desenharLinhaNoMapa(novoPonto);
+                debounce(saveActivityStateToLocalStorage, 2000);
+            },
+            (erro) => {
+                console.warn("GPS perdido durante a corrida:", erro.message);
+            },
+            { enableHighAccuracy: true, maximumAge: 0 }
+        );
     }
 
     function iniciarRastreamento(coordsIniciais) {
@@ -3025,51 +3160,7 @@
         }
 
         // 2. Inicia o "observador"
-        activityWatchId = navigator.geolocation.watchPosition(
-            (posicao) => {
-                if (activityPaused) return; // Se estiver pausado, ignora a atualização
-
-                const now = Date.now();
-                const coords = posicao.coords;
-                const novoPonto = { lat: coords.latitude, lng: coords.longitude };
-                const ultimoPonto = activityPolyline[activityPolyline.length - 1];
-                const distanciaParcialKm = calcularDistanciaHaversine(ultimoPonto, novoPonto);
-
-                if (distanciaParcialKm * 1000 < 3) { // Filtro Anti-Drift
-                    return;
-                }
-
-                // Lógica de cálculo de calorias em tempo real
-                if (activityLastTimestamp > 0) {
-                    const deltaTimeSeconds = (now - activityLastTimestamp) / 1000;
-                    if (deltaTimeSeconds > 0) {
-                        const speedKph = (distanciaParcialKm / deltaTimeSeconds) * 3600;
-                        const MET = getDynamicMET(speedKph);
-                        const caloriasParciais = (MET * 3.5 * userWeightKg) / 200 * (deltaTimeSeconds / 60);
-                        activityTotalCalories += caloriasParciais;
-                        if (currentSegment) {
-                            currentSegment.calories += caloriasParciais;
-                        }
-                    }
-                }
-                activityLastTimestamp = now;
-
-
-                activityTotalDistanceKm += distanciaParcialKm;
-                activityPolyline.push(novoPonto);
-                if (currentSegment) {
-                    currentSegment.points.push(novoPonto);
-                    currentSegment.distance += distanciaParcialKm;
-                }
-
-                atualizarMetricasNaTela();
-                desenharLinhaNoMapa(novoPonto);
-            },
-            (erro) => {
-                console.warn("GPS perdido durante a corrida:", erro.message);
-            },
-            { enableHighAccuracy: true, maximumAge: 0 }
-        );
+        continuarRastreamento();
     }
 
     function pararRastreamento() {
@@ -3182,6 +3273,7 @@
         activitySegments.push(currentSegment);
         currentSegment = null; // Limpa o segmento atual
         renderLiveSegmentHistory(); // ATUALIZA A TELA COM O NOVO SEGMENTO
+        saveActivityStateToLocalStorage(); // Salva o estado ao pausar
 
         document.getElementById('btn-pause-activity').classList.add('hidden');
         document.getElementById('btn-resume-activity').classList.remove('hidden');
@@ -3213,7 +3305,7 @@
 
         // Adiciona uma nova camada de polyline para o novo segmento
         linhaDoTrajeto = L.polyline([], { color: currentSegment.color }).addTo(mapa);
-
+        saveActivityStateToLocalStorage(); // Salva o estado ao retomar
 
         document.getElementById('btn-pause-activity').classList.remove('hidden');
         document.getElementById('btn-resume-activity').classList.add('hidden');
@@ -3369,6 +3461,12 @@
             document.getElementById('btn-pause-activity').classList.add('hidden');
             document.getElementById('btn-resume-activity').classList.add('hidden');
             document.getElementById('btn-finish-activity').classList.add('hidden');
+
+            // Limpa o estado salvo
+            if (activityAssociatedTaskId) {
+                localStorage.removeItem(`activityState_${activityAssociatedTaskId}`);
+            }
+
             showScreen('dashboard');
 
         } catch (error) {
