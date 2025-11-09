@@ -958,6 +958,11 @@
         </div>
       </div>
 
+      <!-- Análise do Mestre (IA) -->
+      <div id="summary-ai-analysis-container" class="px-4 py-2">
+          <!-- Conteúdo inserido via JS -->
+      </div>
+
       <!-- Recompensas Ganhass -->
       <div id="summary-rewards-container" class="px-4 py-2">
           <!-- Conteúdo inserido via JS -->
@@ -2882,6 +2887,23 @@
             document.getElementById('summary-metric-avg-speed').textContent = data.velocidade_media_kmh.toFixed(1);
             document.getElementById('summary-metric-calories').textContent = data.calorias_queimadas;
 
+            // Popula a Análise da IA
+            const analiseIA = data.analise_ia;
+            const aiContainer = document.getElementById('summary-ai-analysis-container');
+            if (analiseIA) {
+                aiContainer.innerHTML = `
+                <div class="rounded-lg bg-surface-dark/50 p-4 backdrop-blur-sm border border-border-dark">
+                    <h3 class="text-lg font-bold text-primary mb-2 text-center">Análise do Mestre</h3>
+                    <p class="text-center text-white italic">"${analiseIA.justificativa_ia}"</p>
+                    <p class="text-center text-sm text-text-dark-secondary mt-2">
+                        Dificuldade: <span class="font-bold text-white">${analiseIA.dificuldade}</span> | Bônus: <span class="font-bold text-white">${analiseIA.multiplicador_bonus}x</span>
+                    </p>
+                </div>
+                `;
+            } else {
+                aiContainer.innerHTML = ''; // Limpa se não houver análise
+            }
+
             // Popula as recompensas
             const rewards = data.recompensa_ganha;
             const rewardsContainer = document.getElementById('summary-rewards-container');
@@ -3370,6 +3392,106 @@
     }
 
 
+    async function analisarEsforcoComIA(distanciaKm, duracaoMinutos, perfilJogador) {
+        console.log("Analisando esforço com IA Nível 2...");
+        const apiKey = "AIzaSyCF4tD2jq3pEHfuilwMq-fjdUnBZDxcoxM"; // Substitua pela sua chave
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        const stats = perfilJogador.stats || {};
+        const velocidade = stats.velocidade || { level: 1 };
+        const vitalidade = stats.vitalidade || { level: 1 };
+
+        const prompt = `
+            Você é um Mestre de Jogo (Game Master) de um RPG da vida real. Sua função é analisar o esforço de uma atividade física de um jogador de forma RELATIVA ao seu nível e histórico. Responda APENAS com um objeto JSON. Não inclua \`\`\`json ou qualquer texto antes ou depois.
+
+            OBJETIVO: Avaliar se a atividade foi 'FÁCIL', 'MÉDIA' ou 'DIFÍCIL' PARA ESTE JOGADOR. Com base na dificuldade, defina um multiplicador de bônus e forneça uma justificativa curta e motivadora.
+
+            REGRAS DO MESTRE:
+            - Uma corrida de 5km em 30 min pode ser 'DIFÍCIL' para um jogador Nv. 1, mas 'FÁCIL' para um Nv. 20.
+            - Considere o Nível de Velocidade: um nível mais alto significa que o jogador é mais rápido.
+            - Considere o Nível de Vitalidade: um nível mais alto significa que o jogador tem mais resistência.
+            - Seja um mestre justo, mas que recompensa o esforço e a superação.
+
+            DADOS DO JOGADOR:
+            - Nível de Velocidade: ${velocidade.level}
+            - Nível de Vitalidade: ${vitalidade.level}
+
+            DADOS DA ATIVIDADE ATUAL:
+            - Distância: ${distanciaKm.toFixed(2)} km
+            - Duração: ${duracaoMinutos.toFixed(2)} minutos
+
+            FORMATO DA RESPOSTA (JSON Obrigatório):
+            {
+              "dificuldade": "FACIL" | "MEDIA" | "DIFICIL",
+              "multiplicador_bonus": 1.0 | 1.5 | 2.0,
+              "justificativa_ia": "Uma breve explicação do porquê da sua avaliação."
+            }
+
+            Exemplo de Análise:
+            - Jogador Nv. 1 (Velocidade 1, Vitalidade 1) faz 3km em 20 min. Isso é um bom esforço inicial.
+            - Resposta: { "dificuldade": "MEDIA", "multiplicador_bonus": 1.5, "justificativa_ia": "Um ótimo começo! Você manteve um ritmo sólido para o seu nível." }
+
+            - Jogador Nv. 20 (Velocidade 20, Vitalidade 18) faz 5km em 30 min. Para ele, isso é uma corrida leve.
+            - Resposta: { "dificuldade": "FACIL", "multiplicador_bonus": 1.0, "justificativa_ia": "Bom para se manter ativo! Uma corrida de aquecimento para um aventureiro do seu calibre." }
+
+            - Jogador Nv. 10 (Velocidade 10, Vitalidade 9) faz 5km em 25 min. Isso é um esforço significativo, talvez um recorde pessoal.
+            - Resposta: { "dificuldade": "DIFICIL", "multiplicador_bonus": 2.0, "justificativa_ia": "Performance incrível! Você superou seus limites e estabeleceu um novo recorde pessoal!" }
+
+            Agora, analise a atividade atual com base nos dados do jogador.
+        `;
+
+        const responseSchema = {
+            type: "OBJECT",
+            properties: {
+                "dificuldade": { "type": "STRING" },
+                "multiplicador_bonus": { "type": "NUMBER" },
+                "justificativa_ia": { "type": "STRING" }
+            },
+            required: ["dificuldade", "multiplicador_bonus", "justificativa_ia"]
+        };
+
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: responseSchema,
+                temperature: 0.4 // Um pouco de criatividade para a justificativa
+            }
+        };
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro na API: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!text) {
+                throw new Error("A IA não retornou uma análise válida.");
+            }
+            const iaResult = JSON.parse(text);
+            console.log("Resultado da Análise Relativa da IA:", iaResult);
+            return iaResult;
+
+        } catch (error) {
+            console.error("Erro ao analisar esforço com IA:", error);
+            // Retorna um objeto padrão em caso de falha para não quebrar o fluxo
+            return {
+                dificuldade: "MEDIA",
+                multiplicador_bonus: 1.0, // Retorna 1.0 para não dar bônus indevido
+                justificativa_ia": "O Mestre estava ocupado. Recompensa padrão aplicada."
+            };
+        }
+    }
+
+
     async function salvarAtividade() {
         // 1. Parar o rastreador (garantia extra)
         pararRastreamento();
@@ -3412,12 +3534,20 @@
         const trajetoString = JSON.stringify(activityPolyline);
         const segmentosString = JSON.stringify(activitySegments.map(s => ({ points: s.points, color: s.color })));
 
-        // 5. Calcular Recompensas (Conforme GDD 4.0)
-        const XP_VEL = Math.round(totalDistance * 20);
-        const XP_VIT = Math.round((totalActiveTime / 60) * 2);
-        const MOEDAS = Math.round(totalDistance * 5);
+        // 5. Chamar a nova IA para análise de esforço
+        const analiseIA = await analisarEsforcoComIA(totalDistance, totalActiveTime / 60, fullProfileData);
+        const bonus = analiseIA.multiplicador_bonus || 1.0;
 
-        // 6. Preparar dados para o Firebase
+        // 6. Calcular Recompensas com Bônus da IA
+        const XP_VEL_BASE = Math.round(totalDistance * 20);
+        const XP_VIT_BASE = Math.round((totalActiveTime / 60) * 2);
+        const MOEDAS_BASE = Math.round(totalDistance * 5);
+
+        const XP_VEL = Math.round(XP_VEL_BASE * bonus);
+        const XP_VIT = Math.round(XP_VIT_BASE * bonus);
+        const MOEDAS = Math.round(MOEDAS_BASE * bonus);
+
+        // 7. Preparar dados para o Firebase
         const activityData = {
             task_id_associada: activityAssociatedTaskId || null,
             tipo_atividade: activityType,
@@ -3430,10 +3560,11 @@
             trajeto_polyline_json: trajetoString,
             trajeto_segmentos_json: segmentosString, // Salva os segmentos com pontos e cor
             historico_segmentos: segmentHistory, // Salva o histórico com estatísticas
-            recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS }
+            recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS },
+            analise_ia: analiseIA // Salva a análise completa da IA
         };
 
-        // 7. Executar a Transação
+        // 8. Executar a Transação
         try {
             const userRef = doc(db, 'artifacts', appId, 'users', currentUserId);
             const profileRef = doc(userRef, 'profile', 'details');
