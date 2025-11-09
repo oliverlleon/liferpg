@@ -2997,11 +2997,36 @@
     }
 
     function startGpsActivity(taskId) {
+        // SEMPRE reseta as variáveis antes de decidir o que fazer
+        activityPolyline = [];
+        activityTotalDistanceKm = 0;
+        activityStartTime = 0;
+        activityTotalCalories = 0;
+        activityLastTimestamp = 0;
+        activityPaused = false;
+        activitySegments = [];
+        totalPausedTime = 0;
+        lastPauseTime = 0;
+        currentSegment = null;
+        activityAssociatedTaskId = taskId; // Define o ID da tarefa atual
+
         const savedState = loadActivityStateFromLocalStorage(taskId);
 
-        if (savedState) {
-            // RESTAURA O ESTADO
-            Object.assign(window, savedState); // Restaura as variáveis globais
+        if (savedState && savedState.activityAssociatedTaskId === taskId) {
+            // RESTAURA O ESTADO DE FORMA SEGURA
+            console.log("Restaurando estado da atividade:", savedState);
+            activityPolyline = savedState.activityPolyline || [];
+            activityTotalDistanceKm = savedState.activityTotalDistanceKm || 0;
+            activityStartTime = savedState.activityStartTime || 0;
+            userWeightKg = savedState.userWeightKg || 75;
+            activityType = savedState.activityType || "corrida";
+            activityTotalCalories = savedState.activityTotalCalories || 0;
+            activityLastTimestamp = savedState.activityLastTimestamp || 0;
+            activityPaused = savedState.activityPaused || false;
+            activitySegments = savedState.activitySegments || [];
+            currentSegment = savedState.currentSegment || null;
+            lastPauseTime = savedState.lastPauseTime || 0;
+            totalPausedTime = savedState.totalPausedTime || 0;
 
             showScreen('activityTracker');
             document.getElementById('mapa-corrida').innerHTML = '';
