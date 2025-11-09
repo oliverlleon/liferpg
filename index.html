@@ -1212,6 +1212,13 @@
       ? JSON.parse(__firebase_config)
       : firebaseConfigUser;
 
+    // --- Configuração da API do Google AI ---
+    const googleAiApiKeyUser = "AIzaSyCF4tD2jq3pEHfuilwMq-fjdUnBZDxcoxM";
+    const googleAiApiKey = typeof __google_ai_api_key !== 'undefined'
+      ? __google_ai_api_key
+      : googleAiApiKeyUser;
+
+
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'rpglife-app';
 
     // Inicialização do Firebase
@@ -3374,8 +3381,7 @@
         console.log("Iniciando análise avançada da IA com os seguintes dados:", { metricasAtuais, perfilCompleto });
 
         // API Key e URL (mesmas da outra função da IA)
-        const apiKey = "AIzaSyCF4tD2jq3pEHfuilwMq-fjdUnBZDxcoxM";
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${googleAiApiKey}`;
 
         // Extrai o histórico de atividades do perfil do usuário para fornecer contexto
         const historicoCorridas = perfilCompleto.activities
@@ -3509,24 +3515,37 @@
         const trajetoString = JSON.stringify(activityPolyline);
         const segmentosString = JSON.stringify(activitySegments.map(s => ({ points: s.points, color: s.color })));
 
-        // 5. NOVA ETAPA: Chamar a IA para Análise Avançada
-        showMessage('Analisando Esforço...', 'O Mestre está avaliando sua jornada.');
-        const analise = await analiseAvancadaIA(
-            { distancia_km: totalDistance, duracao_segundos: totalActiveTime, calorias: Math.round(caloriasTotais) },
-            fullProfileData
-        );
+        // ETAPA 5 & 6: Análise e Cálculo de Recompensa Condicional
+        let analise = null;
+        let XP_VEL, XP_VIT, MOEDAS;
+        let showIaMessage = false;
 
-        // 6. Calcular Recompensas com base no Bônus da IA
-        const base_xp_vel = Math.round(totalDistance * 20);
-        const base_xp_vit = Math.round((totalActiveTime / 60) * 2);
-        const base_moedas = Math.round(totalDistance * 5);
+        if (activityType === 'corrida') {
+            showMessage('Analisando Esforço...', 'O Mestre está avaliando sua jornada.');
+            analise = await analiseAvancadaIA(
+                { distancia_km: totalDistance, duracao_segundos: totalActiveTime, calorias: Math.round(caloriasTotais) },
+                fullProfileData
+            );
 
-        const multiplicador = analise.bonus_multiplicador || 1.0;
-        const XP_VEL = Math.round(base_xp_vel * multiplicador);
-        const XP_VIT = Math.round(base_xp_vit * multiplicador);
-        const MOEDAS = Math.round(base_moedas * multiplicador);
+            const base_xp_vel = Math.round(totalDistance * 20);
+            const base_xp_vit = Math.round((totalActiveTime / 60) * 2);
+            const base_moedas = Math.round(totalDistance * 5);
+            const multiplicador = analise.bonus_multiplicador || 1.0;
 
-        // 7. Preparar dados para o Firebase, agora incluindo a análise da IA
+            XP_VEL = Math.round(base_xp_vel * multiplicador);
+            XP_VIT = Math.round(base_xp_vit * multiplicador);
+            MOEDAS = Math.round(base_moedas * multiplicador);
+            showIaMessage = true;
+
+        } else {
+            // Cálculo Padrão para atividades que não são corrida
+            XP_VEL = Math.round(totalDistance * 20);
+            XP_VIT = Math.round((totalActiveTime / 60) * 2);
+            MOEDAS = Math.round(totalDistance * 5);
+        }
+
+
+        // 7. Preparar dados para o Firebase, agora incluindo a análise da IA (se houver)
         const activityData = {
             task_id_associada: activityAssociatedTaskId || null,
             tipo_atividade: activityType,
@@ -3539,14 +3558,17 @@
             trajeto_polyline_json: trajetoString,
             trajeto_segmentos_json: segmentosString,
             historico_segmentos: segmentHistory,
-            // Novos campos da IA
-            analise_ia: {
-                dificuldade: analise.dificuldade,
-                justificativa: analise.justificativa_ia,
-                bonus_multiplicador: multiplicador
-            },
             recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS }
         };
+
+        // Adiciona a análise da IA apenas se ela foi realizada
+        if (analise) {
+            activityData.analise_ia = {
+                dificuldade: analise.dificuldade,
+                justificativa: analise.justificativa_ia,
+                bonus_multiplicador: analise.bonus_multiplicador
+            };
+        }
 
         // 8. Executar a Transação
         try {
@@ -3613,9 +3635,14 @@
             });
 
             // 9. Mensagem de Sucesso Aprimorada
-            const tituloMsg = `Atividade ${analise.dificuldade} Concluída!`;
-            const corpoMsg = `Análise do Mestre: "${analise.justificativa_ia}" (Bônus: ${multiplicador}x).\nVocê ganhou +${XP_VEL} XP de VEL, +${XP_VIT} XP de VIT e +${MOEDAS} Moedas!`;
-            showMessage(tituloMsg, corpoMsg);
+            if (showIaMessage) {
+                const tituloMsg = `Atividade ${analise.dificuldade} Concluída!`;
+                const corpoMsg = `Análise do Mestre: "${analise.justificativa_ia}" (Bônus: ${analise.bonus_multiplicador}x).\nVocê ganhou +${XP_VEL} XP de VEL, +${XP_VIT} XP de VIT e +${MOEDAS} Moedas!`;
+                showMessage(tituloMsg, corpoMsg);
+            } else {
+                 showMessage("Atividade Salva!", `Você ganhou +${XP_VEL} XP de VEL, +${XP_VIT} XP de VIT e +${MOEDAS} Moedas!`);
+            }
+
 
             document.getElementById('btn-start-activity').classList.remove('hidden');
             document.getElementById('btn-pause-activity').classList.add('hidden');
@@ -3894,8 +3921,7 @@
     async function analyzeTaskWithAI(taskTitle, totalMinutes, taskType, subtasks) {
         console.log(`Analisando: Tipo=${taskType}, Título='${taskTitle}', Duração=${totalMinutes} min, Sub-tarefas=${subtasks.length}`);
         
-        const apiKey = "AIzaSyCF4tD2jq3pEHfuilwMq-fjdUnBZDxcoxM";
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${googleAiApiKey}`;
 
         const subtasksString = JSON.stringify(subtasks.map(s => s.titulo));
         const combinedPrompt = `Você é um mestre de jogo (Game Master) de um RPG da vida real. Sua função é analisar tarefas e classificá-las. Responda APENAS com um objeto JSON. Não inclua \`\`\`json ou qualquer texto antes ou depois.
