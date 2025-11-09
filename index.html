@@ -3289,13 +3289,22 @@
             const profileRef = doc(userRef, 'profile', 'details');
 
             await runTransaction(db, async (transaction) => {
-                // É necessário ler o perfil dentro da transação para evitar race conditions
+                // --- ETAPA DE LEITURA ---
                 const profileSnap = await transaction.get(profileRef);
                 if (!profileSnap.exists()) {
                     throw "Perfil do usuário não encontrado!";
                 }
 
+                let taskSnap = null;
+                let taskRef = null;
+                if (activityAssociatedTaskId) {
+                    taskRef = doc(userRef, 'tasks', activityAssociatedTaskId);
+                    taskSnap = await transaction.get(taskRef);
+                }
+
+                // --- ETAPA DE ESCRITA ---
                 const newActivityRef = doc(collection(userRef, 'activities'));
+
                 // Write 1: Salva a nova atividade
                 transaction.set(newActivityRef, activityData);
 
@@ -3333,12 +3342,9 @@
                     character: profileData.character
                 });
 
-                // Lógica de Tarefa Unificada
-                if (activityAssociatedTaskId) {
-                    const taskRef = doc(userRef, 'tasks', activityAssociatedTaskId);
-                    const taskSnap = await transaction.get(taskRef);
-
-                    if (taskSnap.exists() && taskSnap.data().isGenerated) {
+                // Write 3: Atualiza a tarefa associada (se existir)
+                if (taskSnap && taskSnap.exists()) {
+                    if (taskSnap.data().isGenerated) {
                         // Se é uma "Corrida Rápida" (isGenerated), atualiza o título
                         transaction.update(taskRef, {
                             titulo: `Corrida Rápida de ${totalDistance.toFixed(2)} km`,
