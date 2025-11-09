@@ -2996,6 +2996,14 @@
         if(mapa) mapa.panTo(latLng);
     }
 
+    function resetActivityUI() {
+        document.getElementById('metric-time').textContent = '00:00:00';
+        document.getElementById('metric-distance').textContent = '0.00';
+        document.getElementById('metric-avg-speed').textContent = '0.0';
+        document.getElementById('metric-calories').textContent = '0';
+        renderLiveSegmentHistory(); // Limpa o histórico de etapas
+    }
+
     function startGpsActivity(taskId) {
         // SEMPRE reseta as variáveis antes de decidir o que fazer
         activityPolyline = [];
@@ -3086,7 +3094,7 @@
             currentSegment = null;
 
             showScreen('activityTracker');
-            renderLiveSegmentHistory();
+            resetActivityUI(); // Limpa a UI para uma nova atividade
 
             document.getElementById('btn-start-activity').classList.remove('hidden');
             document.getElementById('btn-pause-activity').classList.add('hidden');
