@@ -862,7 +862,10 @@
     <div id="screen-activity-tracker" class="hidden relative flex min-h-screen w-full flex-col bg-background-dark pb-24">
       <!-- Header -->
       <header class="flex items-center p-4 pb-2 justify-between">
-          <h1 class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Atividade em Andamento</h1>
+          <button id="activity-back-btn" class="text-white flex size-12 shrink-0 items-center justify-center cursor-pointer -ml-4">
+              <span class="material-symbols-outlined text-3xl">arrow_back</span>
+          </button>
+          <h1 class="text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-8">Atividade em Andamento</h1>
       </header>
 
       <!-- Mapa -->
@@ -1457,11 +1460,6 @@
         input.type = 'password';
         icon.textContent = 'visibility';
       }
-    }
-
-    function debounce(func, delay) {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(func, delay);
     }
 
     function normalizeString(str) {
@@ -3203,6 +3201,11 @@
         }
         // A função salvarAtividade será chamada a partir do botão
     }
+
+    document.getElementById('activity-back-btn').addEventListener('click', () => {
+        saveActivityStateToLocalStorage();
+        showScreen('dashboard');
+    });
 
     function atualizarMetricasNaTela() {
         const tempoCorrente = activityPaused ? lastPauseTime : Date.now();
