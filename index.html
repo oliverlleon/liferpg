@@ -1399,6 +1399,15 @@
     };
 
     // --- Funções Auxiliares ---
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
     function showScreen(screenId, data = null) {
       console.log(`Navegando para: ${screenId}`, data ? `com dados: ${JSON.stringify(data)}` : '');
       Object.values(screens).forEach(screen => screen.classList.add('hidden'));
@@ -3131,36 +3140,49 @@
                 const now = Date.now();
                 const coords = posicao.coords;
                 const novoPonto = { lat: coords.latitude, lng: coords.longitude };
-                const ultimoPonto = activityPolyline[activityPolyline.length - 1];
-                const distanciaParcialKm = calcularDistanciaHaversine(ultimoPonto, novoPonto);
 
-                if (distanciaParcialKm * 1000 < 3) {
-                    return;
-                }
+                // Se for o primeiro ponto (o array só tem o ponto inicial)
+                if (activityPolyline.length === 1) {
+                    // Atualiza o ponto de partida para a primeira localização precisa
+                    activityPolyline[0] = novoPonto;
+                    if (currentSegment && currentSegment.points.length === 1) {
+                        currentSegment.points[0] = novoPonto;
+                    }
+                    // Não calcula distância, apenas corrige a posição inicial
+                } else {
+                    // Para todos os pontos seguintes, calcula a distância normalmente
+                    const ultimoPonto = activityPolyline[activityPolyline.length - 1];
+                    const distanciaParcialKm = calcularDistanciaHaversine(ultimoPonto, novoPonto);
 
-                if (activityLastTimestamp > 0) {
-                    const deltaTimeSeconds = (now - activityLastTimestamp) / 1000;
-                    if (deltaTimeSeconds > 0) {
-                        const speedKph = (distanciaParcialKm / deltaTimeSeconds) * 3600;
-                        const MET = getDynamicMET(speedKph);
-                        const caloriasParciais = (MET * 3.5 * userWeightKg) / 200 * (deltaTimeSeconds / 60);
-                        activityTotalCalories += caloriasParciais;
-                        if (currentSegment) {
-                            currentSegment.calories += caloriasParciais;
+                    if (distanciaParcialKm * 1000 < 3) {
+                        return;
+                    }
+
+                    if (activityLastTimestamp > 0) {
+                        const deltaTimeSeconds = (now - activityLastTimestamp) / 1000;
+                        if (deltaTimeSeconds > 0) {
+                            const speedKph = (distanciaParcialKm / deltaTimeSeconds) * 3600;
+                            const MET = getDynamicMET(speedKph);
+                            const caloriasParciais = (MET * 3.5 * userWeightKg) / 200 * (deltaTimeSeconds / 60);
+                            activityTotalCalories += caloriasParciais;
+                            if (currentSegment) {
+                                currentSegment.calories += caloriasParciais;
+                            }
                         }
                     }
-                }
-                activityLastTimestamp = now;
+                    activityLastTimestamp = now;
 
-                activityTotalDistanceKm += distanciaParcialKm;
-                activityPolyline.push(novoPonto);
-                if (currentSegment) {
-                    currentSegment.points.push(novoPonto);
-                    currentSegment.distance += distanciaParcialKm;
+                    activityTotalDistanceKm += distanciaParcialKm;
+                    activityPolyline.push(novoPonto);
+                    if (currentSegment) {
+                        currentSegment.points.push(novoPonto);
+                        currentSegment.distance += distanciaParcialKm;
+                    }
+
+                    desenharLinhaNoMapa(novoPonto);
                 }
 
                 atualizarMetricasNaTela();
-                desenharLinhaNoMapa(novoPonto);
                 debounce(saveActivityStateToLocalStorage, 2000);
             },
             (erro) => {
