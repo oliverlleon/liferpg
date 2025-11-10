@@ -392,9 +392,13 @@
             <img id="hub-avatar" alt="Avatar do Aventureiro" class="h-12 w-12 rounded-full border-2 border-primary" src="https://placehold.co/100x100/1a3828/13ec6d?text=?" />
             <div>
               <h1 id="hub-nickname" class="text-xl font-bold">Carregando...</h1>
-              <p id="hub-level-title" class="text-sm text-text-dark-secondary">
+              <div class="flex items-center gap-4 text-sm text-text-dark-secondary">
                 <span id="hub-level">Nv. 1</span>
-              </p>
+                <span class="flex items-center gap-1">
+                    <span class="material-symbols-outlined text-yellow-400 !text-base">monetization_on</span>
+                    <span id="hub-coins">0</span>
+                </span>
+              </div>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -1794,6 +1798,7 @@
         const elements = {
             'hub-nickname': profileData.nickname || 'Aventureiro',
             'hub-level': `Nv. ${character.level || 1}`,
+            'hub-coins': character.moedas || 0,
             'hub-hp-text': `${character.hp_atual}/${character.hp_max}`,
             'hub-mana-text': `${character.mana_atual}/${character.mana_max}`,
             'hub-xp-text': `${character.xp_atual}/${character.xp_para_upar}`
