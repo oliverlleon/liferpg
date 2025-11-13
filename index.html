@@ -472,11 +472,9 @@
 
           <!-- Filtro de Data para a aba "Todas" -->
           <div id="date-filter-container" class="hidden flex flex-wrap items-center gap-4 p-2 rounded-lg bg-surface-dark/50 border border-border-dark">
-            <div class="relative flex items-center gap-2 flex-grow">
-                <input type="text" id="date-filter-display" readonly class="form-input flex-grow rounded-lg text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-12 placeholder:text-white/40 p-2 text-base font-normal leading-normal cursor-pointer" placeholder="Filtrar por data...">
-                <span class="material-symbols-outlined absolute right-12 top-1/2 -translate-y-1/2 text-text-dark-secondary pointer-events-none">calendar_today</span>
-                <input type="date" id="mission-date-filter" class="absolute opacity-0 w-full h-full cursor-pointer">
-                <button id="clear-date-filter" class="p-2 rounded-full hover:bg-primary/20 text-text-dark-secondary z-10">
+            <div class="flex items-center gap-2 flex-grow">
+                <input type="date" id="mission-date-filter" class="form-input flex-grow rounded-lg text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-12 placeholder:text-white/40 p-2 text-base font-normal leading-normal" style="color-scheme: dark; color: white !important;">
+                <button id="clear-date-filter" class="p-2 rounded-full hover:bg-primary/20 text-text-dark-secondary">
                     <span class="material-symbols-outlined !text-xl">close</span>
                 </button>
             </div>
@@ -2113,26 +2111,12 @@
         }
     });
 
-    // --- Lógica para o novo seletor de data customizado ---
-    const dateFilterInput = document.getElementById('mission-date-filter');
-    const dateFilterDisplay = document.getElementById('date-filter-display');
-
-    // Quando uma data é selecionada no seletor real, formata e mostra no display
-    dateFilterInput.addEventListener('change', () => {
-        if (dateFilterInput.value) {
-            const [year, month, day] = dateFilterInput.value.split('-');
-            dateFilterDisplay.value = `${day}/${month}/${year}`;
-        }
-        filterAndRenderMissions();
-    });
-
-    // Quando o botão de limpar é clicado, limpa ambos os campos
+    // Adiciona listeners para o novo filtro de data
+    document.getElementById('mission-date-filter').addEventListener('change', filterAndRenderMissions);
     document.getElementById('clear-date-filter').addEventListener('click', () => {
-        dateFilterInput.value = '';
-        dateFilterDisplay.value = '';
+        document.getElementById('mission-date-filter').value = '';
         filterAndRenderMissions();
     });
-
     document.getElementById('open-missions-filter').addEventListener('change', filterAndRenderMissions);
 
     // Função unificada para criar o card de uma missão
