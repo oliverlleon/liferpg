@@ -469,6 +469,24 @@
              </button>
           </div>
 
+          <!-- Filtro de Data para a aba "Todas" -->
+          <div id="date-filter-container" class="hidden flex flex-wrap items-center gap-4 p-2 rounded-lg bg-surface-dark/50 border border-border-dark">
+            <div class="flex items-center gap-2 flex-grow">
+                <span class="material-symbols-outlined text-text-dark-secondary pl-2">filter_alt</span>
+                <input type="date" id="mission-date-filter" class="form-input flex-grow bg-transparent border-none text-white focus:ring-0">
+                <button id="clear-date-filter" class="p-2 rounded-full hover:bg-primary/20 text-text-dark-secondary">
+                    <span class="material-symbols-outlined !text-xl">close</span>
+                </button>
+            </div>
+            <div class="flex items-center gap-2 pr-2">
+                <label for="open-missions-filter" class="text-sm text-text-dark-secondary">Apenas Abertas</label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="open-missions-filter" class="sr-only peer">
+                  <div class="w-11 h-6 bg-surface-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+            </div>
+          </div>
+
           <!-- Abas de Filtro -->
           <div id="mission-tabs" class="grid grid-cols-4 gap-2 p-1 rounded-lg bg-surface-dark/50 border border-border-dark">
             <button data-tab="today" class="mission-tab-btn mission-tab-active flex-1 text-center p-2 rounded-md text-sm font-bold transition-colors">
@@ -1996,7 +2014,23 @@
                 filteredTasks = filteredTasks.filter(task => !task.prazo_final && !task.recorrencia);
                 break;
             case 'all':
-                // Nenhuma filtragem adicional necessária
+                const selectedDateStr = document.getElementById('mission-date-filter').value;
+                const onlyOpen = document.getElementById('open-missions-filter').checked;
+
+                if (selectedDateStr) {
+                    const selectedDate = parseLocalDate(selectedDateStr);
+                    if (selectedDate) {
+                        filteredTasks = filteredTasks.filter(task => {
+                            if (!task.prazo_final) return false;
+                            const deadline = parseLocalDate(task.prazo_final);
+                            return deadline && deadline.getTime() === selectedDate.getTime();
+                        });
+                    }
+                }
+
+                if (onlyOpen) {
+                    filteredTasks = filteredTasks.filter(task => task.status !== 'CONCLUIDA');
+                }
                 break;
         }
 
@@ -2059,15 +2093,31 @@
             const newTab = tabButton.dataset.tab;
             if (newTab !== activeMissionTab) {
                 activeMissionTab = newTab;
-                // Delega a estilização para a classe CSS, removendo a manipulação de classes de cor do JS
                 document.querySelectorAll('.mission-tab-btn').forEach(btn => {
                     btn.classList.remove('mission-tab-active');
                 });
                 tabButton.classList.add('mission-tab-active');
+
+                // Mostra ou esconde o filtro de data
+                const dateFilterContainer = document.getElementById('date-filter-container');
+                if (newTab === 'all') {
+                    dateFilterContainer.classList.remove('hidden');
+                } else {
+                    dateFilterContainer.classList.add('hidden');
+                }
+
                 filterAndRenderMissions();
             }
         }
     });
+
+    // Adiciona listeners para o novo filtro de data
+    document.getElementById('mission-date-filter').addEventListener('change', filterAndRenderMissions);
+    document.getElementById('clear-date-filter').addEventListener('click', () => {
+        document.getElementById('mission-date-filter').value = '';
+        filterAndRenderMissions();
+    });
+    document.getElementById('open-missions-filter').addEventListener('change', filterAndRenderMissions);
 
     // Função unificada para criar o card de uma missão
     function createMissionCardHTML(task) {
