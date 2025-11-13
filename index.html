@@ -392,9 +392,13 @@
             <img id="hub-avatar" alt="Avatar do Aventureiro" class="h-12 w-12 rounded-full border-2 border-primary" src="https://placehold.co/100x100/1a3828/13ec6d?text=?" />
             <div>
               <h1 id="hub-nickname" class="text-xl font-bold">Carregando...</h1>
-              <p id="hub-level-title" class="text-sm text-text-dark-secondary">
+              <div class="flex items-center gap-4 text-sm text-text-dark-secondary">
                 <span id="hub-level">Nv. 1</span>
-              </p>
+                <span class="flex items-center gap-1">
+                    <span class="material-symbols-outlined text-yellow-400 !text-base">monetization_on</span>
+                    <span id="hub-coins">0</span>
+                </span>
+              </div>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -1297,6 +1301,17 @@
         projeto: { xp_global: 75, moedas: 50 }
     };
 
+    // Constantes para Multiplicadores da Atividade
+    const REWARDS_ACTIVITY_DIFFICULTY = {
+        FACIL: 1.0,  // Bônus 1.0x (sem bônus)
+        MEDIA: 1.5,  // Bônus 1.5x (+50% XP)
+        DIFICIL: 2.0 // Bônus 2.0x (Dobra o XP)
+    };
+
+    // Constantes de Recompensa Base
+    const REWARD_BASE_PER_KM = 10;
+    const REWARD_BASE_PER_MINUTE = 1;
+
     // --- Seletores de Elementos ---
     const screens = {
       splash: document.getElementById('screen-splash'),
@@ -1783,6 +1798,7 @@
         const elements = {
             'hub-nickname': profileData.nickname || 'Aventureiro',
             'hub-level': `Nv. ${character.level || 1}`,
+            'hub-coins': character.moedas || 0,
             'hub-hp-text': `${character.hp_atual}/${character.hp_max}`,
             'hub-mana-text': `${character.mana_atual}/${character.mana_max}`,
             'hub-xp-text': `${character.xp_atual}/${character.xp_para_upar}`
@@ -3283,6 +3299,102 @@
         salvarAtividade();
     });
 
+/**
+ * CORRIGIDO (À PROVA DE ERROS DE SINTAXE)
+ * Analisa uma atividade de GPS usando a IA, levando em conta
+ * o perfil e histórico do aventureiro para um julgamento relativo.
+ */
+async function analyzeAdvancedActivityWithAI(type, distance, seconds, levelVel, levelVit, weight, history) {
+
+    // 1. Calcular Métricas de Desempenho
+    const totalMinutes = seconds / 60;
+    const paceMinPerKm = distance > 0 ? totalMinutes / distance : 0;
+    const paceMinutes = Math.floor(paceMinPerKm);
+    const paceSeconds = Math.floor((paceMinPerKm - paceMinutes) * 60);
+    const paceString = paceMinPerKm > 0 ? `${paceMinutes}m ${paceSeconds}s /km` : "N/A";
+
+    // 2. Definir o Prompt AVANÇADO
+    const apiKey = "AIzaSyBeLq53I4Zu8TIcttgYwcyhFUBu4uneCxQ"; // Chave do Liferpg
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+    // --- CORREÇÃO CRÍTICA (ANTI-ERRO DE SINTAXE) ---
+    // O prompt é construído com concatenação de string (+) para
+    // NUNCA mais causar um erro de 'Unexpected string'.
+    const combinedPrompt = 'Você é um Mestre de Jogo e Treinador Pessoal de elite.' +
+        '\nSua tarefa é analisar o *esforço relativo* de uma atividade para um aventureiro específico.' +
+        '\nA dificuldade (FACIL, MEDIA, DIFICIL) deve ser relativa ao nível e histórico do aventureiro, não um valor absoluto.' +
+        '\nResponda APENAS com um objeto JSON.' +
+        '\n' +
+        '\nRegras de Julgamento:' +
+        '\n1.  **FACIL**: Esforço de recuperação. Muito mais lento que o histórico recente ou uma distância trivial.' +
+        '\n2.  **MEDIA**: Esforço de manutenção. Alinhado com o histórico recente ou uma distância padrão.' +
+        '\n3.  **DIFICIL**: Esforço de progressão. Um novo recorde pessoal (PR) de ritmo ou distância, ou esforço superior ao histórico.' +
+        '\n' +
+        '\nDADOS DO AVENTUREIRO:' +
+        '\n- Nível de Velocidade (Stats): ' + levelVel +
+        '\n- Nível de Vitalidade (Stats): ' + levelVit +
+        '\n- Peso Atual: ' + weight + ' kg' +
+        '\n- Histórico Recente (Ritmo): ' + history +
+        '\n' +
+        '\nATIVIDADE ATUAL:' +
+        '\n- Tipo: "' + type + '"' +
+        '\n- Distância: ' + distance.toFixed(2) + ' km' +
+        '\n- Duração: ' + totalMinutes.toFixed(1) + ' minutos' +
+        '\n- Ritmo Calculado: ' + paceString +
+        '\n' +
+        '\nResponda APENAS com um objeto JSON com dois campos: "dificuldade" e "justificativa_ia".' +
+        '\nA justificativa é OBRIGATÓRIA e deve explicar brevemente POR QUE você escolheu essa dificuldade, comparando o ritmo atual com o histórico.' +
+        '\n' +
+        '\nExemplo de Resposta:' +
+        '\n{' +
+        '\n  "dificuldade": "DIFICIL",' +
+        '\n  "justificativa_ia": "Novo recorde pessoal! Seu ritmo foi muito mais rápido que sua média de 6:10/km."' +
+        '\n}';
+    // --- FIM DA CORREÇÃO ---
+
+    // 3. Definir o Schema de Resposta (com justificativa)
+    const responseSchema = {
+        type: "OBJECT",
+        properties: {
+            "dificuldade": { "type": "STRING" },
+            "justificativa_ia": { "type": "STRING" }
+        },
+        required: ["dificuldade", "justificativa_ia"]
+    };
+
+    const payload = {
+        contents: [{ parts: [{ text: combinedPrompt }] }],
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: responseSchema,
+            temperature: 0.1
+        }
+    };
+
+    // 4. Chamar a API (com fallback)
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+
+        const result = await response.json();
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!text) throw new Error("A IA não retornou uma análise válida.");
+
+        const analysis = JSON.parse(text);
+        console.log("Análise Avançada da IA:", analysis);
+        return analysis;
+    } catch (error) {
+        console.error("Erro na IA Avançada:", error);
+        // Fallback seguro em caso de falha da IA
+        return { dificuldade: "MEDIA", justificativa_ia: "Análise padrão de esforço." };
+    }
+}
     function renderLiveSegmentHistory() {
         const historyContainer = document.getElementById('live-segment-history');
         if (!historyContainer) return;
@@ -3370,168 +3482,197 @@
     }
 
 
-    async function salvarAtividade() {
-        // 1. Parar o rastreador (garantia extra)
-        pararRastreamento();
-        const fimTimestamp = Date.now();
+async function salvarAtividade() {
+    // 1. Parar o rastreador
+    pararRastreamento();
+    const fimTimestamp = Date.now();
 
-        // 2. Finaliza o último segmento, se houver um ativo
-        if (currentSegment && currentSegment.points.length > 1) {
-            currentSegment.endTime = fimTimestamp;
-            currentSegment.duration = (currentSegment.endTime - currentSegment.startTime) / 1000;
-            // A caloria já foi acumulada em tempo real, então não precisa de cálculo final
-            activitySegments.push(currentSegment);
-        }
+    // 2. Finaliza o último segmento, se houver um ativo
+    if (currentSegment && currentSegment.points.length > 1) {
+        currentSegment.endTime = fimTimestamp;
+        currentSegment.duration = (currentSegment.endTime - currentSegment.startTime) / 1000;
+        activitySegments.push(currentSegment);
+    }
 
-        // 3. Calcular métricas finais e processar segmentos para salvar
-        let totalDistance = 0;
-        let totalActiveTime = 0;
-        const segmentHistory = activitySegments.map(segment => {
-            const duration = segment.duration > 0 ? segment.duration : 0;
-            const distance = segment.distance > 0 ? segment.distance : 0;
-            const speed = (distance / (duration / 3600)) || 0;
-            const calories = segment.calories || 0;
+    // 3. Calcular métricas finais e processar segmentos para salvar
+    let totalDistance = 0;
+    let totalActiveTime = 0;
+    const segmentHistory = activitySegments.map(segment => {
+        const duration = segment.duration > 0 ? segment.duration : 0;
+        const distance = segment.distance > 0 ? segment.distance : 0;
+        const speed = (distance / (duration / 3600)) || 0;
+        const calories = segment.calories || 0;
 
-            totalDistance += distance;
-            totalActiveTime += duration;
+        totalDistance += distance;
+        totalActiveTime += duration;
 
-            return {
-                distancia_km: parseFloat(distance.toFixed(2)),
-                tempo_total_segundos: Math.round(duration),
-                velocidade_media_kmh: parseFloat(speed.toFixed(1)),
-                calorias_queimadas: Math.round(calories),
-                cor_segmento: segment.color
-            };
-        });
-
-
-        const velocidadeMedia = (totalDistance / (totalActiveTime / 3600)) || 0;
-        const caloriasTotais = activityTotalCalories;
-
-        // 4. Serializar o trajeto
-        const trajetoString = JSON.stringify(activityPolyline);
-        const segmentosString = JSON.stringify(activitySegments.map(s => ({ points: s.points, color: s.color })));
-
-        // 5. Calcular Recompensas (Conforme GDD 4.0)
-        const XP_VEL = Math.round(totalDistance * 20);
-        const XP_VIT = Math.round((totalActiveTime / 60) * 2);
-        const MOEDAS = Math.round(totalDistance * 5);
-
-        // 6. Preparar dados para o Firebase
-        const activityData = {
-            task_id_associada: activityAssociatedTaskId || null,
-            tipo_atividade: activityType,
-            data_inicio: Timestamp.fromMillis(activityStartTime),
-            data_fim: Timestamp.fromMillis(fimTimestamp),
-            duracao_total_segundos: totalActiveTime,
-            distancia_total_km: totalDistance,
-            velocidade_media_kmh: velocidadeMedia,
-            calorias_queimadas: Math.round(caloriasTotais),
-            trajeto_polyline_json: trajetoString,
-            trajeto_segmentos_json: segmentosString, // Salva os segmentos com pontos e cor
-            historico_segmentos: segmentHistory, // Salva o histórico com estatísticas
-            recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS }
+        return {
+            distancia_km: parseFloat(distance.toFixed(2)),
+            tempo_total_segundos: Math.round(duration),
+            velocidade_media_kmh: parseFloat(speed.toFixed(1)),
+            calorias_queimadas: Math.round(calories),
+            cor_segmento: segment.color
         };
+    });
 
-        // 7. Executar a Transação
-        try {
-            const userRef = doc(db, 'artifacts', appId, 'users', currentUserId);
-            const profileRef = doc(userRef, 'profile', 'details');
+    const velocidadeMedia = (totalDistance / (totalActiveTime / 3600)) || 0;
+    const caloriasTotais = activityTotalCalories;
+    const trajetoString = JSON.stringify(activityPolyline);
+    const segmentosString = JSON.stringify(activitySegments.map(s => ({ points: s.points, color: s.color })));
 
-            await runTransaction(db, async (transaction) => {
-                // --- ETAPA DE LEITURA ---
-                const profileSnap = await transaction.get(profileRef);
-                if (!profileSnap.exists()) {
-                    throw "Perfil do usuário não encontrado!";
-                }
+    // 4. Pegar Contexto do Aventureiro (NOVO)
+    const aventureiroStats = fullProfileData.stats || {};
+    const aventureiroVitals = fullProfileData.vitals || {};
+    const nivelVelocidade = aventureiroStats.velocidade?.level || 1;
+    const nivelVitalidade = aventureiroStats.vitalidade?.level || 1;
+    const pesoAtual = aventureiroVitals.peso_atual_kg || 75;
+    // (Simulação de histórico. No futuro, puxe isso do Firestore)
+    const historicoRecente = "[Ritmo 6:10/km, Ritmo 6:05/km, Ritmo 6:15/km]";
 
-                let taskSnap = null;
-                let taskRef = null;
-                if (activityAssociatedTaskId) {
-                    taskRef = doc(userRef, 'tasks', activityAssociatedTaskId);
-                    taskSnap = await transaction.get(taskRef);
-                }
+    // 5. Chamar a IA (MODIFICADO)
+    showMessage("Analisando Desempenho...", "Aguarde, o Mestre está avaliando seu esforço...");
 
-                // --- ETAPA DE ESCRITA ---
-                const newActivityRef = doc(collection(userRef, 'activities'));
+    const aiAnalysis = await analyzeAdvancedActivityWithAI(
+        activityType,
+        totalDistance,
+        totalActiveTime,
+        nivelVelocidade,
+        nivelVitalidade,
+        pesoAtual,
+        historicoRecente
+    );
 
-                // Write 1: Salva a nova atividade
-                transaction.set(newActivityRef, activityData);
+    // 6. Calcular Recompensas (MODIFICADO)
+    const difficulty = aiAnalysis.dificuldade.toUpperCase() || 'MEDIA';
+    const justification = aiAnalysis.justificativa_ia || "Bom esforço!";
+    const multiplier = REWARDS_ACTIVITY_DIFFICULTY[difficulty] || 1.5;
 
-                // Write 2: Atualiza o perfil do usuário (stats e moedas) com lógica de level-up
-                const profileData = profileSnap.data();
+    // Calcula recompensas base
+    const base_XP_VEL = Math.round(totalDistance * REWARD_BASE_PER_KM);
+    const base_XP_VIT = Math.round((totalActiveTime / 60) * REWARD_BASE_PER_MINUTE);
+    const base_MOEDAS = Math.round(totalDistance * (REWARD_BASE_PER_KM / 2));
 
-                // Garante que a estrutura de stats exista
-                if (!profileData.stats) profileData.stats = {};
-                const defaultStat = { level: 1, xp_atual: 0, xp_para_upar: 100 };
-                if (!profileData.stats.velocidade) profileData.stats.velocidade = { ...defaultStat };
-                if (!profileData.stats.vitalidade) profileData.stats.vitalidade = { ...defaultStat };
+    // Aplica o multiplicador da IA
+    const XP_VEL = Math.round(base_XP_VEL * multiplier);
+    const XP_VIT = Math.round(base_XP_VIT * multiplier);
+    const MOEDAS = Math.round(base_MOEDAS * multiplier);
 
-                // Lógica de Level Up para Velocidade
-                profileData.stats.velocidade.xp_atual += XP_VEL;
-                while (profileData.stats.velocidade.xp_atual >= profileData.stats.velocidade.xp_para_upar) {
-                    profileData.stats.velocidade.level += 1;
-                    profileData.stats.velocidade.xp_atual -= profileData.stats.velocidade.xp_para_upar;
-                    profileData.stats.velocidade.xp_para_upar = Math.floor(profileData.stats.velocidade.xp_para_upar * 1.15);
-                }
+    // 7. Preparar dados para o Firebase (MODIFICADO)
+    const activityData = {
+        task_id_associada: activityAssociatedTaskId || null,
+        tipo_atividade: activityType,
+        data_inicio: Timestamp.fromMillis(activityStartTime),
+        data_fim: Timestamp.fromMillis(fimTimestamp),
+        duracao_total_segundos: totalActiveTime,
+        distancia_total_km: totalDistance,
+        velocidade_media_kmh: velocidadeMedia,
+        calorias_queimadas: Math.round(caloriasTotais),
+        trajeto_polyline_json: trajetoString,
+        trajeto_segmentos_json: segmentosString,
+        historico_segmentos: segmentHistory,
 
-                // Lógica de Level Up para Vitalidade
-                profileData.stats.vitalidade.xp_atual += XP_VIT;
-                while (profileData.stats.vitalidade.xp_atual >= profileData.stats.vitalidade.xp_para_upar) {
-                    profileData.stats.vitalidade.level += 1;
-                    profileData.stats.vitalidade.xp_atual -= profileData.stats.vitalidade.xp_para_upar;
-                    profileData.stats.vitalidade.xp_para_upar = Math.floor(profileData.stats.vitalidade.xp_para_upar * 1.15);
-                }
+        // --- Dados da IA ---
+        recompensa_ganha: { XP_VEL, XP_VIT, MOEDAS },
+        dificuldade_ia: difficulty,
+        justificativa_ia: justification
+    };
 
-                // Atualiza moedas
-                profileData.character.moedas = (profileData.character.moedas || 0) + MOEDAS;
+    // 8. Executar a Transação
+    try {
+        const userRef = doc(db, 'artifacts', appId, 'users', currentUserId);
+        const profileRef = doc(userRef, 'profile', 'details');
 
-                // Salva o objeto de perfil atualizado
-                transaction.update(profileRef, {
-                    stats: profileData.stats,
-                    character: profileData.character
-                });
-
-                // Write 3: Atualiza a tarefa associada (se existir)
-                if (taskSnap && taskSnap.exists()) {
-                    if (taskSnap.data().isGenerated) {
-                        // Se é uma "Corrida Rápida" (isGenerated), atualiza o título
-                        transaction.update(taskRef, {
-                            titulo: `Corrida Rápida de ${totalDistance.toFixed(2)} km`,
-                            status: 'CONCLUIDA',
-                            recompensa_real: activityData.recompensa_ganha,
-                            activity_id_associada: newActivityRef.id
-                        });
-                    } else {
-                        // Se é uma tarefa normal, apenas a conclui
-                        transaction.update(taskRef, {
-                            status: 'CONCLUIDA',
-                            recompensa_real: activityData.recompensa_ganha,
-                            activity_id_associada: newActivityRef.id
-                        });
-                    }
-                }
-            });
-
-            showMessage("Atividade Salva!", `Você ganhou +${XP_VEL} XP de VEL, +${XP_VIT} XP de VIT e +${MOEDAS} Moedas!`);
-            // Limpa e reseta a UI da tela de atividade antes de mudar de tela
-            document.getElementById('btn-start-activity').classList.remove('hidden');
-            document.getElementById('btn-pause-activity').classList.add('hidden');
-            document.getElementById('btn-resume-activity').classList.add('hidden');
-            document.getElementById('btn-finish-activity').classList.add('hidden');
-
-            // Limpa o estado salvo
-            if (activityAssociatedTaskId) {
-                localStorage.removeItem(`activityState_${activityAssociatedTaskId}`);
+        await runTransaction(db, async (transaction) => {
+            // --- ETAPA DE LEITURA ---
+            const profileSnap = await transaction.get(profileRef);
+            if (!profileSnap.exists()) {
+                throw "Perfil do usuário não encontrado!";
             }
 
-            showScreen('dashboard');
+            let taskSnap = null;
+            let taskRef = null;
+            if (activityAssociatedTaskId) {
+                taskRef = doc(userRef, 'tasks', activityAssociatedTaskId);
+                taskSnap = await transaction.get(taskRef);
+            }
 
-        } catch (error) {
-            console.error("Erro ao salvar atividade:", error);
-            showMessage("Erro", "Não foi possível salvar sua atividade. Tente novamente.");
+            // --- ETAPA DE ESCRITA ---
+            const newActivityRef = doc(collection(userRef, 'activities'));
+
+            // Write 1: Salva a nova atividade
+            transaction.set(newActivityRef, activityData);
+
+            // Write 2: Atualiza o perfil do usuário
+            const profileData = profileSnap.data();
+            if (!profileData.stats) profileData.stats = {};
+            const defaultStat = { level: 1, xp_atual: 0, xp_para_upar: 100 };
+            if (!profileData.stats.velocidade) profileData.stats.velocidade = { ...defaultStat };
+            if (!profileData.stats.vitalidade) profileData.stats.vitalidade = { ...defaultStat };
+
+            // Lógica de Level Up para Velocidade
+            profileData.stats.velocidade.xp_atual += XP_VEL;
+            while (profileData.stats.velocidade.xp_atual >= profileData.stats.velocidade.xp_para_upar) {
+                profileData.stats.velocidade.level += 1;
+                profileData.stats.velocidade.xp_atual -= profileData.stats.velocidade.xp_para_upar;
+                profileData.stats.velocidade.xp_para_upar = Math.floor(profileData.stats.velocidade.xp_para_upar * 1.15);
+            }
+
+            // Lógica de Level Up para Vitalidade
+            profileData.stats.vitalidade.xp_atual += XP_VIT;
+            while (profileData.stats.vitalidade.xp_atual >= profileData.stats.vitalidade.xp_para_upar) {
+                profileData.stats.vitalidade.level += 1;
+                profileData.stats.vitalidade.xp_atual -= profileData.stats.vitalidade.xp_para_upar;
+                profileData.stats.vitalidade.xp_para_upar = Math.floor(profileData.stats.vitalidade.xp_para_upar * 1.15);
+            }
+
+            // Atualiza moedas
+            profileData.character.moedas = (profileData.character.moedas || 0) + MOEDAS;
+            transaction.update(profileRef, {
+                stats: profileData.stats,
+                character: profileData.character
+            });
+
+            // Write 3: Atualiza a tarefa associada (se existir)
+            if (taskSnap && taskSnap.exists()) {
+                const updateData = {
+                    status: 'CONCLUIDA',
+                    recompensa_real: activityData.recompensa_ganha,
+                    activity_id_associada: newActivityRef.id
+                };
+                if (taskSnap.data().isGenerated) {
+                    updateData.titulo = `Corrida Rápida de ${totalDistance.toFixed(2)} km`;
+                }
+                transaction.update(taskRef, updateData);
+            }
+        });
+
+        // AO FINAL DA TRANSAÇÃO BEM-SUCEDIDA:
+
+        // Fecha a mensagem "Analisando..."
+        modal.container.classList.add('hidden');
+
+        // Mostra a nova mensagem personalizada com a justificativa
+        showMessage(
+            `Atividade ${difficulty} Concluída!`,
+            `Análise do Mestre: "${justification}" (Bônus: ${multiplier}x). Você ganhou +${XP_VEL} XP de VEL, +${XP_VIT} XP de VIT e +${MOEDAS} Moedas!`
+        );
+
+        // Limpa o estado salvo e reseta a UI
+        if (activityAssociatedTaskId) {
+            localStorage.removeItem(`activityState_${activityAssociatedTaskId}`);
         }
+        document.getElementById('btn-start-activity').classList.remove('hidden');
+        document.getElementById('btn-pause-activity').classList.add('hidden');
+        document.getElementById('btn-resume-activity').classList.add('hidden');
+        document.getElementById('btn-finish-activity').classList.add('hidden');
+
+        showScreen('dashboard');
+
+    } catch (error) {
+        console.error("Erro ao salvar atividade:", error);
+        showMessage("Erro", "Não foi possível salvar sua atividade. Tente novamente.");
     }
+}
 
 
     document.getElementById('sub-task-list').addEventListener('click', (e) => {
