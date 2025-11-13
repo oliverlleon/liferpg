@@ -105,6 +105,12 @@
     }
 
     /* Animação de Missão em Andamento Aprimorada */
+
+    /* Corrige o ícone do seletor de data no tema escuro */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+    }
+
     @keyframes sword-glow {
         0%, 100% { filter: drop-shadow(0 0 2px #13ec6d); }
         50% { filter: drop-shadow(0 0 10px #13ec6d); }
@@ -473,7 +479,7 @@
           <div id="date-filter-container" class="hidden flex flex-wrap items-center gap-4 p-2 rounded-lg bg-surface-dark/50 border border-border-dark">
             <div class="flex items-center gap-2 flex-grow">
                 <span class="material-symbols-outlined text-text-dark-secondary pl-2">filter_alt</span>
-                <input type="date" id="mission-date-filter" class="form-input flex-grow bg-transparent border-none text-white focus:ring-0" style="color-scheme: dark;">
+                <input type="date" id="mission-date-filter" class="form-input flex-grow bg-transparent border-none text-white focus:ring-0">
                 <button id="clear-date-filter" class="p-2 rounded-full hover:bg-primary/20 text-text-dark-secondary">
                     <span class="material-symbols-outlined !text-xl">close</span>
                 </button>
