@@ -117,6 +117,7 @@
     #mission-date-filter:valid {
       color: white;
     }
+    /* Garante que o placeholder permaneça cinza quando o campo está vazio */
     #mission-date-filter:invalid {
       color: #9db9a8;
     }
@@ -487,7 +488,7 @@
 
           <!-- Filtro de Data para a aba "Todas" -->
           <div id="date-filter-container" class="hidden flex items-center justify-between gap-4 p-2 rounded-lg bg-surface-dark/50 border border-border-dark">
-            <input type="date" id="mission-date-filter" class="form-input flex-grow rounded-lg text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-12 placeholder:text-white/40 p-2 text-base font-normal leading-normal" style="color-scheme: dark;">
+            <input type="date" id="mission-date-filter" class="form-input flex-grow rounded-lg text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-12 placeholder:text-white/40 p-2 text-base font-normal leading-normal">
             <div class="flex items-center gap-2">
                 <label for="open-missions-filter" class="text-sm text-text-dark-secondary whitespace-nowrap">Apenas Abertas</label>
                 <label class="relative inline-flex items-center cursor-pointer">
