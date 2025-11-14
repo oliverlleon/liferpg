@@ -475,11 +475,11 @@
           </div>
 
           <!-- Filtro de Data para a aba "Todas" -->
-          <div id="date-filter-container" class="hidden flex items-center justify-between gap-4 p-2 rounded-lg bg-surface-dark/50 border border-border-dark">
-            <input type="date" id="mission-date-filter" class="form-input flex-grow rounded-lg text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-12 placeholder:text-white/40 p-2 text-base font-normal leading-normal date-input-visible">
-            <div class="flex items-center gap-2">
+          <div id="date-filter-container" class="hidden flex flex-col sm:flex-row items-center justify-between gap-4 p-2 rounded-lg bg-surface-dark/50 border border-border-dark">
+            <input type="date" id="mission-date-filter" class="form-input w-full sm:flex-grow rounded-lg focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-12 placeholder:text-white/40 p-2 text-base font-normal leading-normal date-input-visible">
+            <div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                 <label for="open-missions-filter" class="text-sm text-text-dark-secondary whitespace-nowrap">Apenas Abertas</label>
-                <label class="relative inline-flex items-center cursor-pointer">
+                <label class="relative inline-flex items-center cursor-pointer ml-auto">
                   <input type="checkbox" id="open-missions-filter" class="sr-only peer">
                   <div class="w-11 h-6 bg-surface-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                 </label>
