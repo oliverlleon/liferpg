@@ -106,23 +106,6 @@
 
     /* Animação de Missão em Andamento Aprimorada */
 
-    /* Corrige o problema do date picker em dispositivos móveis */
-    #mission-date-filter::-webkit-datetime-edit-fields-wrapper {
-        color: #9db9a8; /* Cor cinza claro para o placeholder "dd/mm/aaaa" */
-    }
-    #mission-date-filter::-webkit-calendar-picker-indicator {
-        filter: invert(1); /* Inverte a cor do ícone do calendário para branco */
-    }
-    /* Mantém o texto branco DEPOIS de selecionar uma data */
-    #mission-date-filter {
-        color: white;
-    }
-    /* Garante que o texto não selecionado (placeholder) não fique branco */
-    #mission-date-filter:invalid {
-        color: #9db9a8;
-    }
-
-
     @keyframes sword-glow {
         0%, 100% { filter: drop-shadow(0 0 2px #13ec6d); }
         50% { filter: drop-shadow(0 0 10px #13ec6d); }
@@ -488,10 +471,10 @@
           </div>
 
           <!-- Filtro de Data para a aba "Todas" -->
-          <div id="date-filter-container" class="hidden flex items-center justify-between gap-4 p-2 rounded-lg bg-surface-dark/50 border border-border-dark">
+          <div id="date-filter-container" class="hidden flex flex-wrap items-center justify-between gap-4 p-2 rounded-lg bg-surface-dark/50 border border-border-dark">
             <input type="date" id="mission-date-filter" class="form-input flex-grow rounded-lg text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-12 placeholder:text-white/40 p-2 text-base font-normal leading-normal" style="color-scheme: dark; color: white !important;">
             <div class="flex items-center gap-2">
-                <label for="open-missions-filter" class="text-sm text-text-dark-secondary whitespace-nowrap">Apenas Abertas</label>
+                <label for="open-missions-filter" class="text-sm text-text-dark-secondary">Apenas Abertas</label>
                 <label class="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" id="open-missions-filter" class="sr-only peer">
                   <div class="w-11 h-6 bg-surface-secondary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
