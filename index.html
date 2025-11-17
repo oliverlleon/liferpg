@@ -106,6 +106,22 @@
 
     /* Animação de Missão em Andamento Aprimorada */
 
+    /* Corrige a visibilidade do date picker em mobile sem alterar o layout */
+    #mission-date-filter::-webkit-datetime-edit-fields-wrapper {
+      color: #9db9a8; /* Cor cinza para o placeholder "dd/mm/aaaa" */
+    }
+    #mission-date-filter::-webkit-calendar-picker-indicator {
+      filter: invert(1); /* Torna o ícone do calendário branco */
+    }
+    /* Força o texto a ser branco apenas quando uma data válida for selecionada */
+    #mission-date-filter:valid {
+      color: white;
+    }
+    /* Garante que o placeholder permaneça cinza quando o campo está vazio */
+    #mission-date-filter:invalid {
+      color: #9db9a8;
+    }
+
     @keyframes sword-glow {
         0%, 100% { filter: drop-shadow(0 0 2px #13ec6d); }
         50% { filter: drop-shadow(0 0 10px #13ec6d); }
@@ -472,7 +488,7 @@
 
           <!-- Filtro de Data para a aba "Todas" -->
           <div id="date-filter-container" class="hidden flex items-center justify-between gap-4 p-2 rounded-lg bg-surface-dark/50 border border-border-dark">
-            <input type="date" id="mission-date-filter" class="form-input flex-grow rounded-lg text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-12 placeholder:text-white/40 p-2 text-base font-normal leading-normal" style="color-scheme: dark; color: white !important;">
+            <input type="date" id="mission-date-filter" class="form-input flex-grow rounded-lg text-white focus:outline-0 focus:ring-0 border border-primary/30 bg-[#1C2720] focus:border-primary h-12 placeholder:text-white/40 p-2 text-base font-normal leading-normal" style="color-scheme: dark;">
             <div class="flex items-center gap-2">
                 <label for="open-missions-filter" class="text-sm text-text-dark-secondary whitespace-nowrap">Apenas Abertas</label>
                 <label class="relative inline-flex items-center cursor-pointer">
